@@ -1,0 +1,20 @@
+[gd_scene load_steps=4 format=3 uid="uid://yuoyd2re7fye"]
+
+[ext_resource type="PackedScene" uid="uid://cb4a3b8u7c8a" path="res://scenes/player/player.tscn" id="1_ig7tw"]
+
+[sub_resource type="NavigationMesh" id="NavigationMesh_7dm0k"]
+
+[sub_resource type="BoxMesh" id="BoxMesh_ig7tw"]
+
+[node name="Main" type="Node3D"]
+
+[node name="NavigationRegion3D" type="NavigationRegion3D" parent="."]
+transform = Transform3D(7.92432, 0, 0, 0, 0.0852307, 0, 0, 0, 5.63125, 0, 0, 0)
+navigation_mesh = SubResource("NavigationMesh_7dm0k")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="NavigationRegion3D"]
+transform = Transform3D(1.00383, 0, 0, 0, 1.00383, 0, 0, 0, 1.00383, 0, 0, 0)
+mesh = SubResource("BoxMesh_ig7tw")
+skeleton = NodePath("../..")
+
+[node name="Player" parent="." instance=ExtResource("1_ig7tw")]

@@ -1,0 +1,6 @@
+.godot/
+build/
+godot-copy-all-errors-*/
+*.tmp
+*~
+# Editor import cache included via project import; keep everything else tracked

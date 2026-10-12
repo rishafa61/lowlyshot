@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="WeaponData" format=3]
+
+[ext_resource type="Script" path="res://scripts/weapon_data.gd" id="1_script"]
+
+[resource]
+script = ExtResource("1_script")
+id = "flashbang"
+display_name = "M-84 Flashbang"
+type = "util"
+dmg = 5.0
+fire_rate = 1.0
+owned = true
+equipped = false
+price = 150
+scene_path = "res://scenes/weapons/utilities/flashbang_hand.tscn"
+hold_style = "util"

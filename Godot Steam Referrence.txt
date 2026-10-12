@@ -1,0 +1,95 @@
+Godo offers a variety of networking tools such as the multiplayer synchronization and spawner nodes and the RPC system. But before we can build games using those tools, we will need to let Godo know what library drives the networking or more specifically create a multiplayer pier object and initialize Godo's multiplayer networking API with it. The multiplayer pier can be created by multiple networking libraries. The built-in one being Enet, which we used to set up multiplayer in a previous video.
+
+But in this video, we will focus on creating a multiplayer pier using the Steam SDK, which will be provided by a plug-in called Godo Steam. By the end of this video, you will have a working peer-to-peer networking setup where your friends will be able to join your game through Steam without the need for port forwarding. The project files are available on Git through a link in the description.
+
+Setting Up GodotSteam
+
+In a new project, the very first thing we'll do is install God's theme from within the editor. Look for the asset store and in there, look up God's theme. As of this recording, the latest version is 4.19.1.
+
+The download might sometimes take a while, but once it's finished, install it and we are good to go. If all went well, you should now have an add-ons folder that includes the Goto Steam add-on. The next thing we want to do is properly initialize go to steam in our project. Go to project settings and at the very bottom we can find steam and initialization.
+
+In this window we'll fill in the app ID which is required for steam to work. Steam has a reserved app ID for games in development which is 480. This works for now but when you end up releasing your game you will need to change this app ID to your own. Below that, we will enable initialize on startup and we'll leave embedded callbacks unchecked as we'll be running those ourselves later in the project.
+
+We can now close this window. Let's add a new 2D scene which we will call main so we can run the project. Before you run the scene, make sure Steam is running in the background. If go to steam is properly initialized, you should now see the steam overlay popup and upon pressing shift tab the steam overlay will open.
+
+And now you have access to all the features that go steam has to offer. Check out their website godo steam.com for documentation and tutorials.
+
+Networking Script
+
+Let's begin with making a networking class. In our file system, let's add a new script that we'll call networking. Here we will initialize networking, create a function to host a Steam lobby, and connect to players who try to join that lobby. Now, I mentioned that we will be making peer-to-peer connections.
+
+If you don't know what peer-to-peer is, it's where all client instances are connected to one another without the need for a central server. Instead, all clients are connected to a hosting player who also participates in the game. Notice that all clients are only connected to the hosting player, not to each other. So any messages from one player to the others are relayed through the host.
+
+We want to create those connections without port forwarding. Port forwarding opens a port on your network to the internet, allowing others to connect to your system, which comes with security risks. So the alternative is to create those connections through something called a relay network. We can initialize access to it by calling steam.init relay network access in our ready function.
+
+In the project settings, we left embed callbacks unchecked because we will use the process function to run those callbacks ourselves. Simply call steam.run callbacks on every frame. This is required to receive any callbacks from steamworks. Next, we will create the host lobby function for which we will need two new constants. a lobby type and the number of people that can join our lobby, ourselves included.
+
+To create the actual lobby, we call steam.create lobby and include the lobby type and the maximum allowed members. Creating a lobby will emit two signals, lobby created and lobby joint in our ready function. Let's connect callables to those signals. This will produce an error because we have yet to declare those callables, but we'll do so in a moment.
+
+First, let's add the signal host created and the variable pair which will be of type steam multiplayer pair. The lobby created signal is only called on the machine of the host. Declare the connected callable on lobby created and make sure to add the signal parameters that we can find by hovering over the original signal. Then we want to initialize the host that other players can connect to and at the bottom emit the host created signal.
+
+The lobby join signal is called for all players who joined the lobby including ourselves since we directly join our own lobby after creating it. So in the on lobby joint callable when we run this code as the lobby owner which we can check by comparing the lobby owner's steam ID to our own we simply want to ignore the rest of this function. Below that we will create the connection to the lobby owner. Notice that in both functions, we create and assign a Steam multiplayer pair object to multiplayer.multiplayer pair.
+
+This effectively tells God that networking is enabled and we can start using KDO's networking API. Setting server relay to true is to accomplish the peer-to-peer setup I talked about earlier where all clients are only connected to the hosting player and any form of communication is relayed through the host. Back in our ready function, let's attach a callable to the join the requested signal. This signal is called when a player is attempting to join a friend through the Steam overlay.
+
+In the connected callable, we'll simply run steam.join lobby with the provided lobby ID. And that's it for our networking script. Let's create an autoload out of it by going to project settings, then globals. Look for the script in the file system and add it to the list.
+
+This automatically adds the networking script as a note to the top of our scene tree upon running the project and it allows us to access the networking contents
+
+Main Scene
+
+from other scripts. In the main scene, we need to set up a few things. We need a button that allows players to host the lobby, a spawn point, and a way to synchronize player spawning over the network. First in a new convos layer, let's add the button.
+
+I'll rename the button to host and also set the text value to host. Then we add a 2D node as the spawn point. Simply drag it somewhere in the center of the screen. And lastly, we'll add a multiplayer spawner node.
+
+In there, we set the spawn path to the main node. The way the multiplayer spawner node works is that when the host spawns an object listed in the auto spawn list to the spawn path node, that object is automatically spawned on all connected instances. Since we want to spawn player controllers, we will need to create one first. Let's add a new character body 2D node to our file system.
+
+I'll simply call it player controller. Then I click and drag the newly created scene inside the auto spawn list of the multiplayer spawner. Let's attach a new script to the main scene. In there, we want to spawn the host player when the host is created and spawn other players that connect to our lobby.
+
+In the ready function, attach a callable to the host created signal we made in the networking script. Then we create that callable and name it on host created. In there, we will call a function spawn player which we have yet to declare to directly spawn the host player. We will also connect spawn player to the signal multiplayer pair connected which is emitted for each player that connects to us.
+
+To instantiate a new player, we need a reference to the player scene. From the file system, drag in the player controller node that we also referenced in the auto spawn list. When you drag the player into the script, hold down control to automatically preload the scene into a new constant. Remember, when the host spawns this player, all connected clients will also spawn this player.
+
+To spawn players that's just connected, the spawn player function requires a pair ID of that player. In this function, we will make an instance of the player controller and add it as a child of the scene. Before we spawn the player, we change its name to the given peer ID. The multiplayer spawner node synchronizes the names of objects upon spawning them.
+
+By changing the name to the peer ID, we can grant authority over a player controller to the correct client. At the bottom, we'll call another function that initializes the player controller. Again, we'll create that function in a second, but first, let's add an array to the script to keep track of all existing player controllers. Inside a new function, initialize player, which requires a character body node.
+
+We will set the player position to the spawn point. Add collision exceptions with all existing player controllers and then append the new player instance to the list of players. Adding collision exceptions is optional, but I remember people asking in a previous video why their player got whacked out of the screen. That was because of collision.
+
+When a player spawns on top of another player, they push each other outward. So, we add collision exceptions to prevent that from happening this time. The last thing we need to do in the main scene is to add the host buttons pressed signal to the script. When the button is pressed, we want to call networking.host lobby.
+
+This allows us to host a lobby when the host button is pressed. Then we also want to add the multiplayer spawners spawn signal to the script. This is only emitted on connected clients when the host spawns something from the auto spawn list. When this happens, check if it's a character body 2D node and initialize it as a new player.
+
+Player Controller
+
+Next up is to create the player controller. I went ahead and created a simple character body 2D scene with a sprite and a collider. For the networking part of the controller, we'll add the multiplayer synchronizer node. When we select it, the replication tab opens.
+
+There we can select properties to be synchronized over the network. We want to synchronize the player position. So add a new property. Select the character body node and select position.
+
+The multiplayer synchronizer node automatically synchronizes the properties configured in the list. The user who has so-called authority over the nodes specified in the root path replicates their state of the listed properties to the other players. It's important to specify and assign which player gets authority over what node for each existing instance the host included. The listed properties have a few extra settings.
+
+The spawn setting when checked directly replicates the current state of the property when it's spawned. If left unchecked, it uses the default value instead. With the replicate setting, we can specify when to replicate a property. Then we'll continue with a new script for our player controller.
+
+The first thing we'll need to assess is who has authority over each newly spawned player controller. Remember that before spawning a player in the main scene, we assigned the player ID to be its name, which is synchronized by the multiplayer spawner. So in the enter tree function, we can now use the name to set the authority to the correct player. Now we can use the authority to determine if our local client is allowed to change the state of this node.
+
+In the physics process function, we can check if we have authority using is multiplayer authority, which is the same as comparing the authority with the local unique ID. If our local client doesn't have authority, we simply ignore the rest of the function. Below that, we can define any movement code like you usually would. Let's keep things simple by changing the velocity based on
+
+Testing
+
+keyboard input. To test and see if this setup works, you need two systems that run a different Steam account in the background. On the left screen, the IC Engine Steam account is active and on the right, the IC Engineer Steam account. You can build and export the game to the other system or just run the same project setup via Git.
+
+Let's create the lobby using IC Engine. Then let's connect IC Engineer by joining the game through the Steam overlay. And as you can see, both clients are connected and can move around a player.
+
+The Hat?
+
+I created a small wacky example to further demonstrate how quickly we can set uporked properties. I've added a 2D node called hat that contains a sprite node with a head texture. The bottom of the hat is aligned with the pivot of the 2D head node so that if we scale the head node, it grows and shrinks. The idea is that players are able to change the size of the hat and have that change synchronized over the network.
+
+To do so, we can add a new property to our multiplayer synchronizer node. In the replication tab, select our head node and then scale. I only want the value to synchronize when it's changed. So, we can set the replicate value to onchange.
+
+Then inside the player script, I added some logic that grows the head when I press the G button and shrinks the head when I press the S button. And just like that, changing head sizes is possible and visible to other players. One quick last thing I'd like to mention, if you want to synchronize a custom property from a script, you have to export this property using at export. Otherwise, it won't be visible to the synchronizer node.
+
+Then simply add the property to the synchronization list. As usual,
+
+Outro
+
+the multiplayer spawner and multiplayer synchronizer nodes exist to make networking things such as player properties convenient, but other than that, it's not convenient for syncing the press of a button or sending chat messages. To add more functionality to our worked game, we can use remote procedure calls or RPCs in short. Please comment RPC below if you'd be interested in learning about them so I might cover that topic in the future. In the meantime, you can watch my latest death log here where I'm building a multiplayer horror game that actually uses God's team for the networking.

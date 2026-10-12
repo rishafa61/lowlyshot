@@ -1,0 +1,31 @@
+[gd_scene load_steps=6 format=3 uid="uid://cpqdqr0ry1ias"]
+
+[ext_resource type="Script" uid="uid://clrpt3w7cyk2p" path="res://scenes/weapons/utilities/grenade_projectile.gd" id="1_script"]
+
+[sub_resource type="PhysicsMaterial" id="PhysicsMaterial_bounce"]
+friction = 0.4
+bounce = 0.6
+
+[sub_resource type="SphereShape3D" id="SphereShape3D_nade"]
+radius = 0.15
+
+[sub_resource type="SphereMesh" id="SphereMesh_nade"]
+radius = 0.1
+height = 0.2
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_nade"]
+albedo_color = Color(0.2, 0.5, 0.2, 1)
+
+[node name="GrenadeProjectile" type="RigidBody3D"]
+mass = 0.8
+physics_material_override = SubResource("PhysicsMaterial_bounce")
+continuous_cd = true
+angular_damp = 1.0
+script = ExtResource("1_script")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+shape = SubResource("SphereShape3D_nade")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+mesh = SubResource("SphereMesh_nade")
+surface_material_override/0 = SubResource("StandardMaterial3D_nade")

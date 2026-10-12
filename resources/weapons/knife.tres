@@ -1,0 +1,24 @@
+[gd_resource type="Resource" script_class="WeaponData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/weapon_data.gd" id="1_script"]
+
+[resource]
+script = ExtResource("1_script")
+id = "knife"
+display_name = "Default Knife"
+type = "melee"
+dmg = 80.0
+rng = 10.0
+stab = 100.0
+fire_rate = 0.6
+mag = 0
+max_mag = 0
+res = 0
+max_res = 0
+auto = false
+is_sniper = false
+owned = true
+equipped = true
+price = 0
+scene_path = "res://scenes/weapons/melee/Knife.tscn"
+hold_style = "melee"

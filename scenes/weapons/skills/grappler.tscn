@@ -1,0 +1,161 @@
+[gd_scene load_steps=5 format=3 uid="uid://d1dbwi8t5v3dc"]
+
+[sub_resource type="StandardMaterial3D" id="Mat_BlackBody"]
+albedo_color = Color(0.12, 0.12, 0.13, 1)
+metallic = 0.65
+roughness = 0.45
+
+[sub_resource type="StandardMaterial3D" id="Mat_Silver"]
+albedo_color = Color(0.82, 0.83, 0.85, 1)
+metallic = 0.95
+roughness = 0.25
+
+[sub_resource type="StandardMaterial3D" id="Mat_Grip"]
+albedo_color = Color(0.08, 0.08, 0.09, 1)
+metallic = 0.2
+roughness = 0.85
+
+[sub_resource type="StandardMaterial3D" id="Mat_Gold"]
+albedo_color = Color(0.95, 0.76, 0.18, 1)
+metallic = 0.95
+roughness = 0.2
+
+[node name="Grappler" type="Node3D"]
+
+[node name="Body" type="Node3D" parent="."]
+
+[node name="MainHousing" type="CSGBox3D" parent="Body"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.02, 0.05)
+size = Vector3(0.065, 0.11, 0.26)
+material = SubResource("Mat_BlackBody")
+
+[node name="SpoolDrum" type="CSGCylinder3D" parent="Body"]
+transform = Transform3D(-4.37114e-08, -1, 0, 1, -4.37114e-08, 0, 0, 0, 1, 0, -0.005, 0.12)
+radius = 0.065
+height = 0.072
+sides = 24
+material = SubResource("Mat_BlackBody")
+
+[node name="SpoolDetailOuter" type="CSGCylinder3D" parent="Body"]
+transform = Transform3D(-4.37114e-08, -1, 0, 1, -4.37114e-08, 0, 0, 0, 1, 0.002, -0.005, 0.12)
+radius = 0.045
+height = 0.076
+sides = 24
+material = SubResource("Mat_BlackBody")
+
+[node name="SpoolPin" type="CSGCylinder3D" parent="Body"]
+transform = Transform3D(-4.37114e-08, -1, 0, 1, -4.37114e-08, 0, 0, 0, 1, 0, -0.005, 0.12)
+radius = 0.012
+height = 0.082
+sides = 16
+material = SubResource("Mat_Silver")
+
+[node name="SpoolSlotTop" type="CSGBox3D" parent="Body"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.038, 0.02, 0.14)
+size = Vector3(0.006, 0.018, 0.01)
+material = SubResource("Mat_Silver")
+
+[node name="SpoolSlotBottom" type="CSGBox3D" parent="Body"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.038, -0.03, 0.12)
+size = Vector3(0.006, 0.018, 0.01)
+material = SubResource("Mat_Silver")
+
+[node name="Grip" type="CSGBox3D" parent="Body"]
+transform = Transform3D(1, 0, 0, 0, 0.882948, 0.469472, 0, -0.469472, 0.882948, 0, -0.11, 0.19)
+size = Vector3(0.05, 0.15, 0.06)
+material = SubResource("Mat_Grip")
+
+[node name="TriggerGuard" type="CSGBox3D" parent="Body"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.065, 0.08)
+size = Vector3(0.02, 0.035, 0.06)
+material = SubResource("Mat_BlackBody")
+
+[node name="Trigger" type="CSGBox3D" parent="Body"]
+transform = Transform3D(1, 0, 0, 0, 0.939693, 0.34202, 0, -0.34202, 0.939693, 0, -0.055, 0.075)
+size = Vector3(0.012, 0.022, 0.012)
+material = SubResource("Mat_Silver")
+
+[node name="SightMid" type="CSGBox3D" parent="Body"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.085, -0.065)
+size = Vector3(0.016, 0.022, 0.012)
+material = SubResource("Mat_BlackBody")
+
+[node name="SightRear" type="CSGBox3D" parent="Body"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.08, 0.14)
+size = Vector3(0.014, 0.014, 0.01)
+material = SubResource("Mat_BlackBody")
+
+[node name="BarrelUpper" type="CSGCylinder3D" parent="Body"]
+transform = Transform3D(1, 0, 0, 0, -4.37114e-08, -1, 0, 1, -4.37114e-08, 0, 0.055, -0.19)
+radius = 0.022
+height = 0.22
+sides = 20
+material = SubResource("Mat_BlackBody")
+
+[node name="BarrelUpperCap" type="CSGCylinder3D" parent="Body/BarrelUpper"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.115, 0)
+radius = 0.015
+height = 0.025
+sides = 16
+cone = true
+material = SubResource("Mat_BlackBody")
+
+[node name="BarrelLower" type="CSGCylinder3D" parent="Body"]
+transform = Transform3D(1, 0, 0, 0, -4.37114e-08, -1, 0, 1, -4.37114e-08, 0, 0.01, -0.18)
+radius = 0.026
+height = 0.2
+sides = 20
+material = SubResource("Mat_BlackBody")
+
+[node name="Collar" type="CSGCylinder3D" parent="Body/BarrelLower"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.01, 0)
+radius = 0.035
+height = 0.075
+sides = 16
+material = SubResource("Mat_BlackBody")
+
+[node name="UnderRail" type="CSGBox3D" parent="Body"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.035, -0.22)
+size = Vector3(0.035, 0.03, 0.11)
+material = SubResource("Mat_BlackBody")
+
+[node name="Dart" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.01, -0.32)
+
+[node name="Shaft" type="CSGCylinder3D" parent="Dart"]
+transform = Transform3D(1, 0, 0, 0, -4.37114e-08, -1, 0, 1, -4.37114e-08, 0, 0, 0.04)
+radius = 0.012
+height = 0.14
+sides = 16
+material = SubResource("Mat_Gold")
+
+[node name="HeadCone" type="CSGCylinder3D" parent="Dart"]
+transform = Transform3D(1, 0, 0, 0, -4.37114e-08, 1, 0, -1, -4.37114e-08, 0, 0, -0.07)
+radius = 0.026
+height = 0.07
+sides = 16
+cone = true
+material = SubResource("Mat_Gold")
+
+[node name="BarbTop" type="CSGBox3D" parent="Dart"]
+transform = Transform3D(1, 0, 0, 0, 0.819152, 0.573576, 0, -0.573576, 0.819152, 0, 0.032, -0.015)
+size = Vector3(0.008, 0.014, 0.07)
+material = SubResource("Mat_Gold")
+
+[node name="BarbBottom" type="CSGBox3D" parent="Dart"]
+transform = Transform3D(1, 0, 0, 0, 0.819152, -0.573576, 0, 0.573576, 0.819152, 0, -0.032, -0.015)
+size = Vector3(0.008, 0.014, 0.07)
+material = SubResource("Mat_Gold")
+
+[node name="BarbRight" type="CSGBox3D" parent="Dart"]
+transform = Transform3D(0.819152, 0, 0.573576, 0, 1, 0, -0.573576, 0, 0.819152, 0.032, 0, -0.015)
+size = Vector3(0.07, 0.014, 0.008)
+material = SubResource("Mat_Gold")
+
+[node name="BarbLeft" type="CSGBox3D" parent="Dart"]
+transform = Transform3D(0.819152, 0, -0.573576, 0, 1, 0, 0.573576, 0, 0.819152, -0.032, 0, -0.015)
+size = Vector3(0.07, 0.014, 0.008)
+material = SubResource("Mat_Gold")
+
+[node name="MuzzleMarker" type="Marker3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.01, -0.4)

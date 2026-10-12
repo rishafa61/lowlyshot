@@ -1,0 +1,114 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scenes/ui/operator_menu.gd" id="1_script"]
+
+[node name="OperatorMenu" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_script")
+
+[node name="Background" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.12, 0.12, 0.15, 1)
+
+[node name="TopBar" type="HBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_left = 20.0
+offset_top = 20.0
+offset_right = -20.0
+offset_bottom = 70.0
+grow_horizontal = 2
+
+[node name="BtnBack" type="Button" parent="TopBar"]
+custom_minimum_size = Vector2(100, 0)
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+text = "< BACK"
+
+[node name="Title" type="Label" parent="TopBar"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 24
+text = "OPERATOR SELECTION"
+horizontal_alignment = 1
+
+[node name="PanelContainer" type="PanelContainer" parent="."]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -460.0
+offset_top = -280.0
+offset_right = 460.0
+offset_bottom = 280.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="HBoxContainer" type="HBoxContainer" parent="PanelContainer"]
+layout_mode = 2
+theme_override_constants/separation = 20
+
+[node name="Categories" type="VBoxContainer" parent="PanelContainer/HBoxContainer"]
+custom_minimum_size = Vector2(320, 0)
+layout_mode = 2
+
+[node name="VSeparator" type="VSeparator" parent="PanelContainer/HBoxContainer"]
+layout_mode = 2
+
+[node name="Details" type="VBoxContainer" parent="PanelContainer/HBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 20
+
+[node name="OpName" type="Label" parent="PanelContainer/HBoxContainer/Details"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.8, 0.2, 1)
+theme_override_font_sizes/font_size = 32
+text = "Vanguard"
+
+[node name="HSeparator" type="HSeparator" parent="PanelContainer/HBoxContainer/Details"]
+layout_mode = 2
+
+[node name="OpHealth" type="Label" parent="PanelContainer/HBoxContainer/Details"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+text = "Max Health: 120"
+
+[node name="OpArmor" type="Label" parent="PanelContainer/HBoxContainer/Details"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+text = "Max Armor: 50"
+
+[node name="OpSpeed" type="Label" parent="PanelContainer/HBoxContainer/Details"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+text = "Movement Speed: Normal"
+
+[node name="OpSkill" type="Label" parent="PanelContainer/HBoxContainer/Details"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.4, 0.8, 1, 1)
+theme_override_font_sizes/font_size = 24
+text = "Unique Skill: Adrenaline Surge"
+
+[node name="Spacer" type="Control" parent="PanelContainer/HBoxContainer/Details"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="BtnEquip" type="Button" parent="PanelContainer/HBoxContainer/Details"]
+custom_minimum_size = Vector2(0, 60)
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+text = "EQUIP OPERATOR"

@@ -1,0 +1,69 @@
+[gd_scene load_steps=7 format=3]
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_body"]
+top_radius = 0.03
+bottom_radius = 0.03
+height = 0.12
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_dgrey"]
+albedo_color = Color(0.25, 0.28, 0.25, 1)
+metallic = 0.3
+roughness = 0.6
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_cap"]
+top_radius = 0.035
+bottom_radius = 0.035
+height = 0.015
+
+[sub_resource type="SphereMesh" id="SphereMesh_hole"]
+radius = 0.008
+height = 0.016
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_red"]
+albedo_color = Color(0.6, 0.1, 0.1, 1)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_metal"]
+albedo_color = Color(0.2, 0.2, 0.2, 1)
+metallic = 0.9
+
+[node name="FlashbangHand" type="Node3D"]
+
+[node name="Body" type="MeshInstance3D" parent="."]
+mesh = SubResource("CylinderMesh_body")
+surface_material_override/0 = SubResource("StandardMaterial3D_dgrey")
+
+[node name="TopCap" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.0675, 0)
+mesh = SubResource("CylinderMesh_cap")
+surface_material_override/0 = SubResource("StandardMaterial3D_dgrey")
+
+[node name="BottomCap" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.0675, 0)
+mesh = SubResource("CylinderMesh_cap")
+surface_material_override/0 = SubResource("StandardMaterial3D_dgrey")
+
+[node name="Hole1" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.025, 0.03, 0)
+mesh = SubResource("SphereMesh_hole")
+surface_material_override/0 = SubResource("StandardMaterial3D_red")
+
+[node name="Hole2" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.0, 0.025)
+mesh = SubResource("SphereMesh_hole")
+surface_material_override/0 = SubResource("StandardMaterial3D_red")
+
+[node name="Hole3" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.025, -0.03, 0)
+mesh = SubResource("SphereMesh_hole")
+surface_material_override/0 = SubResource("StandardMaterial3D_red")
+
+[node name="Spoon" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0.965926, 0.258819, 0, -0.258819, 0.965926, 0, 0.01, 0.04)
+size = Vector3(0.015, 0.1, 0.008)
+material = SubResource("StandardMaterial3D_metal")
+
+[node name="PinRing" type="CSGTorus3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.06, -0.02)
+inner_radius = 0.012
+outer_radius = 0.018
+material = SubResource("StandardMaterial3D_metal")

@@ -1,0 +1,119 @@
+[gd_scene load_steps=7 format=3 uid="uid://dddw7ym217i68"]
+
+[sub_resource type="StandardMaterial3D" id="Mat_HousingGreen"]
+albedo_color = Color(0.35, 0.45, 0.3, 1)
+metallic = 0.4
+roughness = 0.6
+
+[sub_resource type="StandardMaterial3D" id="Mat_MetalGrey"]
+albedo_color = Color(0.5, 0.52, 0.55, 1)
+metallic = 0.8
+roughness = 0.4
+
+[sub_resource type="StandardMaterial3D" id="Mat_GripBlack"]
+albedo_color = Color(0.12, 0.12, 0.13, 1)
+metallic = 0.1
+roughness = 0.85
+
+[sub_resource type="StandardMaterial3D" id="Mat_Screen"]
+albedo_color = Color(0.7, 0.8, 0.7, 1)
+emission_enabled = true
+emission = Color(0.5, 0.7, 0.5, 1)
+emission_energy_multiplier = 1.2
+uv1_scale = Vector3(10, 10, 10)
+
+[sub_resource type="StandardMaterial3D" id="Mat_LensGlow"]
+albedo_color = Color(0.4, 1, 0.4, 1)
+emission_enabled = true
+emission = Color(0.4, 1, 0.4, 1)
+emission_energy_multiplier = 2.0
+
+[sub_resource type="StandardMaterial3D" id="Mat_RedTrigger"]
+albedo_color = Color(0.8, 0.1, 0.1, 1)
+roughness = 0.6
+
+[node name="AirstrikeLocator" type="Node3D"]
+
+[node name="MainBody" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.210891, 0.05)
+size = Vector3(0.08, 0.07, 0.22)
+material = SubResource("Mat_HousingGreen")
+
+[node name="TopPanel" type="CSGBox3D" parent="MainBody"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.035, 0)
+size = Vector3(0.06, 0.015, 0.18)
+material = SubResource("Mat_MetalGrey")
+
+[node name="SightNotch" type="CSGBox3D" parent="MainBody/TopPanel"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.015, -0.05)
+size = Vector3(0.02, 0.015, 0.02)
+material = SubResource("Mat_GripBlack")
+
+[node name="SideCylinderRight" type="CSGCylinder3D" parent="MainBody"]
+transform = Transform3D(1, 0, 0, 0, -4.37114e-08, -1, 0, 1, -4.37114e-08, 0.045, 0, 0.02)
+radius = 0.03
+height = 0.18
+sides = 20
+material = SubResource("Mat_MetalGrey")
+
+[node name="SideCylinderLeft" type="CSGCylinder3D" parent="MainBody"]
+transform = Transform3D(1, 0, 0, 0, -4.37114e-08, -1, 0, 1, -4.37114e-08, -0.045, 0, 0.02)
+radius = 0.03
+height = 0.18
+sides = 20
+material = SubResource("Mat_MetalGrey")
+
+[node name="ScreenHousing" type="CSGBox3D" parent="MainBody"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.015, 0, -0.11)
+size = Vector3(0.06, 0.06, 0.02)
+material = SubResource("Mat_HousingGreen")
+
+[node name="ScreenPanel" type="CSGBox3D" parent="MainBody/ScreenHousing"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -0.01)
+size = Vector3(0.05, 0.045, 0.005)
+material = SubResource("Mat_Screen")
+
+[node name="LensHousing" type="CSGCylinder3D" parent="MainBody"]
+transform = Transform3D(1, 0, 0, 0, -4.37114e-08, -1, 0, 1, -4.37114e-08, 0.035, -0.005, -0.12)
+radius = 0.018
+height = 0.03
+sides = 20
+material = SubResource("Mat_GripBlack")
+
+[node name="LensGlow" type="CSGCylinder3D" parent="MainBody/LensHousing"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.01, 0)
+radius = 0.012
+height = 0.012
+sides = 16
+material = SubResource("Mat_LensGlow")
+
+[node name="GripAssembly" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.08, 0)
+
+[node name="GripBase" type="CSGBox3D" parent="GripAssembly"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.240891, -0.02)
+size = Vector3(0.04, 0.03, 0.07)
+material = SubResource("Mat_GripBlack")
+
+[node name="Handle" type="CSGBox3D" parent="GripAssembly"]
+transform = Transform3D(1, 0, 0, 0, 0.965926, 0.258819, 0, -0.258819, 0.965926, 0, 0.150891, 0.01)
+size = Vector3(0.035, 0.15, 0.045)
+material = SubResource("Mat_GripBlack")
+
+[node name="Trigger" type="CSGBox3D" parent="GripAssembly"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.200891, -0.045)
+size = Vector3(0.012, 0.02, 0.015)
+material = SubResource("Mat_RedTrigger")
+
+[node name="HandGuard" type="CSGBox3D" parent="GripAssembly"]
+transform = Transform3D(1, 0, 0, 0, 0.939693, -0.34202, 0, 0.34202, 0.939693, 0, 0.150891, 0.08)
+size = Vector3(0.025, 0.16, 0.02)
+material = SubResource("Mat_GripBlack")
+
+[node name="BottomConnector" type="CSGBox3D" parent="GripAssembly"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.0808914, 0.04)
+size = Vector3(0.03, 0.02, 0.09)
+material = SubResource("Mat_GripBlack")
+
+[node name="MuzzleMarker" type="Marker3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.035, 0.205891, -0.09)

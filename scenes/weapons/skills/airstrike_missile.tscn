@@ -1,0 +1,27 @@
+[gd_scene format=3 uid="uid://dkgtq1ujw5a2l"]
+
+[ext_resource type="Script" uid="uid://cl300k7xedeph" path="res://scenes/weapons/skills/airstrike_missile.gd" id="1_script"]
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_missile"]
+top_radius = 0.2
+bottom_radius = 0.2
+height = 1.5
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_missile"]
+albedo_color = Color(0.2, 0.2, 0.2, 1)
+
+[sub_resource type="SphereMesh" id="SphereMesh_boom"]
+radius = 5.0
+height = 10.0
+
+[node name="AirstrikeMissile" type="Node3D" unique_id=2127724393]
+script = ExtResource("1_script")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="." unique_id=682494358]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.75, 0)
+mesh = SubResource("CylinderMesh_missile")
+surface_material_override/0 = SubResource("StandardMaterial3D_missile")
+
+[node name="Explosion" type="MeshInstance3D" parent="." unique_id=432943793]
+visible = false
+mesh = SubResource("SphereMesh_boom")

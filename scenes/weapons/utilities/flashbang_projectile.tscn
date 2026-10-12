@@ -1,0 +1,26 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://scenes/weapons/utilities/flashbang_projectile.gd" id="1_script"]
+
+[sub_resource type="PhysicsMaterial" id="PhysicsMaterial_bounce"]
+bounce = 0.5
+friction = 0.5
+
+[sub_resource type="CylinderShape3D" id="CylinderShape3D_nade"]
+radius = 0.04
+height = 0.15
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_body"]
+top_radius = 0.035
+bottom_radius = 0.035
+height = 0.14
+
+[node name="FlashbangProjectile" type="RigidBody3D"]
+physics_material_override = SubResource("PhysicsMaterial_bounce")
+script = ExtResource("1_script")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+shape = SubResource("CylinderShape3D_nade")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+mesh = SubResource("CylinderMesh_body")

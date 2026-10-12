@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3 uid="uid://cikq4itx0e0sb"]
+
+[ext_resource type="Script" uid="uid://ij2luwsmit7" path="res://scenes/weapons/skills/airstrike_manager.gd" id="1_script"]
+
+[node name="AirstrikeManager" type="Node3D"]
+script = ExtResource("1_script")

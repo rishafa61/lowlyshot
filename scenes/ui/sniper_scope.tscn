@@ -1,0 +1,110 @@
+[gd_scene load_steps=4 format=3 uid="uid://k5g6musou22s"]
+
+[ext_resource type="Script" uid="uid://cvc38rupamx46" path="res://scenes/ui/sniper_scope.gd" id="1_script"]
+
+[sub_resource type="Shader" id="Shader_scope"]
+code = "shader_type canvas_item;
+
+uniform float lens_radius = 0.35;
+uniform float scope_thickness = 0.02;
+uniform float aspect_ratio = 1.777777; // 16:9 default
+uniform vec4 border_color : source_color = vec4(0.0, 0.0, 0.0, 1.0);
+
+void fragment() {
+	vec2 center_uv = UV - vec2(0.5);
+	
+	// Multiply x by aspect ratio to keep it perfectly circular
+	center_uv.x *= aspect_ratio;
+	
+	float dist = length(center_uv);
+	
+	if (dist > lens_radius) {
+		COLOR = border_color;
+	} else if (dist > lens_radius - scope_thickness) {
+		// Draw a thick black ring immediately around the lens
+		COLOR = vec4(0.0, 0.0, 0.0, 1.0);
+	} else {
+		// Transparent center
+		COLOR = vec4(0.0, 0.0, 0.0, 0.0);
+	}
+}"
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_scope"]
+shader = SubResource("Shader_scope")
+shader_parameter/lens_radius = 0.5
+shader_parameter/scope_thickness = 0.02
+shader_parameter/aspect_ratio = 1.7777
+shader_parameter/border_color = Color(0.154876, 0.154876, 0.154876, 1)
+
+[node name="SniperScope" type="CanvasLayer"]
+layer = 10
+script = ExtResource("1_script")
+
+[node name="ScopeMask" type="ColorRect" parent="."]
+material = SubResource("ShaderMaterial_scope")
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="CenterContainer" type="CenterContainer" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="Lens" type="Control" parent="CenterContainer"]
+custom_minimum_size = Vector2(800, 800)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="ReticleH" type="ColorRect" parent="CenterContainer/Lens"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -311.0
+offset_top = -1.0
+offset_right = 312.0
+offset_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(1, 0, 0, 0.7)
+
+[node name="ReticleV" type="ColorRect" parent="CenterContainer/Lens"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_top = -311.0
+offset_right = 1.0
+offset_bottom = 311.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(1, 0, 0, 0.7)
+
+[node name="CenterDot" type="ColorRect" parent="CenterContainer/Lens"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -3.0
+offset_top = -3.0
+offset_right = 3.0
+offset_bottom = 3.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(1, 0, 0, 1)

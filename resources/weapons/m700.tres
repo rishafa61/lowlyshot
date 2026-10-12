@@ -1,0 +1,21 @@
+[gd_resource type="Resource" script_class="WeaponData" format=3 uid="uid://cwh6wka17ntik"]
+
+[ext_resource type="Script" uid="uid://bb02xcedscp06" path="res://scripts/weapon_data.gd" id="1_script"]
+
+[resource]
+script = ExtResource("1_script")
+id = "m700"
+display_name = "M700 Sniper"
+dmg = 120.0
+rng = 150.0
+stab = 20.0
+fire_rate = 1.2
+mag = 5
+max_mag = 5
+res = 15
+max_res = 15
+auto = false
+is_sniper = true
+price = 2500
+scene_path = "res://scenes/weapons/main/m700.tscn"
+viewmodel_position = Vector3(0.05, 0.03, 0.1)

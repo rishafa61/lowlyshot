@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="WeaponData" format=3 uid="uid://62ict4lmvt1b"]
+
+[ext_resource type="Script" uid="uid://bb02xcedscp06" path="res://scripts/weapon_data.gd" id="1_script"]
+
+[resource]
+script = ExtResource("1_script")
+id = "glock"
+display_name = "Glock"
+dmg = 10.0
+rng = 40.0
+stab = 60.0
+fire_rate = 0.3
+mag = 12
+max_mag = 12
+res = 48
+max_res = 48
+auto = false
+owned = true
+equipped = true
+scene_path = "res://scenes/weapons/secondary/Glock.tscn"

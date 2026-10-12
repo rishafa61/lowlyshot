@@ -1,0 +1,43 @@
+[gd_scene load_steps=7 format=3]
+
+[ext_resource type="Script" path="res://scripts/multiplayer/multiplayer_manager.gd" id="1_mgr"]
+[ext_resource type="Script" path="res://scripts/multiplayer/multiplayer_hud.gd" id="2_hud"]
+[ext_resource type="Script" path="res://scripts/multiplayer/player_spawner.gd" id="3_spawner"]
+[ext_resource type="Script" path="res://scripts/multiplayer/spawn_point.gd" id="4_sp"]
+[ext_resource type="PackedScene" path="res://scenes/levels/arena_template.tscn" id="5_arena"]
+
+[sub_resource type="Environment" id="env_arena"]
+background_mode = 1
+background_color = Color(0.05, 0.05, 0.08, 1)
+ambient_light_source = 2
+ambient_light_color = Color(0.4, 0.4, 0.4, 1)
+
+[node name="MultiplayerArena" type="Node3D"]
+script = ExtResource("1_mgr")
+
+[node name="PlayerSpawner" type="Node3D" parent="."]
+script = ExtResource("3_spawner")
+
+[node name="Timer" type="Timer" parent="."]
+
+[node name="Light" type="DirectionalLight3D" parent="."]
+transform = Transform3D(0.866, -0.433, 0.25, 0, 0.5, 0.866, -0.5, -0.75, 0.433, 0, 15, 0)
+shadow_enabled = true
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("env_arena")
+
+[node name="ArenaTemplate" parent="." instance=ExtResource("5_arena")]
+
+[node name="AttackersSpawn" type="Marker3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -22, 1, 0)
+script = ExtResource("4_sp")
+team = "attackers"
+
+[node name="DefendersSpawn" type="Marker3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 22, 1, 0)
+script = ExtResource("4_sp")
+team = "defenders"
+
+[node name="MultiplayerHUD" type="CanvasLayer" parent="."]
+script = ExtResource("2_hud")

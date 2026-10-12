@@ -1,0 +1,24 @@
+[gd_resource type="Resource" script_class="WeaponData" format=3]
+
+[ext_resource type="Script" path="res://scripts/weapon_data.gd" id="1_script"]
+
+[resource]
+script = ExtResource("1_script")
+id = "desert_hawk"
+display_name = "Desert Hawk"
+type = "gun"
+dmg = 68.0
+rng = 55.0
+stab = 25.0
+fire_rate = 0.35
+mag = 7
+max_mag = 7
+res = 28
+max_res = 28
+auto = false
+is_sniper = false
+owned = true
+equipped = false
+price = 700
+scene_path = "res://scenes/weapons/secondary/desert_hawk.tscn"
+hold_style = "pistol"

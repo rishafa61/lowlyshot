@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="WeaponData" format=3 uid="uid://cax8gpb45isrd"]
+
+[ext_resource type="Script" uid="uid://bb02xcedscp06" path="res://scripts/weapon_data.gd" id="1_script"]
+
+[resource]
+script = ExtResource("1_script")
+id = "ak47"
+display_name = "AK-47"
+dmg = 20.0
+rng = 60.0
+owned = true
+equipped = true
+scene_path = "res://scenes/weapons/main/ak47.tscn"
+viewmodel_position = Vector3(0.05, 0.03, 0.1)

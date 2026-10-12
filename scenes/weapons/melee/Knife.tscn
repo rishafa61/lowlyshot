@@ -1,0 +1,26 @@
+[gd_scene format=3 uid="uid://dvi5jb0fh1r1w"]
+
+[sub_resource type="BoxMesh" id="BoxMesh_blade"]
+size = Vector3(0.02, 0.08, 0.4)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_blade"]
+metallic = 1.0
+roughness = 0.2
+
+[node name="Knife" type="Node3D"]
+transform = Transform3D(-1, 8.74228e-08, 0, -8.74228e-08, -1, 0, 0, 0, 1, 0, 0, 0)
+
+[node name="Blade" type="MeshInstance3D" parent="."]
+transform = Transform3D(9.41625e-16, -3.14301e-08, 1, -0.49282, -3.14301e-08, 0, 2.15419e-08, -0.719038, -4.37114e-08, 0.145, 0, 0)
+mesh = SubResource("BoxMesh_blade")
+surface_material_override/0 = SubResource("StandardMaterial3D_blade")
+
+[node name="Handle" type="MeshInstance3D" parent="."]
+transform = Transform3D(3.5331e-15, -4.37114e-08, 0.382933, -1.84913, -4.37114e-08, 5.29396e-23, 8.08279e-08, -1, -1.67385e-08, -0.106069, 0, 0)
+mesh = SubResource("BoxMesh_blade")
+surface_material_override/0 = SubResource("StandardMaterial3D_blade")
+
+[node name="Handle2" type="MeshInstance3D" parent="."]
+transform = Transform3D(3.05087e-15, -3.71906e-08, 0.10758, -1.59674, -3.71906e-08, -1.94118e-23, 6.97957e-08, -0.850822, -4.70247e-09, -0.202152, 0, 0)
+mesh = SubResource("BoxMesh_blade")
+surface_material_override/0 = SubResource("StandardMaterial3D_blade")

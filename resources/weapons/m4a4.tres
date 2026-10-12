@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="WeaponData" format=3 uid="uid://c3wdgxw827xc3"]
+
+[ext_resource type="Script" uid="uid://bb02xcedscp06" path="res://scripts/weapon_data.gd" id="1_script"]
+
+[resource]
+script = ExtResource("1_script")
+id = "m4a4"
+display_name = "M4A4"
+dmg = 18.0
+rng = 70.0
+stab = 65.0
+fire_rate = 0.09
+res = 60
+max_res = 60
+owned = true
+price = 3100
+scene_path = "res://scenes/weapons/main/m4a4.tscn"

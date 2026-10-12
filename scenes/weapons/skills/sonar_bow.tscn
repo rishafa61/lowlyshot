@@ -1,0 +1,41 @@
+[gd_scene load_steps=3 format=3 uid="uid://fx10axqc8fj0"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_composite"]
+albedo_color = Color(0.15, 0.15, 0.2, 1)
+metallic = 0.5
+roughness = 0.3
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_string"]
+
+[node name="SonarBow" type="Node3D"]
+
+[node name="BowBody" type="CSGCylinder3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, -4.37114e-08, -1, 0, 1, -4.37114e-08, 0.0708179, 0, 0)
+radius = 0.04
+height = 1.0
+material = SubResource("StandardMaterial3D_composite")
+
+[node name="String1" type="CSGCylinder3D" parent="BowBody"]
+transform = Transform3D(0.965926, 0.258819, 0, -0.258819, 0.965926, 0, 0, 0, 1, -0.0989679, 0.25, 0)
+radius = 0.005
+height = 0.5
+material = SubResource("StandardMaterial3D_string")
+
+[node name="String2" type="CSGCylinder3D" parent="BowBody"]
+transform = Transform3D(0.965926, -0.258819, 0, 0.258819, 0.965926, 0, 0, 0, 1, -0.0989679, -0.25, 0)
+radius = 0.005
+height = 0.5
+material = SubResource("StandardMaterial3D_string")
+
+[node name="Arrow" type="CSGCylinder3D" parent="BowBody"]
+transform = Transform3D(-4.37114e-08, -1, 0, 1, -4.37114e-08, 0, 0, 0, 1, -0.1, 0, 0)
+radius = 0.015
+height = 0.8
+material = SubResource("StandardMaterial3D_composite")
+
+[node name="Tip" type="CSGCylinder3D" parent="BowBody/Arrow"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.4, 0)
+radius = 0.02
+height = 0.1
+cone = true
+material = SubResource("StandardMaterial3D_composite")

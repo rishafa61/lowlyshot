@@ -1,0 +1,591 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://scenes/ui/hud.gd" id="1_script"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_bow_charge"]
+bg_color = Color(0, 0.8, 1, 1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_console_bg"]
+bg_color = Color(0.18, 0.22, 0.18, 0.95)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.3, 0.4, 0.3, 1)
+corner_radius_top_left = 2
+corner_radius_top_right = 2
+corner_radius_bottom_right = 2
+corner_radius_bottom_left = 2
+
+[node name="HUD" type="CanvasLayer"]
+script = ExtResource("1_script")
+
+[node name="KillfeedContainer" type="VBoxContainer" parent="."]
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -300.0
+offset_top = 15.0
+offset_right = -15.0
+offset_bottom = 200.0
+grow_horizontal = 0
+mouse_filter = 2
+theme_override_constants/separation = 4
+alignment = 0
+
+[node name="CrosshairName" type="Label" parent="."]
+visible = false
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -100.0
+offset_top = 10.0
+offset_right = 100.0
+offset_bottom = 33.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 4
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="OverlayStatsLabel" type="Label" parent="."]
+visible = false
+anchors_preset = 0
+offset_top = 15.0
+offset_right = 250.0
+offset_bottom = 80.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(0, 1, 0, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 3
+theme_override_font_sizes/font_size = 16
+text = ""
+
+[node name="BloodVignette" type="ColorRect" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(1, 0, 0, 0)
+[node name="SpectatorLabel" type="Label" parent="."]
+visible = false
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -250.0
+offset_top = -90.0
+offset_right = 250.0
+offset_bottom = -50.0
+grow_horizontal = 2
+grow_vertical = 0
+theme_override_colors/font_color = Color(1, 0.9, 0.2, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 4
+theme_override_font_sizes/font_size = 20
+text = "SPECTATING: None (A/D to cycle)"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="CrosshairContainer" type="CenterContainer" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="Outline" type="ColorRect" parent="CrosshairContainer"]
+custom_minimum_size = Vector2(6, 6)
+layout_mode = 2
+mouse_filter = 2
+color = Color(0, 0, 0, 1)
+
+[node name="Dot" type="ColorRect" parent="CrosshairContainer/Outline"]
+custom_minimum_size = Vector2(4, 4)
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -2.0
+offset_top = -2.0
+offset_right = 2.0
+offset_bottom = 2.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="SkillDurationLabel" type="Label" parent="."]
+visible = false
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -50.0
+offset_top = 20.0
+offset_right = 50.0
+offset_bottom = 40.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 0.8, 0.2, 1)
+theme_override_font_sizes/font_size = 20
+text = "5.0s"
+horizontal_alignment = 1
+
+[node name="ProgressContainer" type="Control" parent="."]
+layout_mode = 3
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="ReloadBar" type="ProgressBar" parent="ProgressContainer"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -50.0
+offset_top = 15.0
+offset_right = 50.0
+offset_bottom = 23.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+show_percentage = false
+
+[node name="CookBar" type="ProgressBar" parent="ProgressContainer"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -50.0
+offset_top = 25.0
+offset_right = 50.0
+offset_bottom = 33.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+show_percentage = false
+theme_override_colors/font_color = Color(1, 0, 0, 1)
+
+[node name="HitMarker" type="Label" parent="ProgressContainer"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -20.0
+offset_top = -17.0
+offset_right = 20.0
+offset_bottom = 17.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_colors/font_color = Color(1, 0, 0, 1)
+theme_override_font_sizes/font_size = 24
+text = "X"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="DamageTextSpawn" type="Control" parent="."]
+layout_mode = 3
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="MinimapMargin" type="MarginContainer" parent="."]
+anchors_preset = 0
+offset_left = 20.0
+offset_top = 20.0
+offset_right = 170.0
+offset_bottom = 170.0
+grow_horizontal = 0
+theme_override_constants/margin_top = 0
+theme_override_constants/margin_left = 0
+mouse_filter = 2
+
+[node name="MinimapBG" type="ColorRect" parent="MinimapMargin"]
+custom_minimum_size = Vector2(150, 150)
+layout_mode = 2
+color = Color(0, 0, 0, 0.5)
+
+[node name="MinimapClip" type="Control" parent="MinimapMargin/MinimapBG"]
+clip_contents = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="MapPivot" type="Node2D" parent="MinimapMargin/MinimapBG/MinimapClip"]
+position = Vector2(75, 75)
+
+[node name="MapWorld" type="Node2D" parent="MinimapMargin/MinimapBG/MinimapClip/MapPivot"]
+
+[node name="MapTexture" type="TextureRect" parent="MinimapMargin/MinimapBG/MinimapClip/MapPivot/MapWorld"]
+offset_left = -110.0
+offset_top = -250.0
+offset_right = 110.0
+offset_bottom = 250.0
+expand_mode = 1
+stretch_mode = 5
+
+[node name="PlayerDot" type="ColorRect" parent="MinimapMargin/MinimapBG"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -3.0
+offset_top = -3.0
+offset_right = 3.0
+offset_bottom = 3.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 1, 0, 1)
+
+
+[node name="BowUI" type="Control" parent="."]
+visible = false
+layout_mode = 3
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_top = 40.0
+offset_bottom = 40.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="ChargeBar" type="ProgressBar" parent="BowUI"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -120.0
+offset_top = -6.0
+offset_right = 120.0
+offset_bottom = 6.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/fill = SubResource("StyleBoxFlat_bow_charge")
+max_value = 1.0
+value = 0.0
+show_percentage = false
+
+[node name="Segment1" type="ColorRect" parent="BowUI/ChargeBar"]
+layout_mode = 0
+offset_left = 79.0
+offset_right = 81.0
+offset_bottom = 12.0
+color = Color(0, 0, 0, 1)
+
+[node name="Segment2" type="ColorRect" parent="BowUI/ChargeBar"]
+layout_mode = 0
+offset_left = 159.0
+offset_right = 161.0
+offset_bottom = 12.0
+color = Color(0, 0, 0, 1)
+
+[node name="Bounces" type="HBoxContainer" parent="BowUI"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -30.0
+offset_top = 10.0
+offset_right = 30.0
+offset_bottom = 30.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 20
+alignment = 1
+
+[node name="Bounce1" type="Control" parent="BowUI/Bounces"]
+custom_minimum_size = Vector2(10, 10)
+layout_mode = 2
+
+[node name="Rect" type="ColorRect" parent="BowUI/Bounces/Bounce1"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+rotation = 0.785398
+pivot_offset = Vector2(5, 5)
+
+layout_mode = 2
+size_flags_vertical = 4
+color = Color(0.2, 0.2, 0.2, 0.8)
+
+[node name="Bounce2" type="Control" parent="BowUI/Bounces"]
+custom_minimum_size = Vector2(10, 10)
+layout_mode = 2
+
+[node name="Rect" type="ColorRect" parent="BowUI/Bounces/Bounce2"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+rotation = 0.785398
+pivot_offset = Vector2(5, 5)
+
+layout_mode = 2
+size_flags_vertical = 4
+color = Color(0.2, 0.2, 0.2, 0.8)
+
+[node name="SkillMargin" type="MarginContainer" parent="."]
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -100.0
+offset_top = -100.0
+offset_right = 100.0
+grow_horizontal = 2
+grow_vertical = 0
+theme_override_constants/margin_bottom = 40
+
+[node name="VBox" type="VBoxContainer" parent="SkillMargin"]
+layout_mode = 2
+
+[node name="SkillLabel" type="Label" parent="SkillMargin/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+text = "[X] Skill Ready"
+horizontal_alignment = 1
+
+[node name="SkillBar" type="ProgressBar" parent="SkillMargin/VBox"]
+custom_minimum_size = Vector2(200, 10)
+layout_mode = 2
+max_value = 1.0
+value = 1.0
+show_percentage = false
+[node name="ConsoleLayer" type="CanvasLayer" parent="."]
+layer = 120
+
+[node name="ConsoleContainer" type="PanelContainer" parent="ConsoleLayer"]
+visible = false
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -350.0
+offset_top = -200.0
+offset_right = 350.0
+offset_bottom = 200.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_console_bg")
+custom_minimum_size = Vector2(700, 400)
+mouse_filter = 1
+
+[node name="VBoxContainer" type="VBoxContainer" parent="ConsoleLayer/ConsoleContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="HeaderBar" type="HBoxContainer" parent="ConsoleLayer/ConsoleContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_constants/separation = 5
+
+[node name="HeaderTitle" type="Label" parent="ConsoleLayer/ConsoleContainer/VBoxContainer/HeaderBar"]
+theme_override_colors/font_color = Color(0.8, 0.8, 0.8, 1)
+theme_override_font_sizes/font_size = 16
+text = "CONSOLE"
+custom_minimum_size = Vector2(0, 28)
+
+[node name="HeaderSpacer" type="Control" parent="ConsoleLayer/ConsoleContainer/VBoxContainer/HeaderBar"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="CloseButton" type="Button" parent="ConsoleLayer/ConsoleContainer/VBoxContainer/HeaderBar"]
+custom_minimum_size = Vector2(28, 28)
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+theme_override_colors/font_color = Color(1, 0.3, 0.3, 1)
+text = "×"
+tooltip_text = "Close Console"
+
+[node name="LogScrollContainer" type="ScrollContainer" parent="ConsoleLayer/ConsoleContainer/VBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+vertical_scroll_mode = 1
+
+[node name="LogContainer" type="VBoxContainer" parent="ConsoleLayer/ConsoleContainer/VBoxContainer/LogScrollContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+custom_minimum_size = Vector2(0, 300)
+
+[node name="LogLabel" type="Label" parent="ConsoleLayer/ConsoleContainer/VBoxContainer/LogScrollContainer/LogContainer"]
+layout_mode = 2
+autowrap_mode = 2
+theme_override_colors/font_color = Color(0.8, 0.8, 0.8, 1)
+theme_override_font_sizes/font_size = 14
+text = ""
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="InputContainer" type="HBoxContainer" parent="ConsoleLayer/ConsoleContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_constants/separation = 5
+
+[node name="PromptLabel" type="Label" parent="ConsoleLayer/ConsoleContainer/VBoxContainer/InputContainer"]
+theme_override_colors/font_color = Color(0.2, 1, 0.2, 1)
+theme_override_font_sizes/font_size = 14
+text = "] "
+custom_minimum_size = Vector2(20, 0)
+
+[node name="InputLine" type="LineEdit" parent="ConsoleLayer/ConsoleContainer/VBoxContainer/InputContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 14
+placeholder_text = "Enter command..."
+clear_button_enabled = false
+
+[node name="SuggestionsBox" type="ItemList" parent="ConsoleLayer/ConsoleContainer/VBoxContainer"]
+visible = false
+custom_minimum_size = Vector2(0, 90)
+layout_mode = 2
+theme_override_font_sizes/font_size = 13
+theme_override_colors/font_color = Color(0.9, 0.9, 0.4, 1)
+
+
+[node name="WeaponMargin" type="MarginContainer" parent="."]
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -150.0
+offset_top = -250.0
+offset_bottom = -100.0
+grow_horizontal = 0
+grow_vertical = 0
+theme_override_constants/margin_right = 40
+mouse_filter = 2
+
+[node name="VBoxContainer" type="VBoxContainer" parent="WeaponMargin"]
+layout_mode = 2
+mouse_filter = 2
+
+[node name="Slot1" type="Label" parent="WeaponMargin/VBoxContainer"]
+layout_mode = 2
+text = "  Slot 1  "
+
+[node name="Slot2" type="Label" parent="WeaponMargin/VBoxContainer"]
+layout_mode = 2
+text = "  Slot 2  "
+
+[node name="Slot3" type="Label" parent="WeaponMargin/VBoxContainer"]
+layout_mode = 2
+text = "  Slot 3  "
+
+[node name="Slot4" type="Label" parent="WeaponMargin/VBoxContainer"]
+layout_mode = 2
+text = "  Slot 4  "
+
+[node name="AmmoMargin" type="MarginContainer" parent="."]
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -200.0
+offset_top = -80.0
+grow_horizontal = 0
+grow_vertical = 0
+theme_override_constants/margin_right = 40
+theme_override_constants/margin_bottom = 40
+mouse_filter = 2
+
+[node name="AmmoLabel" type="Label" parent="AmmoMargin"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 28
+text = "12 / 48"
+horizontal_alignment = 2
+
+[node name="StatsMargin" type="MarginContainer" parent="."]
+anchors_preset = 2
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_top = -140.0
+offset_right = 250.0
+grow_vertical = 0
+theme_override_constants/margin_left = 40
+theme_override_constants/margin_bottom = 40
+mouse_filter = 2
+
+[node name="VBoxContainer" type="VBoxContainer" parent="StatsMargin"]
+layout_mode = 2
+mouse_filter = 2
+
+[node name="HealthLabel" type="Label" parent="StatsMargin/VBoxContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.2, 1, 0.2, 1)
+text = "Health: [100]"
+
+[node name="ArmorLabel" type="Label" parent="StatsMargin/VBoxContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.4, 0.7, 1, 1)
+text = "Armor: [50]"
+
+
+[node name="StaminaContainer" type="MarginContainer" parent="."]
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -150.0
+offset_top = -40.0
+offset_right = 150.0
+offset_bottom = -20.0
+grow_horizontal = 2
+grow_vertical = 0
+mouse_filter = 2
+
+[node name="StaminaBar" type="ProgressBar" parent="StaminaContainer"]
+custom_minimum_size = Vector2(300, 8)
+layout_mode = 2
+mouse_filter = 2
+show_percentage = false
+value = 100.0
+

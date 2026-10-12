@@ -1,0 +1,7 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="PackedScene" path="res://scenes/enemies/bullseye.tscn" id="1_bull"]
+[ext_resource type="Script" path="res://scenes/enemies/moving_bullseye.gd" id="2_script"]
+
+[node name="MovingBullseye" instance=ExtResource("1_bull")]
+script = ExtResource("2_script")

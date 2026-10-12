@@ -1,0 +1,81 @@
+[gd_scene format=3 uid="uid://b8q017oaeihsd"]
+
+[ext_resource type="Script" uid="uid://dpjan68ol478d" path="res://scenes/enemies/capsule_enemy.gd" id="1_script"]
+[ext_resource type="Script" path="res://scripts/components/health_component.gd" id="health_comp"]
+[ext_resource type="Script" uid="uid://cbywyqgo60jmr" path="res://scenes/enemies/hitbox.gd" id="2_hitbox"]
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_nav"]
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_body"]
+
+[sub_resource type="BoxMesh" id="BoxMesh_visor"]
+size = Vector3(0.6, 0.2, 0.3)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_visor"]
+albedo_color = Color(0, 0, 0, 1)
+
+[sub_resource type="SphereShape3D" id="SphereShape3D_3aw4s"]
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_upper"]
+radius = 0.584254
+height = 1.3927
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_lower"]
+radius = 0.45
+height = 1.12664
+
+[node name="CapsuleEnemy" type="CharacterBody3D" groups=["enemy"]]
+script = ExtResource("1_script")
+
+[node name="HealthComponent" type="Node" parent="."]
+script = ExtResource("health_comp")
+max_health = 100.0
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
+shape = SubResource("CapsuleShape3D_nav")
+
+[node name="NavigationAgent3D" type="NavigationAgent3D" parent="."]
+
+[node name="Eyes" type="Marker3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.6, -0.5)
+
+[node name="Visuals" type="Node3D" parent="."]
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Visuals"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
+mesh = SubResource("CapsuleMesh_body")
+
+[node name="Visor" type="MeshInstance3D" parent="Visuals/MeshInstance3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.6, -0.455249)
+mesh = SubResource("BoxMesh_visor")
+surface_material_override/0 = SubResource("StandardMaterial3D_visor")
+
+[node name="WeaponHolder" type="Node3D" parent="Visuals"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.4, 1.2, -0.4)
+
+[node name="Hitboxes" type="Node3D" parent="."]
+
+[node name="HeadBox" type="Area3D" parent="Hitboxes"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.6, 0)
+script = ExtResource("2_hitbox")
+body_part = "head"
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Hitboxes/HeadBox"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.0133445, -0.00455809, 0.0262848)
+shape = SubResource("SphereShape3D_3aw4s")
+
+[node name="UpperBox" type="Area3D" parent="Hitboxes"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.0326781, 1.08561, 1.19209e-07)
+script = ExtResource("2_hitbox")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Hitboxes/UpperBox"]
+shape = SubResource("CapsuleShape3D_upper")
+
+[node name="LowerBox" type="Area3D" parent="Hitboxes"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.4, 0)
+script = ExtResource("2_hitbox")
+body_part = "lower"
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Hitboxes/LowerBox"]
+shape = SubResource("CapsuleShape3D_lower")

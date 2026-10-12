@@ -1,0 +1,314 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scenes/ui/settings_menu.gd" id="1_script"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_bg"]
+bg_color = Color(0.12, 0.12, 0.15, 1)
+
+[node name="SettingsMenu" type="Control"]
+process_mode = 3
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_script")
+
+[node name="Background" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.1, 0.1, 0.12, 1)
+
+[node name="TopBar" type="HBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_left = 20.0
+offset_top = 20.0
+offset_right = -20.0
+offset_bottom = 70.0
+grow_horizontal = 2
+
+[node name="BtnBack" type="Button" parent="TopBar"]
+custom_minimum_size = Vector2(100, 0)
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+text = "< BACK"
+
+[node name="Spacer" type="Control" parent="TopBar"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="TabVisual" type="Button" parent="TopBar"]
+custom_minimum_size = Vector2(120, 0)
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "VISUAL"
+
+[node name="TabAudio" type="Button" parent="TopBar"]
+custom_minimum_size = Vector2(120, 0)
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "AUDIO"
+
+[node name="TabGameplay" type="Button" parent="TopBar"]
+custom_minimum_size = Vector2(120, 0)
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "GAMEPLAY"
+
+[node name="TabControls" type="Button" parent="TopBar"]
+custom_minimum_size = Vector2(150, 0)
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "CONTROL KEYS"
+
+[node name="Spacer2" type="Control" parent="TopBar"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Content" type="MarginContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = 80.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 100
+theme_override_constants/margin_top = 40
+theme_override_constants/margin_right = 100
+theme_override_constants/margin_bottom = 40
+
+[node name="TabVisualPanel" type="VBoxContainer" parent="Content"]
+layout_mode = 2
+theme_override_constants/separation = 20
+
+[node name="Label" type="Label" parent="Content/TabVisualPanel"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 28
+text = "Visual Settings"
+
+[node name="HSeparator" type="HSeparator" parent="Content/TabVisualPanel"]
+layout_mode = 2
+
+[node name="HBoxGraphics" type="HBoxContainer" parent="Content/TabVisualPanel"]
+layout_mode = 2
+[node name="Label" type="Label" parent="Content/TabVisualPanel/HBoxGraphics"]
+custom_minimum_size = Vector2(250, 0)
+layout_mode = 2
+text = "Graphics Quality"
+[node name="OptGraphics" type="OptionButton" parent="Content/TabVisualPanel/HBoxGraphics"]
+layout_mode = 2
+size_flags_horizontal = 3
+item_count = 3
+popup/item_0/text = "Low"
+popup/item_1/text = "Medium"
+popup/item_2/text = "High"
+
+[node name="HBoxFPS" type="HBoxContainer" parent="Content/TabVisualPanel"]
+layout_mode = 2
+[node name="Label" type="Label" parent="Content/TabVisualPanel/HBoxFPS"]
+custom_minimum_size = Vector2(250, 0)
+layout_mode = 2
+text = "FPS Limit"
+[node name="OptFPS" type="OptionButton" parent="Content/TabVisualPanel/HBoxFPS"]
+layout_mode = 2
+size_flags_horizontal = 3
+item_count = 4
+popup/item_0/text = "60"
+popup/item_1/text = "120"
+popup/item_2/text = "144"
+popup/item_3/text = "Unlimited"
+
+[node name="HBoxRefresh" type="HBoxContainer" parent="Content/TabVisualPanel"]
+layout_mode = 2
+[node name="Label" type="Label" parent="Content/TabVisualPanel/HBoxRefresh"]
+custom_minimum_size = Vector2(250, 0)
+layout_mode = 2
+text = "Refresh Rate"
+[node name="OptRefresh" type="OptionButton" parent="Content/TabVisualPanel/HBoxRefresh"]
+layout_mode = 2
+size_flags_horizontal = 3
+item_count = 3
+popup/item_0/text = "60Hz"
+popup/item_1/text = "120Hz"
+popup/item_2/text = "144Hz"
+
+[node name="HBoxAspect" type="HBoxContainer" parent="Content/TabVisualPanel"]
+layout_mode = 2
+[node name="Label" type="Label" parent="Content/TabVisualPanel/HBoxAspect"]
+custom_minimum_size = Vector2(250, 0)
+layout_mode = 2
+text = "Aspect Ratio"
+[node name="OptAspect" type="OptionButton" parent="Content/TabVisualPanel/HBoxAspect"]
+layout_mode = 2
+size_flags_horizontal = 3
+item_count = 3
+popup/item_0/text = "16:9"
+popup/item_1/text = "16:10"
+popup/item_2/text = "21:9"
+
+[node name="HBoxMotion" type="HBoxContainer" parent="Content/TabVisualPanel"]
+layout_mode = 2
+[node name="Label" type="Label" parent="Content/TabVisualPanel/HBoxMotion"]
+custom_minimum_size = Vector2(250, 0)
+layout_mode = 2
+text = "Motion Blur"
+[node name="OptMotion" type="OptionButton" parent="Content/TabVisualPanel/HBoxMotion"]
+layout_mode = 2
+size_flags_horizontal = 3
+item_count = 2
+popup/item_0/text = "Off"
+popup/item_1/text = "On"
+
+
+[node name="TabAudioPanel" type="VBoxContainer" parent="Content"]
+visible = false
+layout_mode = 2
+theme_override_constants/separation = 20
+
+[node name="Label" type="Label" parent="Content/TabAudioPanel"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 28
+text = "Audio Settings"
+
+[node name="HSeparator" type="HSeparator" parent="Content/TabAudioPanel"]
+layout_mode = 2
+
+[node name="HBoxBGM" type="HBoxContainer" parent="Content/TabAudioPanel"]
+layout_mode = 2
+[node name="Label" type="Label" parent="Content/TabAudioPanel/HBoxBGM"]
+custom_minimum_size = Vector2(250, 0)
+layout_mode = 2
+text = "BGM Volume"
+[node name="SliderBGM" type="HSlider" parent="Content/TabAudioPanel/HBoxBGM"]
+layout_mode = 2
+size_flags_horizontal = 3
+max_value = 100.0
+value = 80.0
+
+[node name="HBoxSFX" type="HBoxContainer" parent="Content/TabAudioPanel"]
+layout_mode = 2
+[node name="Label" type="Label" parent="Content/TabAudioPanel/HBoxSFX"]
+custom_minimum_size = Vector2(250, 0)
+layout_mode = 2
+text = "SFX Volume"
+[node name="SliderSFX" type="HSlider" parent="Content/TabAudioPanel/HBoxSFX"]
+layout_mode = 2
+size_flags_horizontal = 3
+max_value = 100.0
+value = 100.0
+
+[node name="HBoxInput" type="HBoxContainer" parent="Content/TabAudioPanel"]
+layout_mode = 2
+[node name="Label" type="Label" parent="Content/TabAudioPanel/HBoxInput"]
+custom_minimum_size = Vector2(250, 0)
+layout_mode = 2
+text = "Mic Input Vol"
+[node name="SliderInput" type="HSlider" parent="Content/TabAudioPanel/HBoxInput"]
+layout_mode = 2
+size_flags_horizontal = 3
+max_value = 100.0
+value = 100.0
+
+
+[node name="TabGameplayPanel" type="VBoxContainer" parent="Content"]
+visible = false
+layout_mode = 2
+theme_override_constants/separation = 20
+
+[node name="Label" type="Label" parent="Content/TabGameplayPanel"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 28
+text = "Gameplay Settings"
+
+[node name="HSeparator" type="HSeparator" parent="Content/TabGameplayPanel"]
+layout_mode = 2
+
+[node name="HBoxHipSens" type="HBoxContainer" parent="Content/TabGameplayPanel"]
+layout_mode = 2
+[node name="Label" type="Label" parent="Content/TabGameplayPanel/HBoxHipSens"]
+custom_minimum_size = Vector2(250, 0)
+layout_mode = 2
+text = "Hip Fire Sensitivity"
+[node name="SliderHipSens" type="HSlider" parent="Content/TabGameplayPanel/HBoxHipSens"]
+layout_mode = 2
+size_flags_horizontal = 3
+min_value = 0.1
+max_value = 5.0
+step = 0.1
+value = 1.0
+[node name="SpinBoxHip" type="SpinBox" parent="Content/TabGameplayPanel/HBoxHipSens"]
+layout_mode = 2
+min_value = 0.1
+max_value = 5.0
+step = 0.1
+value = 1.0
+
+[node name="HBoxScopeSens" type="HBoxContainer" parent="Content/TabGameplayPanel"]
+layout_mode = 2
+[node name="Label" type="Label" parent="Content/TabGameplayPanel/HBoxScopeSens"]
+custom_minimum_size = Vector2(250, 0)
+layout_mode = 2
+text = "Scope Sensitivity"
+[node name="SliderScopeSens" type="HSlider" parent="Content/TabGameplayPanel/HBoxScopeSens"]
+layout_mode = 2
+size_flags_horizontal = 3
+min_value = 0.1
+max_value = 5.0
+step = 0.1
+value = 0.5
+[node name="SpinBoxScope" type="SpinBox" parent="Content/TabGameplayPanel/HBoxScopeSens"]
+layout_mode = 2
+min_value = 0.1
+max_value = 5.0
+step = 0.1
+value = 0.5
+
+
+[node name="TabControlsPanel" type="VBoxContainer" parent="Content"]
+visible = false
+layout_mode = 2
+theme_override_constants/separation = 20
+
+[node name="Label" type="Label" parent="Content/TabControlsPanel"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 28
+text = "Control Keys Guide"
+
+[node name="HSeparator" type="HSeparator" parent="Content/TabControlsPanel"]
+layout_mode = 2
+
+[node name="RichTextLabel" type="RichTextLabel" parent="Content/TabControlsPanel"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_font_sizes/normal_font_size = 18
+text = "Movement:
+[W] [A] [S] [D]  - Move
+[SPACE]          - Jump
+[SHIFT]          - Sprint
+[C] or [CTRL]    - Crouch
+[SHIFT] + [C]    - Slide
+
+Combat:
+[LEFT CLICK]     - Fire / Light Melee
+[RIGHT CLICK]    - ADS / Scope / Heavy Melee
+[R]              - Reload
+
+Loadout:
+[1] - Primary
+[2] - Secondary
+[3] - Melee
+[4] - Grenade (Hold Left Click to Cook)
+
+Other:
+[Q] / [E]        - Lean Left / Right
+[F]              - Interact
+[ESC]            - Pause
+[~]              - Toggle Debug Menu"

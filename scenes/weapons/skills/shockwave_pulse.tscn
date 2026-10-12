@@ -1,0 +1,32 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://scenes/weapons/skills/shockwave_pulse.gd" id="1_script"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_shock"]
+transparency = 1
+albedo_color = Color(1, 0.6, 0, 0.5)
+emission_enabled = true
+emission = Color(1, 0.4, 0, 1)
+emission_energy_multiplier = 3.0
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_shock"]
+top_radius = 2.0
+bottom_radius = 2.0
+height = 0.2
+
+[sub_resource type="CylinderShape3D" id="CylinderShape3D_shock"]
+radius = 2.0
+height = 1.0
+
+[node name="ShockwavePulse" type="Area3D"]
+collision_layer = 0
+collision_mask = 7
+script = ExtResource("1_script")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+mesh = SubResource("CylinderMesh_shock")
+material_override = SubResource("StandardMaterial3D_shock")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.4, 0)
+shape = SubResource("CylinderShape3D_shock")

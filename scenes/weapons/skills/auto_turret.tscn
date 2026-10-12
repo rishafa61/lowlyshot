@@ -1,0 +1,146 @@
+[gd_scene load_steps=7 format=3]
+
+[ext_resource type="Script" path="res://scenes/weapons/skills/auto_turret.gd" id="1_script"]
+[ext_resource type="Script" path="res://scripts/components/health_component.gd" id="health_comp"]
+
+[sub_resource type="StandardMaterial3D" id="Mat_MetalDark"]
+albedo_color = Color(0.18, 0.18, 0.2, 1)
+metallic = 0.8
+roughness = 0.4
+
+[sub_resource type="StandardMaterial3D" id="Mat_MetalGrey"]
+albedo_color = Color(0.4, 0.42, 0.45, 1)
+metallic = 0.6
+roughness = 0.5
+
+[sub_resource type="StandardMaterial3D" id="Mat_Lens"]
+albedo_color = Color(0.8, 0.1, 0.1, 1)
+emission_enabled = true
+emission = Color(1, 0, 0, 1)
+emission_energy_multiplier = 2.0
+
+[sub_resource type="SphereShape3D" id="SphereShape3D_range"]
+radius = 20.0
+
+[sub_resource type="CylinderShape3D" id="CylinderShape3D_body"]
+height = 1.0
+radius = 0.5
+
+[node name="AutoTurret" type="StaticBody3D" groups=["player_turret"]]
+script = ExtResource("1_script")
+
+[node name="HealthComponent" type="Node" parent="."]
+script = ExtResource("health_comp")
+max_health = 100.0
+
+[node name="BodyCollision" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, 0)
+shape = SubResource("CylinderShape3D_body")
+
+[node name="Base" type="Node3D" parent="."]
+
+[node name="CenterPost" type="CSGCylinder3D" parent="Base"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.4, 0)
+radius = 0.08
+height = 0.4
+sides = 16
+material = SubResource("Mat_MetalDark")
+
+[node name="LegFront" type="CSGBox3D" parent="Base"]
+transform = Transform3D(1, 0, 0, 0, 0.707107, -0.707107, 0, 0.707107, 0.707107, 0, 0.2, -0.3)
+size = Vector3(0.06, 0.6, 0.04)
+material = SubResource("Mat_MetalGrey")
+
+[node name="FootFront" type="CSGBox3D" parent="Base"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.02, -0.5)
+size = Vector3(0.1, 0.04, 0.15)
+material = SubResource("Mat_MetalDark")
+
+[node name="LegBackLeft" type="CSGBox3D" parent="Base"]
+transform = Transform3D(0.5, -0.612372, -0.612372, 0.866025, 0.353553, 0.353553, 0, -0.707107, 0.707107, -0.26, 0.2, 0.15)
+size = Vector3(0.06, 0.6, 0.04)
+material = SubResource("Mat_MetalGrey")
+
+[node name="FootBackLeft" type="CSGBox3D" parent="Base"]
+transform = Transform3D(0.866025, 0, 0.5, 0, 1, 0, -0.5, 0, 0.866025, -0.43, 0.02, 0.25)
+size = Vector3(0.1, 0.04, 0.15)
+material = SubResource("Mat_MetalDark")
+
+[node name="LegBackRight" type="CSGBox3D" parent="Base"]
+transform = Transform3D(0.5, 0.612372, 0.612372, -0.866025, 0.353553, 0.353553, 0, -0.707107, 0.707107, 0.26, 0.2, 0.15)
+size = Vector3(0.06, 0.6, 0.04)
+material = SubResource("Mat_MetalGrey")
+
+[node name="FootBackRight" type="CSGBox3D" parent="Base"]
+transform = Transform3D(0.866025, 0, -0.5, 0, 1, 0, 0.5, 0, 0.866025, 0.43, 0.02, 0.25)
+size = Vector3(0.1, 0.04, 0.15)
+material = SubResource("Mat_MetalDark")
+
+[node name="BatteryBox" type="CSGBox3D" parent="Base"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.15, 0.3, 0.1)
+size = Vector3(0.12, 0.35, 0.25)
+material = SubResource("Mat_MetalDark")
+
+[node name="Swivel" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.6, 0)
+
+[node name="Pitch" type="Node3D" parent="Swivel"]
+
+[node name="Receiver" type="CSGBox3D" parent="Swivel/Pitch"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.1, 0.1)
+size = Vector3(0.18, 0.25, 0.45)
+material = SubResource("Mat_MetalGrey")
+
+[node name="AmmoDrum" type="CSGCylinder3D" parent="Swivel/Pitch"]
+transform = Transform3D(-4.37114e-08, -1, 0, 1, -4.37114e-08, 0, 0, 0, 1, -0.15, 0.1, 0.15)
+radius = 0.15
+height = 0.15
+sides = 24
+material = SubResource("Mat_MetalDark")
+
+[node name="BarrelUpper" type="CSGBox3D" parent="Swivel/Pitch"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.12, -0.2)
+size = Vector3(0.08, 0.08, 0.3)
+material = SubResource("Mat_MetalGrey")
+
+[node name="BarrelLower" type="CSGCylinder3D" parent="Swivel/Pitch"]
+transform = Transform3D(1, 0, 0, 0, -4.37114e-08, -1, 0, 1, -4.37114e-08, 0, 0.12, -0.5)
+radius = 0.03
+height = 0.4
+sides = 16
+material = SubResource("Mat_MetalDark")
+
+[node name="MuzzleBrake" type="CSGCylinder3D" parent="Swivel/Pitch/BarrelLower"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.2, 0)
+radius = 0.04
+height = 0.08
+sides = 12
+material = SubResource("Mat_MetalGrey")
+
+[node name="Optic" type="CSGBox3D" parent="Swivel/Pitch"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.28, -0.05)
+size = Vector3(0.06, 0.06, 0.15)
+material = SubResource("Mat_MetalDark")
+
+[node name="Lens" type="CSGCylinder3D" parent="Swivel/Pitch/Optic"]
+transform = Transform3D(1, 0, 0, 0, -4.37114e-08, -1, 0, 1, -4.37114e-08, 0, 0, -0.08)
+radius = 0.02
+height = 0.02
+sides = 12
+material = SubResource("Mat_Lens")
+
+[node name="MuzzlePos" type="Marker3D" parent="Swivel/Pitch"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.12, -0.75)
+
+[node name="ScanRay" type="RayCast3D" parent="Swivel/Pitch"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.12, -0.75)
+target_position = Vector3(0, 0, -20)
+collide_with_areas = true
+
+[node name="DetectionArea" type="Area3D" parent="."]
+collision_layer = 0
+monitorable = false
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="DetectionArea"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
+shape = SubResource("SphereShape3D_range")
