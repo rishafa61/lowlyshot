@@ -64,7 +64,7 @@ func is_lobby_host() -> bool:
 	if current_lobby_id == 0:
 		return true
 	var steam = _get_steam()
-	if steam == null or not steam_initialized:
+	if steam == null or not is_steam_running:
 		return true
 	var owner_id: int = steam.getLobbyOwner(current_lobby_id)
 	return owner_id == 0 or owner_id == steam_id
