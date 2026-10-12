@@ -58,4 +58,12 @@ func _execute_skill(player: CharacterBody3D) -> void:
 	if flat_forward.length_squared() > 0.001:
 		active_turret.look_at(spawn_pos + flat_forward, Vector3.UP)
 	
+	# Replicate turret to other peers (visual replica only there)
+	var mgr = player.get_tree().current_scene
+	if mgr is MultiplayerManager:
+		mgr.spawn_utility_net("res://scenes/weapons/skills/auto_turret.tscn", spawn_pos, flat_forward, {
+			"faction": "Player",
+			"owner_name": "Player"
+		})
+	
 	start_cooldown()

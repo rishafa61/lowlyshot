@@ -156,6 +156,9 @@ func _ready() -> void:
 
 
 func stun(duration: float):
+	if is_puppet:
+		_net_apply_stun.rpc_id(get_multiplayer_authority(), duration)
+		return
 	if is_dead: return
 	var prev_speed = speed_normal
 	var prev_sprint = speed_sprint
@@ -169,6 +172,12 @@ func stun(duration: float):
 		speed_normal = prev_speed
 		speed_sprint = prev_sprint
 	)
+
+@rpc("any_peer", "call_remote", "reliable")
+func _net_apply_stun(duration: float) -> void:
+	if is_puppet or is_dead:
+		return
+	stun(duration)
 
 func _on_health_damaged(_raw_amount: float, _absorbed: float) -> void:
 	if hud:
@@ -320,6 +329,10 @@ var _net_target_pos: Vector3 = Vector3.ZERO
 var _net_target_yaw: float = 0.0
 var _net_target_pitch: float = 0.0
 var _net_tick: int = 0
+var _puppet_body: MeshInstance3D = null
+var _puppet_gun_holder: Node3D = null
+var _net_weapon_path: String = ""
+var _puppet_death_played: bool = false
 
 func _setup_puppet() -> void:
 	set_process_unhandled_input(false)
@@ -332,16 +345,49 @@ func _setup_puppet() -> void:
 	hud = null
 	sniper_scope_ui = null
 	# Visible body so the other player can actually be seen
-	var body := MeshInstance3D.new()
+	_puppet_body = MeshInstance3D.new()
 	var cap := CapsuleMesh.new()
 	cap.radius = 0.5
 	cap.height = 2.0
-	body.mesh = cap
-	body.position = Vector3(0, 1, 0)
+	_puppet_body.mesh = cap
+	_puppet_body.position = Vector3(0, 1, 0)
 	var mat := StandardMaterial3D.new()
 	mat.albedo_color = Color(0.3, 0.6, 1.0) if team == "attackers" else Color(1.0, 0.35, 0.3)
-	body.material_override = mat
-	add_child(body)
+	_puppet_body.material_override = mat
+	add_child(_puppet_body)
+	# Third-person gun holder so others can see the weapon this player holds
+	_puppet_gun_holder = Node3D.new()
+	_puppet_gun_holder.position = Vector3(0.3, 1.35, -0.35)
+	add_child(_puppet_gun_holder)
+
+## Syncs the visible gun model on remote puppets
+func net_set_weapon(weapon_scene_path: String) -> void:
+	if not is_puppet:
+		return
+	if weapon_scene_path == _net_weapon_path:
+		return
+	_net_weapon_path = weapon_scene_path
+	for c in _puppet_gun_holder.get_children():
+		c.queue_free()
+	if weapon_scene_path == "" or not is_instance_valid(_puppet_gun_holder):
+		return
+	var sc = load(weapon_scene_path) as PackedScene
+	if sc == null:
+		return
+	var gun = sc.instantiate() as Node3D
+	_puppet_gun_holder.add_child(gun)
+
+## Third-person death animation for remote puppets
+func net_play_death() -> void:
+	if not is_puppet or _puppet_death_played:
+		return
+	_puppet_death_played = true
+	if is_instance_valid(_puppet_gun_holder):
+		_puppet_gun_holder.visible = false
+	if is_instance_valid(_puppet_body):
+		var tween = create_tween().set_parallel(true)
+		tween.tween_property(_puppet_body, "rotation:x", deg_to_rad(-90), 0.5).set_trans(Tween.TRANS_BOUNCE)
+		tween.tween_property(_puppet_body, "position:y", 0.2, 0.5)
 
 ## Called by the MultiplayerManager with the owner's latest transform
 func net_set_target(pos: Vector3, yaw: float, pitch: float) -> void:
@@ -360,9 +406,12 @@ func _net_send_state() -> void:
 	_net_tick += 1
 	if _net_tick % 2 != 0:
 		return # 30 Hz is plenty
+	var weapon_path := ""
+	if active_slot >= 0 and active_slot < weapons.size():
+		weapon_path = str(weapons[active_slot].get("scene_path", ""))
 	var mgr = get_tree().current_scene
 	if mgr is MultiplayerManager:
-		mgr.send_local_player_state(int(str(name)), global_position, rotation.y, head.rotation.x)
+		mgr.send_local_player_state(int(str(name)), global_position, rotation.y, head.rotation.x, weapon_path)
 
 ## Runs on the OWNER of this player when someone else shot its puppet
 @rpc("any_peer", "call_remote", "reliable")
@@ -399,12 +448,17 @@ func die():
 	var k_faction = last_attacker_faction if last_attacker_faction != "" else "Enemy"
 	var gun = last_weapon if last_weapon != "" else "Combat"
 	var v_faction = "Ally" if team == "attackers" else ("Enemy" if team == "defenders" else "Player")
-	GlobalData.register_kill(killer, k_faction, gun, player_name, v_faction)
+	# Host (or offline) registers the kill locally; clients report so the host
+	# can broadcast one killfeed event to every peer (no duplicates).
+	if not GlobalData.is_networked() or multiplayer.is_server():
+		GlobalData.register_kill(killer, k_faction, gun, player_name, v_faction)
 	# Client deaths must reach the host: it owns scores / stats
-	if GlobalData.is_networked() and not multiplayer.is_server():
+	if GlobalData.is_networked():
 		var mgr = get_tree().current_scene
 		if mgr is MultiplayerManager:
-			mgr.report_kill.rpc_id(1, killer, k_faction, gun, player_name, v_faction)
+			if not multiplayer.is_server():
+				mgr.report_kill.rpc_id(1, killer, k_faction, gun, player_name, v_faction)
+			mgr.notify_player_death(int(str(name)))
 	
 	# Drop camera to floor
 	var tween = create_tween()
@@ -755,6 +809,17 @@ func throw_grenade():
 	proj.apply_impulse(throw_dir * 12.0 + Vector3.UP * 2.0)
 	# Add spin for better bouncing physics
 	proj.apply_torque_impulse(Vector3(randf_range(-2, 2), randf_range(-2, 2), randf_range(-2, 2)))
+	
+	# Replicate grenade throw to other peers
+	var mgr = get_tree().current_scene
+	if mgr is MultiplayerManager:
+		var extra := {
+			"fuse": proj.fuse,
+			"impulse": throw_dir * 12.0 + Vector3.UP * 2.0,
+			"owner_name": player_name,
+			"faction": "Ally" if team == "attackers" else "Enemy"
+		}
+		mgr.spawn_utility_net(proj_path, proj.global_position, throw_dir, extra)
 
 func create_tracer(start: Vector3, end: Vector3):
 	var mesh_inst = MeshInstance3D.new()

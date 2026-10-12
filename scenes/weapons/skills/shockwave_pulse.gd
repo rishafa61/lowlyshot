@@ -24,8 +24,11 @@ func _physics_process(delta):
 		queue_free()
 
 var target_group: String = "enemy" # "enemy" for player-fired, "player" for enemy-fired
+var is_net_replica: bool = false
 
 func _on_body_entered(body):
+	if is_net_replica:
+		return # Visual wave only on replicas
 	# We use body_entered because CharacterBody3D is a PhysicsBody, not an Area
 	if body.is_in_group(target_group) and body not in hit_enemies:
 		hit_enemies.append(body)

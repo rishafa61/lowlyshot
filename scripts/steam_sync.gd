@@ -59,6 +59,16 @@ func _has_real_peer() -> bool:
 	var peer := multiplayer.multiplayer_peer
 	return peer != null and not (peer is OfflineMultiplayerPeer)
 
+## Returns true if we are the lobby leader or in offline mode (eligible to start matches)
+func is_lobby_host() -> bool:
+	if current_lobby_id == 0:
+		return true
+	var steam = _get_steam()
+	if steam == null or not steam_initialized:
+		return true
+	var owner_id: int = steam.getLobbyOwner(current_lobby_id)
+	return owner_id == 0 or owner_id == steam_id
+
 func _get_steam() -> Object:
 	if Engine.has_singleton("Steam"):
 		return Engine.get_singleton("Steam")

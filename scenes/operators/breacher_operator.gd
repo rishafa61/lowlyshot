@@ -54,6 +54,13 @@ func _process(delta):
 			proj.direction = cam_dir
 			proj.look_at(proj.global_position + cam_dir, Vector3.UP)
 			
+			# Replicate shockwave visual + effect ownership
+			var mgr = player_ref.get_tree().current_scene
+			if mgr is MultiplayerManager:
+				mgr.spawn_utility_net("res://scenes/weapons/skills/shockwave_pulse.tscn", ground_pos, cam_dir, {
+					"max_range": proj.max_range
+				})
+			
 			start_cooldown()
 			
 			is_holding_skill = false

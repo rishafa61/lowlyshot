@@ -1,6 +1,8 @@
 extends RigidBody3D
 
 var fuse: float = 2.0
+## Visual replica on non-owner peers: play the flash visuals, skip stun/damage
+var is_net_replica: bool = false
 
 func _physics_process(delta):
 	fuse -= delta
@@ -34,6 +36,10 @@ func explode():
 	flash_mesh.add_child(timer)
 	
 	# Blast radius stun
+	if is_net_replica:
+		queue_free()
+		return
+
 	var query = PhysicsShapeQueryParameters3D.new()
 	query.shape = SphereShape3D.new()
 	query.shape.radius = 12.0

@@ -416,22 +416,33 @@ func _spawn_bots(scene_path: String, count_arg: String) -> void:
 	if count <= 0:
 		print_to_console("Spawn count must be > 0")
 		return
-	var scene = load(scene_path) as PackedScene
-	if not scene:
-		print_to_console("Failed to load scene: " + scene_path)
-		return
 	var player_pos = Vector3.ZERO
 	var players = get_tree().get_nodes_in_group("player")
 	if players.size() > 0:
 		player_pos = players[0].global_position
 	var root = get_tree().current_scene
+	var mgr: MultiplayerManager = root as MultiplayerManager if root is MultiplayerManager else null
+
 	for i in count:
-		var bot = scene.instantiate()
 		var spawn_offset = Vector3(randf_range(-5, 5), 0.5, randf_range(-5, 5))
 		if spawn_offset.length() < 2.0:
 			spawn_offset = spawn_offset.normalized() * 2.5
-		bot.position = player_pos + spawn_offset
-		root.add_child(bot)
+		var spawn_pos = player_pos + spawn_offset
+		var team = "attackers" if scene_path.contains("ally") else "defenders"
+		if mgr and GlobalData.is_networked():
+			if multiplayer.is_server():
+				mgr.host_spawn_bot(scene_path, spawn_pos, team)
+			else:
+				print_to_console("Only the host can spawn bots in online matches")
+				return
+		else:
+			var scene = load(scene_path) as PackedScene
+			if not scene:
+				print_to_console("Failed to load scene: " + scene_path)
+				return
+			var bot = scene.instantiate()
+			bot.position = spawn_pos
+			root.add_child(bot)
 	print_to_console("Spawned %d bot(s)" % count)
 
 func _kick_bots() -> void:

@@ -245,6 +245,13 @@ func _on_start_game_pressed():
 				GlobalSettings.current_minimap = ""
 			
 			var steam_sync = get_node_or_null("/root/SteamSync")
+			# Guard: if in a Steam party lobby and not the host, block match start
+			if steam_sync and steam_sync.current_lobby_id != 0 and not steam_sync.is_lobby_host():
+				btn_start_game.text = "ONLY HOST CAN START"
+				var t = get_tree().create_timer(2.0)
+				t.timeout.connect(func(): if is_instance_valid(btn_start_game): btn_start_game.text = "START GAME")
+				return
+
 			# Only the Multiplayer arena is network-aware, and only host over Steam when friends are in the lobby
 			# (solo = normal offline match with bots).
 			var should_host_steam = steam_sync and selected_mode == "Multiplayer" and steam_sync.party_members.size() > 0

@@ -55,6 +55,14 @@ func _process(delta):
 			proj.global_position = player_ref.camera.global_position + (cam_dir * 1.0)
 			proj.set_start_direction(cam_dir)
 			
+			# Replicate the sonar arrow so others see/hear it too
+			var mgr = player_ref.get_tree().current_scene
+			if mgr is MultiplayerManager:
+				mgr.spawn_utility_net("res://scenes/weapons/skills/sonar_arrow.tscn", proj.global_position, cam_dir, {
+					"bounces_left": proj.bounces_left,
+					"speed": proj.speed
+				})
+			
 			# Reset visual state
 			bow.hide()
 			arrow.position.x = 0.0

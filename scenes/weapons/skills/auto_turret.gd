@@ -17,6 +17,8 @@ var is_dead: bool = false
 var faction: String = "Player" # "Player", "Ally", "Enemy"
 var owner_name: String = "Player"
 var weapon_name: String = "Auto-Turret"
+## Set by MultiplayerManager on non-owner peers: visual replica only (no AI, no damage)
+var is_net_replica: bool = false
 
 @onready var swivel: Node3D = $Swivel
 @onready var pitch: Node3D = $Swivel/Pitch
@@ -34,6 +36,8 @@ func _physics_process(delta: float) -> void:
 	if lifetime <= 0.0:
 		destroy()
 		return
+	if is_net_replica:
+		return # Visual replica: host/owner simulates firing and health
 		
 	if fire_timer > 0.0:
 		fire_timer -= delta

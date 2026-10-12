@@ -1,6 +1,7 @@
 extends RigidBody3D
 
 var fuse: float = 3.0
+var is_net_replica: bool = false
 
 func _physics_process(delta):
 	fuse -= delta
@@ -33,6 +34,10 @@ func explode():
 	timer.timeout.connect(explosion.queue_free)
 	explosion.add_child(timer)
 	
+	if is_net_replica:
+		queue_free()
+		return
+
 	var query = PhysicsShapeQueryParameters3D.new()
 	query.shape = SphereShape3D.new()
 	query.shape.radius = 4.0

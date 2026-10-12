@@ -46,6 +46,28 @@ var start_pos: Vector3
 var respawn_timer = 0.0
 @export var can_respawn: bool = true
 
+# ---------------- Bot Replication ----------------
+var is_net_puppet: bool = false
+var net_id: int = -1
+var net_weapon_id: String = ""
+var _net_target_pos: Vector3 = Vector3.ZERO
+var _net_target_yaw: float = 0.0
+
+func net_set_target(pos: Vector3, yaw: float) -> void:
+	_net_target_pos = pos
+	_net_target_yaw = yaw
+
+func net_play_death() -> void:
+	if not is_net_puppet or is_dead:
+		return
+	is_dead = true
+	for box in hitbox_shapes:
+		box.set_deferred("disabled", true)
+	collision_shape.set_deferred("disabled", true)
+	var tween = create_tween().set_parallel(true)
+	tween.tween_property(visuals, "rotation:x", deg_to_rad(-90), 0.5).set_trans(Tween.TRANS_BOUNCE)
+	tween.tween_property(visuals, "position:y", -0.5, 0.5)
+
 # Weapon Stats
 var ammo = 30
 var max_ammo = 30
@@ -105,6 +127,10 @@ func reveal_silhouette():
 func _ready():
 	if bot_name == "":
 		bot_name = GlobalData.get_random_bot_name()
+	# Replicated puppets: visuals + collision only, no AI (host owns the sim)
+	if is_net_puppet:
+		_setup_puppet_bot()
+		return
 	# Assign a random operator to this enemy
 	var op_script = available_operators.pick_random()
 	active_operator = op_script.new()
@@ -128,6 +154,19 @@ func _ready():
 	_equip_random_primary()
 	_find_nearest_enemy()
 
+func _setup_puppet_bot() -> void:
+	health_component = $HealthComponent
+	health_component.setup(100.0, 0.0) # host owns real health; visual only
+	can_respawn = false
+	start_pos = global_position
+	_net_target_pos = global_position
+	_net_target_yaw = rotation.y
+	_setup_nametag()
+	var mat = StandardMaterial3D.new()
+	mat.albedo_color = Color(0.2, 0.7, 0.9)
+	mesh.set_surface_override_material(0, mat)
+	_equip_random_primary()
+
 func _find_nearest_enemy() -> void:
 	var enemies = get_tree().get_nodes_in_group("enemy")
 	var closest_dist = INF
@@ -146,7 +185,14 @@ func _equip_random_primary() -> void:
 	
 	# Pick a random primary weapon from GlobalData
 	var primaries = GlobalData.weapons["Primary"]
-	var w = primaries.pick_random()
+	var w = null
+	if net_weapon_id != "":
+		for cand in primaries:
+			if cand["id"] == net_weapon_id:
+				w = cand
+				break
+	if w == null:
+		w = primaries.pick_random()
 	
 	# Map weapon ID to scene path
 	var scene_map = {
@@ -201,6 +247,12 @@ func _physics_process(delta):
 		nametag_timer -= delta
 		if nametag_timer <= 0.0:
 			nametag.visible = false
+	# Replicated puppet: just lerp toward host state, no AI
+	if is_net_puppet:
+		var t: float = min(1.0, delta * 10.0)
+		global_position = global_position.lerp(_net_target_pos, t)
+		rotation.y = lerp_angle(rotation.y, _net_target_yaw, t)
+		return
 	if not is_on_floor():
 		velocity.y -= gravity * delta
 		
@@ -503,6 +555,12 @@ func take_damage(amount: float, attacker_name: String = "", weapon_name: String 
 func receive_damage(base_dmg: float, part: String = "upper", attacker_name: String = "", weapon_name: String = "", attacker_faction: String = "") -> float:
 	if is_dead:
 		return 0.0
+	# Replicated puppet: route the hit to the host's authoritative bot
+	if is_net_puppet:
+		var mgr = get_tree().current_scene
+		if mgr is MultiplayerManager:
+			mgr.report_bot_damage.rpc_id(1, net_id, base_dmg, part, attacker_name, weapon_name, attacker_faction)
+		return base_dmg
 
 	if attacker_name != "":
 		last_attacker = attacker_name
@@ -544,7 +602,13 @@ func die():
 	var k_faction = last_attacker_faction if last_attacker_faction != "" else "Enemy"
 	var gun = last_weapon if last_weapon != "" else "Combat"
 	var victim = bot_name if bot_name != "" else "Ally"
-	GlobalData.register_kill(killer, k_faction, gun, victim, "Ally")
+	# Puppets never self-register: only the host owns kill scoring
+	if not is_net_puppet:
+		GlobalData.register_kill(killer, k_faction, gun, victim, "Ally")
+		# Replicate death visual to clients
+		var mgr = get_tree().current_scene
+		if mgr is MultiplayerManager and net_id >= 0:
+			mgr.broadcast_bot_died(net_id)
 	
 	# Notify player/active operator of kill
 	var players = get_tree().get_nodes_in_group("player")

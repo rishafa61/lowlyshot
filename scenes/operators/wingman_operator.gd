@@ -25,9 +25,15 @@ func _process(delta):
 		# If they click fire, confirm the target!
 		if Input.is_action_just_pressed("fire"):
 			if target_indicator and target_indicator.visible:
-				var mgr = airstrike_manager.instantiate()
-				player_ref.get_parent().add_child(mgr)
-				mgr.global_position = target_indicator.global_position
+				var mgr_scene = airstrike_manager.instantiate()
+				player_ref.get_parent().add_child(mgr_scene)
+				var strike_pos = target_indicator.global_position
+				mgr_scene.global_position = strike_pos
+				
+				# Replicate airstrike barrage to other peers
+				var mp_mgr = player_ref.get_tree().current_scene
+				if mp_mgr is MultiplayerManager:
+					mp_mgr.spawn_utility_net("res://scenes/weapons/skills/airstrike_manager.tscn", strike_pos)
 				
 				start_cooldown()
 				cancel_skill()
