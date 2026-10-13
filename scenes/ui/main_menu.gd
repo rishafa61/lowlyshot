@@ -75,13 +75,34 @@ func _ready():
 	
 	set_play_mode("Practice")
 	_init_party_system()
+	_init_version_label()
+
+func _init_version_label() -> void:
+	var updater = get_node_or_null("/root/Updater")
+	var v_str: String = updater.VERSION if updater and "VERSION" in updater else "1.0.2"
+	var lbl_ver := Label.new()
+	lbl_ver.text = "v%s" % v_str
+	lbl_ver.add_theme_font_size_override("font_size", 13)
+	lbl_ver.add_theme_color_override("font_color", Color(1, 1, 1, 0.4))
+	add_child(lbl_ver)
+	lbl_ver.anchor_left = 0.0
+	lbl_ver.anchor_top = 1.0
+	lbl_ver.anchor_right = 0.0
+	lbl_ver.anchor_bottom = 1.0
+	lbl_ver.offset_left = 16
+	lbl_ver.offset_bottom = -12
+	lbl_ver.offset_top = -34
+	lbl_ver.offset_right = 120
 
 ## 5v5 bot backfill toggle for online Team Deathmatch (host choice)
 func _init_bots_toggle() -> void:
 	bots_toggle = CheckButton.new()
 	bots_toggle.text = "ADD BOTS (5v5 FILL)"
 	bots_toggle.button_pressed = GlobalSettings.online_bots_enabled
-	bots_toggle.toggled.connect(func(on): GlobalSettings.online_bots_enabled = on)
+	bots_toggle.toggled.connect(func(on):
+		GlobalSettings.online_bots_enabled = on
+		GlobalSettings.save_settings()
+	)
 	var map_area = map_list.get_parent()
 	map_area.add_child(bots_toggle)
 	map_area.move_child(bots_toggle, map_desc.get_index() + 1)

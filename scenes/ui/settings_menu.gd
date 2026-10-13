@@ -70,4 +70,5 @@ func _on_scope_changed_from_spin(val: float):
 
 
 func _on_back_pressed():
+	GlobalSettings.save_settings()
 	get_tree().change_scene_to_file(GlobalSettings.previous_scene)

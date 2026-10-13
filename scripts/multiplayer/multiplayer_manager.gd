@@ -367,12 +367,25 @@ func sync_time(time_left: int) -> void:
 func request_join_team_local(team: String) -> void:
 	request_join_team(team)
 
+## Server truth: can this peer still fit on the team (5 humans max)?
+func can_join_team(team: String) -> bool:
+	var humans := 0
+	for pid in players_data:
+		if players_data[pid].get("team", "") == team:
+			humans += 1
+	return humans < team_size
+
 @rpc("any_peer", "call_local", "reliable")
 func request_join_team(team: String) -> void:
 	if not is_multiplayer_authority():
 		return
 	var peer = multiplayer.get_remote_sender_id()
 	if peer == 0: peer = 1 # local
+
+	# Authority-side 5v5 human cap: spoofed/full team bounces to other side.
+	# Re-picking same team counts self as occupied slot, not a new member.
+	if players_data.has(peer) and players_data[peer].get("team", "") != team and not can_join_team(team):
+		team = "defenders" if team == "attackers" else "attackers"
 	
 	if not players_data.has(peer):
 		players_data[peer] = { "name": str(peer), "team": team, "kills": 0, "deaths": 0, "ping": 0 }

@@ -18,6 +18,7 @@ var btn_defenders: Button
 var match_end_overlay: Control
 var match_end_title: Label
 var match_end_score: Label
+var lbl_team_full: Label
 var match_end_return: Button
 
 func _ready() -> void:
@@ -130,6 +131,14 @@ func _build_ui() -> void:
 	btn_defenders.custom_minimum_size = Vector2(280, 50)
 	btn_defenders.text = "DEFENDERS (Red)"
 	s_box.add_child(btn_defenders)
+
+	# Team-full notice (replaces the _toast helper main menu has, not HUD)
+	lbl_team_full = Label.new()
+	lbl_team_full.text = ""
+	lbl_team_full.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	lbl_team_full.add_theme_font_size_override("font_size", 20)
+	lbl_team_full.add_theme_color_override("font_color", Color(1, 0.4, 0.4))
+	s_box.add_child(lbl_team_full)
 
 	# Match End Overlay
 	match_end_overlay = Control.new()
@@ -342,6 +351,10 @@ func pick_side(team: String) -> void:
 	if not manager:
 		return
 	if multiplayer.has_multiplayer_peer():
+		# Cap humans at 5 per side: full team stays on picker with notice
+		if not manager.can_join_team(team):
+			lbl_team_full.text = "%s IS FULL (5 MAX) — PICK OTHER SIDE" % team.to_upper()
+			return
 		manager.request_join_team.rpc_id(1, team)
 	else:
 		manager.request_join_team_local(team)
