@@ -446,13 +446,21 @@ func _spawn_bots(scene_path: String, count_arg: String) -> void:
 	print_to_console("Spawned %d bot(s)" % count)
 
 func _kick_bots() -> void:
+	var root = get_tree().current_scene
+	var mgr: MultiplayerManager = root as MultiplayerManager if root is MultiplayerManager else null
+	if mgr and GlobalData.is_networked():
+		if not multiplayer.is_server():
+			print_to_console("Only the host can kick bots in online matches")
+			return
+		print_to_console("Kicked %d bot(s)" % mgr.host_kick_bots())
+		return
+	# Offline: players share the ally/enemy groups (team groups), so only free
+	# nodes that actually are bots.
 	var removed = 0
-	for node in get_tree().get_nodes_in_group("enemy"):
-		if node is CharacterBody3D:
-			node.queue_free()
-			removed += 1
-	for node in get_tree().get_nodes_in_group("ally"):
-		if node is CharacterBody3D:
+	if mgr:
+		removed = mgr.host_kick_bots()
+	for node in get_tree().get_nodes_in_group("enemy") + get_tree().get_nodes_in_group("ally"):
+		if node is CharacterBody3D and "bot_name" in node and not node.is_queued_for_deletion():
 			node.queue_free()
 			removed += 1
 	print_to_console("Kicked %d bot(s)" % removed)

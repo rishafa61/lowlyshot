@@ -33,6 +33,7 @@ var players_data: Dictionary = {}
 
 # ---------------- Bot replication state ----------------
 var _next_bot_net_id: int = 100
+var _bots_kicked_by_admin: bool = false
 # host: net_id -> bot instance | client: net_id -> puppet bot instance
 var net_bots: Dictionary = {}
 var _bot_sync_timer: float = 0.0
@@ -61,6 +62,8 @@ func _process(delta: float) -> void:
 		_broadcast_bot_states()
 
 func _fill_bots() -> void:
+	if _bots_kicked_by_admin:
+		return
 	# Ensure each team has `team_size` total members (players + bots)
 	_balance_team_bots("attackers")
 	_balance_team_bots("defenders")
@@ -143,6 +146,20 @@ func _despawn_host_bot(bot: CharacterBody3D) -> void:
 			for p in ready_peers:
 				net_despawn_bot.rpc_id(p, b_id)
 	bot.queue_free()
+
+## Despawn every tracked bot (team fill + console spawned) on host AND clients
+func host_kick_bots() -> int:
+	_bots_kicked_by_admin = true
+	var removed := 0
+	for b_id in net_bots.keys():
+		var b = net_bots[b_id]
+		if is_instance_valid(b) and not b.is_queued_for_deletion():
+			_despawn_host_bot(b)
+			removed += 1
+	net_bots.clear()
+	for team in team_bots:
+		team_bots[team] = []
+	return removed
 
 func _broadcast_bot_states() -> void:
 	var ids: Array = []

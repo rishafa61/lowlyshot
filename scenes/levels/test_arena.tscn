@@ -6,6 +6,7 @@
 [ext_resource type="PackedScene" uid="uid://b8q017oaeihsd" path="res://scenes/enemies/capsule_enemy.tscn" id="5_capsule"]
 [ext_resource type="PackedScene" uid="uid://cgk3khdoin2gt" path="res://scenes/objects/door.tscn" id="door_scene"]
 [ext_resource type="PackedScene" uid="uid://dy55w0og5y8q0" path="res://scenes/objects/flickering_light.tscn" id="light_scene"]
+[ext_resource type="Script" path="res://scripts/levels/test_arena_net.gd" id="6_net"]
 
 [sub_resource type="Environment" id="Environment_test"]
 background_mode = 1
@@ -31,6 +32,7 @@ albedo_color = Color(0.895232, 0.598318, 0.441116, 1)
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_ory3k"]
 
 [node name="TestArena" type="Node3D" unique_id=2006587879]
+script = ExtResource("6_net")
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=1148845337]
 environment = SubResource("Environment_test")

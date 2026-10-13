@@ -252,9 +252,8 @@ func _on_start_game_pressed():
 				t.timeout.connect(func(): if is_instance_valid(btn_start_game): btn_start_game.text = "START GAME")
 				return
 
-			# Only the Multiplayer arena is network-aware, and only host over Steam when friends are in the lobby
-			# (solo = normal offline match with bots).
-			var should_host_steam = steam_sync and selected_mode == "Multiplayer" and steam_sync.party_members.size() > 0
+			# Multiplayer AND Practice (training ground): party follows the host in
+			var should_host_steam = steam_sync and selected_mode in ["Multiplayer", "Practice"] and steam_sync.party_members.size() > 0
 			if should_host_steam and steam_sync.is_steam_running and ClassDB.class_exists("SteamMultiplayerPeer"):
 				steam_sync.start_steam_host(map_data["scene"])
 				get_tree().change_scene_to_file(map_data["scene"])

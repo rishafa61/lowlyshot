@@ -412,6 +412,8 @@ func _net_send_state() -> void:
 	var mgr = get_tree().current_scene
 	if mgr is MultiplayerManager:
 		mgr.send_local_player_state(int(str(name)), global_position, rotation.y, head.rotation.x, weapon_path)
+	elif mgr and mgr.has_method("net_state"):
+		mgr.net_state.rpc(global_position, rotation.y, head.rotation.x, weapon_path)
 
 ## Runs on the OWNER of this player when someone else shot its puppet
 @rpc("any_peer", "call_remote", "reliable")
