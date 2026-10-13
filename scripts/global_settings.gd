@@ -17,3 +17,6 @@ var fps_limit = 0 # 0=60, 1=120, etc
 var previous_scene: String = "res://scenes/ui/main_menu.tscn"
 
 var current_minimap: String = ""
+
+# Multiplayer match fill (host chooses in the Play menu)
+var online_bots_enabled: bool = true

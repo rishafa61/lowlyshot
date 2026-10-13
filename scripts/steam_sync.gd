@@ -246,7 +246,8 @@ func _open_dialog(dialog_script: GDScript, canvas_name: String) -> void:
 	dialog.dialog_closed.connect(func(): canvas.queue_free())
 	root.add_child(canvas)
 
-## Create a Public lobby for party joining (no-op if we already have/are creating one)
+## Create a lobby for party joining (no-op if we already have/are creating one).
+## Defaults to invisible (private-by-code): only listed when the host opens it.
 func ensure_lobby() -> void:
 	var steam = _get_steam()
 	if not is_steam_running or steam == null:
@@ -254,9 +255,9 @@ func ensure_lobby() -> void:
 	if current_lobby_id != 0 or _lobby_create_pending:
 		return
 	_lobby_create_pending = true
-	_log("createLobby(public, 10)")
-	# 2 = Public (LobbyTypePublic) so friends can browse via in-game server list; max 10 players
-	steam.createLobby(2, 10)
+	_log("createLobby(invisible, 10)")
+	# 3 = Invisible so the room only shows up after the host toggles "Open Lobby"
+	steam.createLobby(3, 10)
 
 ## Refresh public lobby browser: friends can join without invite or code
 func refresh_lobby_list() -> void:
@@ -266,12 +267,41 @@ func refresh_lobby_list() -> void:
 		return
 	steam.addRequestLobbyListDistanceFilter(3) # 3 = worldwide (default only returns nearby lobbies)
 	steam.addRequestLobbyListStringFilter("game", LOBBY_GAME_TAG, 0) # 0 = EqualTo
+	steam.addRequestLobbyListStringFilter("is_open", "1", 0) # only rooms the host opened
 	steam.addRequestLobbyListResultCountFilter(50)
 	steam.requestLobbyList()
 
 func _on_lobby_match_list(lobbies: Array) -> void:
-	_log("Lobby list refreshed: %d lobbies" % lobbies.size())
-	lobbies_refreshed.emit(lobbies)
+	# Deduplicate: Steam can return the same room more than once.
+	var seen: Dictionary = {}
+	var unique: Array = []
+	for lid in lobbies:
+		var key := int(lid)
+		if not seen.has(key):
+			seen[key] = true
+			unique.append(key)
+	_log("Lobby list refreshed: %d lobbies (%d unique)" % [lobbies.size(), unique.size()])
+	lobbies_refreshed.emit(unique)
+
+## Host toggles room visibility in the lobby browser. Open = listed publicly;
+## closed = invisible, joinable only via lobby code/invite.
+func set_lobby_open(open: bool) -> bool:
+	var steam = _get_steam()
+	if current_lobby_id == 0 or not is_steam_running or steam == null:
+		return false
+	if not is_lobby_host():
+		return false
+	steam.setLobbyType(current_lobby_id, 2 if open else 3)
+	steam.setLobbyData(current_lobby_id, "is_open", "1" if open else "0")
+	steam.setLobbyJoinable(current_lobby_id, true)
+	_log("lobby %d set %s" % [current_lobby_id, "OPEN" if open else "CLOSED"])
+	return true
+
+func is_lobby_open() -> bool:
+	var steam = _get_steam()
+	if current_lobby_id == 0 or not is_steam_running or steam == null:
+		return false
+	return steam.getLobbyData(current_lobby_id, "is_open") == "1"
 
 ## Check cmdline args for Steam invite auto-join
 ## ("+connect_lobby <id>" as two args, "+connect_lobby=<id>", or a raw lobby ID)
@@ -304,6 +334,7 @@ func _on_lobby_created(connect_code: int, lobby_id: int) -> void:
 		steam.setLobbyData(lobby_id, "host_name", persona_name)
 		steam.setLobbyData(lobby_id, "host_steam_id", str(steam_id))
 		steam.setLobbyData(lobby_id, "game_state", "in_lobby")
+		steam.setLobbyData(lobby_id, "is_open", "0") # hidden until host opens it
 		# Rich Presence "connect" = friends list shows "Join Game" (not just "Invite to Watch")
 		steam.setRichPresence("connect", str(lobby_id))
 		steam.setRichPresence("status", "In lobby - inviting friends")

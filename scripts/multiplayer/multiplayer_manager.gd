@@ -44,6 +44,8 @@ func _ready() -> void:
 	GlobalData.kill_occurred.connect(_on_kill_occurred)
 	if GlobalData.is_networked():
 		_setup_networking()
+		# Host's menu toggle decides whether online matches backfill with bots
+		bots_in_online_matches = GlobalSettings.online_bots_enabled
 	if is_multiplayer_authority():
 		timer_node.wait_time = 1.0
 		timer_node.timeout.connect(_on_tick)
@@ -78,22 +80,27 @@ func _balance_team_bots(team: String) -> void:
 	var needed_bots = max(0, team_size - human_count)
 	if GlobalData.is_networked() and not bots_in_online_matches:
 		needed_bots = 0
-	var current_bot_list: Array = team_bots[team]
 
-	# Clean up any dead/invalid bots from list
-	var valid_bots: Array = []
-	for b in current_bot_list:
-		if is_instance_valid(b) and not b.is_queued_for_deletion():
-			valid_bots.append(b)
-	team_bots[team] = valid_bots
+	# Reconcile against the REAL host-side bots in the tree (team fill AND
+	# console spawned) so a team can never exceed team_size total members.
+	var group := "ally" if team == "attackers" else "enemy"
+	var live_bots: Array = []
+	for b in get_tree().get_nodes_in_group(group):
+		if is_instance_valid(b) and not b.is_queued_for_deletion() \
+				and b is CharacterBody3D and "bot_name" in b and not b.get("is_net_puppet"):
+			live_bots.append(b)
+	team_bots[team] = live_bots
 
-	# If human joined, kick excess bots to make room
+	# Kick excess bots to make room for humans
+	var kicked := false
 	while team_bots[team].size() > needed_bots:
 		var excess_bot = team_bots[team].pop_back()
 		if is_instance_valid(excess_bot):
+			match_stats.erase(excess_bot.bot_name)
+			kicked = true
 			_despawn_host_bot(excess_bot)
 
-	# If bots missing, spawn until filled
+	# Spawn until the team is filled
 	var ally_scene = "res://scenes/enemies/capsule_ally.tscn"
 	var enemy_scene = "res://scenes/enemies/capsule_enemy.tscn"
 	var scene_path = ally_scene if team == "attackers" else enemy_scene
@@ -108,6 +115,9 @@ func _balance_team_bots(team: String) -> void:
 		var bot = host_spawn_bot(scene_path, spawn_pos, team)
 		if bot:
 			team_bots[team].append(bot)
+
+	if kicked:
+		_sync_match_data()
 
 ## Spawns a bot on host and replicates to all ready clients
 func host_spawn_bot(scene_path: String, pos: Vector3, team: String, custom_name: String = "") -> CharacterBody3D:
@@ -154,11 +164,14 @@ func host_kick_bots() -> int:
 	for b_id in net_bots.keys():
 		var b = net_bots[b_id]
 		if is_instance_valid(b) and not b.is_queued_for_deletion():
+			match_stats.erase(b.bot_name)
 			_despawn_host_bot(b)
 			removed += 1
 	net_bots.clear()
 	for team in team_bots:
 		team_bots[team] = []
+	if removed > 0:
+		_sync_match_data()
 	return removed
 
 func _broadcast_bot_states() -> void:
@@ -435,6 +448,9 @@ func client_ready() -> void:
 			if b.get("equipped_primary") and b.equipped_primary.has("id"):
 				weapon_id = b.equipped_primary["id"]
 			net_spawn_bot.rpc_id(peer, b_id, scene_path, b.global_position, b.rotation.y, team, b.bot_name, weapon_id)
+	# New peer may have been added to players_data just before readying:
+	# rebalance so bot counts match humans (max 5v5 = 10 combatants).
+	_fill_bots()
 
 func replicate_spawn(data: Dictionary) -> void:
 	for p in ready_peers:

@@ -25,6 +25,8 @@ extends Control
 # ponytail: spawn in-match peer bodies from player_spawner on peer_connected / match join; add when netcode lands.
 
 var selected_mode = "Practice"
+var bots_toggle: CheckButton
+var btn_update: Button
 var maps = {
 	"Campaign": [
 		{"name": "Operation Sandstorm", "scene": "res://scenes/levels/campaign_map.tscn", "desc": "Infiltrate the trench, eliminate 5 hostiles, and reach the extraction zone."}
@@ -68,9 +70,54 @@ func _ready():
 	
 	map_list.item_selected.connect(_on_map_selected)
 	btn_start_game.pressed.connect(_on_start_game_pressed)
+	_init_update_button()
+	_init_bots_toggle()
 	
 	set_play_mode("Practice")
 	_init_party_system()
+
+## 5v5 bot backfill toggle for online Team Deathmatch (host choice)
+func _init_bots_toggle() -> void:
+	bots_toggle = CheckButton.new()
+	bots_toggle.text = "ADD BOTS (5v5 FILL)"
+	bots_toggle.button_pressed = GlobalSettings.online_bots_enabled
+	bots_toggle.toggled.connect(func(on): GlobalSettings.online_bots_enabled = on)
+	var map_area = map_list.get_parent()
+	map_area.add_child(bots_toggle)
+	map_area.move_child(bots_toggle, map_desc.get_index() + 1)
+
+## In-game updater: silent check on menu load, button appears when outdated
+func _init_update_button() -> void:
+	var updater = get_node_or_null("/root/Updater")
+	btn_update = Button.new()
+	btn_update.text = "⬆ UPDATE GAME"
+	btn_update.custom_minimum_size = Vector2(170, 42)
+	btn_update.visible = false
+	btn_update.pressed.connect(func():
+		btn_update.disabled = true
+		btn_update.text = "DOWNLOADING..."
+		_toast("Downloading update, don't close the game...")
+		if not updater.download_update():
+			btn_update.disabled = false
+			btn_update.text = "⬆ UPDATE GAME"
+	)
+	party_ui.add_child(btn_update)
+	btn_update.set_anchors_preset(Control.PRESET_TOP_RIGHT)
+	btn_update.position = Vector2(get_viewport_rect().size.x - 200, 16)
+	if updater == null:
+		return
+	updater.update_check_done.connect(func(available, latest):
+		btn_update.visible = available
+		btn_update.text = "⬆ UPDATE TO %s" % latest
+		btn_update.disabled = false
+		if not available:
+			print("[MainMenu] Up to date (%s)" % latest)
+	)
+	updater.update_downloaded.connect(func():
+		_toast("Update applied! Restarting...")
+	)
+	updater.update_failed.connect(func(reason): _toast(reason))
+	updater.check_for_updates()
 
 func _init_party_system() -> void:
 	for i in party_slots.size():
@@ -207,6 +254,8 @@ func _on_play_pressed():
 
 func set_play_mode(mode: String):
 	selected_mode = mode
+	if is_instance_valid(bots_toggle):
+		bots_toggle.visible = (mode == "Multiplayer")
 	
 	# Highlight sidebar
 	btn_campaign.modulate = Color(1, 1, 1, 1)
@@ -255,6 +304,8 @@ func _on_start_game_pressed():
 			# Multiplayer AND Practice (training ground): party follows the host in
 			var should_host_steam = steam_sync and selected_mode in ["Multiplayer", "Practice"] and steam_sync.party_members.size() > 0
 			if should_host_steam and steam_sync.is_steam_running and ClassDB.class_exists("SteamMultiplayerPeer"):
+				if selected_mode == "Multiplayer":
+					steam_sync.set_lobby_open(true) # started match = room joinable
 				steam_sync.start_steam_host(map_data["scene"])
 				get_tree().change_scene_to_file(map_data["scene"])
 				return

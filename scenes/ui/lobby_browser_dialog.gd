@@ -6,6 +6,9 @@ signal lobby_joined(lobby_id: int)
 var list_box: VBoxContainer
 var lbl_status: Label
 var btn_refresh: Button
+var toggle_open_lobby: CheckButton
+var line_code: LineEdit
+var btn_join_code: Button
 
 func _ready() -> void:
 	_build_ui()
@@ -30,7 +33,7 @@ func _build_ui() -> void:
 	add_child(center)
 
 	var panel := PanelContainer.new()
-	panel.custom_minimum_size = Vector2(520, 420)
+	panel.custom_minimum_size = Vector2(580, 480)
 	center.add_child(panel)
 
 	var margin := MarginContainer.new()
@@ -45,29 +48,53 @@ func _build_ui() -> void:
 	margin.add_child(vbox)
 
 	var title := Label.new()
-	title.text = "ACTIVE MULTIPLAYER LOBBIES"
+	title.text = "MULTIPLAYER ROOMS"
 	title.add_theme_font_size_override("font_size", 20)
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	vbox.add_child(title)
 
-	var desc := Label.new()
-	desc.text = "Click a squad below to join your friend's room instantly:"
-	desc.add_theme_font_size_override("font_size", 14)
-	desc.add_theme_color_override("font_color", Color(0.8, 0.8, 0.8))
-	desc.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	vbox.add_child(desc)
+	# Host toggle: Open Lobby on/off
+	var host_box := HBoxContainer.new()
+	host_box.alignment = BoxContainer.ALIGNMENT_CENTER
+	host_box.add_theme_constant_override("separation", 12)
+	vbox.add_child(host_box)
+
+	toggle_open_lobby = CheckButton.new()
+	var steam_sync = get_node_or_null("/root/SteamSync")
+	var is_open: bool = steam_sync.is_lobby_open() if steam_sync else false
+	toggle_open_lobby.text = "OPEN LOBBY (public in list)"
+	toggle_open_lobby.button_pressed = is_open
+	toggle_open_lobby.toggled.connect(_on_open_toggled)
+	host_box.add_child(toggle_open_lobby)
 
 	var sep := HSeparator.new()
 	vbox.add_child(sep)
 
+	# Direct code entry (for joining closed/unlisted rooms)
+	var code_box := HBoxContainer.new()
+	code_box.add_theme_constant_override("separation", 8)
+	vbox.add_child(code_box)
+
+	line_code = LineEdit.new()
+	line_code.placeholder_text = "Paste lobby code here..."
+	line_code.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	line_code.clear_button_enabled = true
+	code_box.add_child(line_code)
+
+	btn_join_code = Button.new()
+	btn_join_code.text = "JOIN BY CODE"
+	btn_join_code.custom_minimum_size = Vector2(130, 32)
+	btn_join_code.pressed.connect(_on_join_code_pressed)
+	code_box.add_child(btn_join_code)
+
 	lbl_status = Label.new()
-	lbl_status.text = "Searching for lobbies..."
+	lbl_status.text = "Searching for open lobbies..."
 	lbl_status.add_theme_font_size_override("font_size", 13)
 	lbl_status.add_theme_color_override("font_color", Color(0.4, 0.9, 1.0))
 	vbox.add_child(lbl_status)
 
 	var scroll := ScrollContainer.new()
-	scroll.custom_minimum_size = Vector2(470, 220)
+	scroll.custom_minimum_size = Vector2(520, 200)
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	vbox.add_child(scroll)
 
@@ -96,6 +123,23 @@ func _build_ui() -> void:
 	)
 	btn_hbox.add_child(btn_close)
 
+func _on_open_toggled(pressed: bool) -> void:
+	var steam_sync = get_node_or_null("/root/SteamSync")
+	if steam_sync and steam_sync.has_method("set_lobby_open"):
+		var ok: bool = steam_sync.set_lobby_open(pressed)
+		if ok:
+			lbl_status.text = "Your lobby is now %s." % ("OPEN to public" if pressed else "CLOSED (code only)")
+		else:
+			toggle_open_lobby.button_pressed = !pressed
+			lbl_status.text = "Only the room host can toggle lobby visibility."
+
+func _on_join_code_pressed() -> void:
+	var raw := line_code.text.strip_edges()
+	if not raw.is_valid_int() or raw.to_int() <= 0:
+		lbl_status.text = "Invalid lobby code. Paste numeric code copied from host."
+		return
+	_join_selected(raw.to_int())
+
 func _connect_steam() -> void:
 	var steam_sync = get_node_or_null("/root/SteamSync")
 	if steam_sync and steam_sync.has_signal("lobbies_refreshed"):
@@ -104,7 +148,7 @@ func _connect_steam() -> void:
 func refresh_lobbies() -> void:
 	for c in list_box.get_children():
 		c.queue_free()
-	lbl_status.text = "Querying Steam for active rooms..."
+	lbl_status.text = "Querying Steam for open rooms..."
 	var steam_sync = get_node_or_null("/root/SteamSync")
 	if steam_sync == null or not steam_sync.has_method("refresh_lobby_list"):
 		lbl_status.text = "Steam not connected (SteamSync missing)."
@@ -117,14 +161,22 @@ func _on_lobbies_received(lobbies: Array) -> void:
 	for c in list_box.get_children():
 		c.queue_free()
 	
-	if lobbies.is_empty():
-		lbl_status.text = "No active lobbies found. Have your friend create one, or copy/paste their code!"
+	# Strict client-side deduplication by numeric ID
+	var seen: Dictionary = {}
+	var unique: Array = []
+	for lid in lobbies:
+		var k := int(lid)
+		if not seen.has(k):
+			seen[k] = true
+			unique.append(k)
+
+	if unique.is_empty():
+		lbl_status.text = "No open lobbies found. If room is closed, paste host code above."
 		return
 
-	lbl_status.text = "Found %d active room(s):" % lobbies.size()
+	lbl_status.text = "Found %d open room(s):" % unique.size()
 	var steam = Engine.get_singleton("Steam") if Engine.has_singleton("Steam") else null
-	for lobby_id in lobbies:
-		var lid: int = int(lobby_id)
+	for lid in unique:
 		var host_name = steam.getLobbyData(lid, "host_name") if steam else "Host"
 		var room_name = steam.getLobbyData(lid, "name") if steam else "Tactical Match"
 		var count = steam.getNumLobbyMembers(lid) if steam else 1
