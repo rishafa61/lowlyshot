@@ -1,7 +1,7 @@
 extends Area3D
 @export var body_part: String = "upper"
 
-func take_damage(amount: float, attacker_name: String = "", weapon_name: String = "", attacker_faction: String = "") -> float:
+func take_damage(amount: float, attacker_name: String = "", weapon_name: String = "", attacker_faction: String = "", _attacker_pos: Vector3 = Vector3.INF) -> float:
 	var root = get_parent().get_parent() # Hitboxes node -> CharacterBody3D
 	if root.has_method("receive_damage"):
 		return root.receive_damage(amount, body_part, attacker_name, weapon_name, attacker_faction)
