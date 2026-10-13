@@ -896,8 +896,6 @@ func create_tracer(start: Vector3, end: Vector3):
 	var tween = mesh_inst.create_tween()
 	tween.tween_property(mat, "albedo_color:a", 0.0, 0.22)
 	tween.tween_callback(mesh_inst.queue_free)
-	get_tree().create_timer(0.3).timeout.connect(func():
-		if is_instance_valid(mesh_inst): mesh_inst.queue_free)
 
 func _check_crosshair_target() -> void:
 	if not hud: return

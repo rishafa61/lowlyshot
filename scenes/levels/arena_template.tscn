@@ -1,4 +1,8 @@
-[gd_scene load_steps=5 format=3]
+[gd_scene format=3 uid="uid://c8usao40qdgdd"]
+
+[sub_resource type="NavigationMesh" id="nav_mesh"]
+vertices = PackedVector3Array(-29, 0.1, -29, 29, 0.1, -29, 29, 0.1, 29, -29, 0.1, 29)
+polygons = [PackedInt32Array(0, 1, 2), PackedInt32Array(0, 2, 3)]
 
 [sub_resource type="StandardMaterial3D" id="mat_floor"]
 albedo_color = Color(0.18, 0.2, 0.24, 1)
@@ -8,75 +12,42 @@ roughness = 0.8
 albedo_color = Color(0.3, 0.32, 0.38, 1)
 roughness = 0.6
 
-[sub_resource type="StandardMaterial3D" id="mat_cover"]
-albedo_color = Color(0.65, 0.45, 0.25, 1)
-roughness = 0.5
+[node name="ArenaTemplate" type="Node3D" unique_id=693604934]
 
-[sub_resource type="NavigationMesh" id="nav_mesh"]
-vertices = PackedVector3Array(-29, 0.1, -29, 29, 0.1, -29, 29, 0.1, 29, -29, 0.1, 29)
-polygons = [PackedInt32Array(0, 1, 2), PackedInt32Array(0, 2, 3)]
-
-[node name="ArenaTemplate" type="Node3D"]
-
-[node name="NavigationRegion3D" type="NavigationRegion3D" parent="."]
+[node name="NavigationRegion3D" type="NavigationRegion3D" parent="." unique_id=1573557491]
+transform = Transform3D(2.354022, 0, 0, 0, 1, 0, 0, 0, 0.77690434, 0, 0, 0)
 navigation_mesh = SubResource("nav_mesh")
 
-[node name="Floor" type="CSGBox3D" parent="NavigationRegion3D"]
+[node name="Floor" type="CSGBox3D" parent="NavigationRegion3D" unique_id=256080527]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.5, 0)
-size = Vector3(60, 1, 60)
 material_override = SubResource("mat_floor")
 use_collision = true
+size = Vector3(60, 1, 60)
 
-[node name="WallN" type="CSGBox3D" parent="NavigationRegion3D"]
+[node name="WallN" type="CSGBox3D" parent="NavigationRegion3D" unique_id=1295882764]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 4.5, -30)
-size = Vector3(60, 10, 1)
 material_override = SubResource("mat_walls")
 use_collision = true
+size = Vector3(60, 10, 1)
 
-[node name="WallS" type="CSGBox3D" parent="NavigationRegion3D"]
+[node name="WallS" type="CSGBox3D" parent="NavigationRegion3D" unique_id=2021673930]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 4.5, 30)
+material_override = SubResource("mat_walls")
+use_collision = true
 size = Vector3(60, 10, 1)
-material_override = SubResource("mat_walls")
-use_collision = true
 
-[node name="WallE" type="CSGBox3D" parent="NavigationRegion3D"]
+[node name="WallE" type="CSGBox3D" parent="NavigationRegion3D" unique_id=493111787]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 30, 4.5, 0)
-size = Vector3(1, 10, 60)
 material_override = SubResource("mat_walls")
 use_collision = true
+size = Vector3(1, 10, 60)
 
-[node name="WallW" type="CSGBox3D" parent="NavigationRegion3D"]
+[node name="WallW" type="CSGBox3D" parent="NavigationRegion3D" unique_id=1615149119]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -30, 4.5, 0)
-size = Vector3(1, 10, 60)
 material_override = SubResource("mat_walls")
 use_collision = true
+size = Vector3(1, 10, 60)
 
-[node name="CenterBlock" type="CSGBox3D" parent="NavigationRegion3D"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2, 0)
-size = Vector3(8, 4, 8)
-material_override = SubResource("mat_cover")
-use_collision = true
-
-[node name="CoverWestA" type="CSGBox3D" parent="NavigationRegion3D"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -12, 1.5, -8)
-size = Vector3(4, 3, 1.5)
-material_override = SubResource("mat_cover")
-use_collision = true
-
-[node name="CoverWestB" type="CSGBox3D" parent="NavigationRegion3D"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -12, 1.5, 8)
-size = Vector3(4, 3, 1.5)
-material_override = SubResource("mat_cover")
-use_collision = true
-
-[node name="CoverEastA" type="CSGBox3D" parent="NavigationRegion3D"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 12, 1.5, -8)
-size = Vector3(4, 3, 1.5)
-material_override = SubResource("mat_cover")
-use_collision = true
-
-[node name="CoverEastB" type="CSGBox3D" parent="NavigationRegion3D"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 12, 1.5, 8)
-size = Vector3(4, 3, 1.5)
-material_override = SubResource("mat_cover")
+[node name="CSGBox3D" type="CSGBox3D" parent="NavigationRegion3D" unique_id=1591026746]
+transform = Transform3D(4.0293937, 0, 0, 0, 4.8615065, 0, 0, 0, 11.854133, -27.493177, 2.1680923, -9.516761)
 use_collision = true

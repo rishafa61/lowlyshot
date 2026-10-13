@@ -554,8 +554,6 @@ func create_tracer(start: Vector3, end: Vector3):
 	var tween = mesh_inst.create_tween()
 	tween.tween_property(mat, "albedo_color:a", 0.0, 0.1)
 	tween.tween_callback(mesh_inst.queue_free)
-	get_tree().create_timer(0.2).timeout.connect(func():
-		if is_instance_valid(mesh_inst): mesh_inst.queue_free)
 
 func take_damage(amount: float, attacker_name: String = "", weapon_name: String = "", attacker_faction: String = "", _attacker_pos: Vector3 = Vector3.INF) -> float:
 	return receive_damage(amount, "torso", attacker_name, weapon_name, attacker_faction)
