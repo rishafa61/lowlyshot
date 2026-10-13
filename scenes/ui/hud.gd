@@ -229,7 +229,7 @@ func show_damage_vignette():
 
 ## Directional hit indicator: red arrow around crosshair pointing at shooter
 func show_damage_direction(angle_rad: float) -> void:
-	var center: Vector2 = get_viewport_rect().size / 2.0
+	var center: Vector2 = get_viewport().get_visible_rect().size / 2.0
 	var arrow := Label.new()
 	arrow.text = "➤"
 	arrow.add_theme_font_size_override("font_size", 34)
