@@ -184,7 +184,7 @@ func _on_health_damaged(_raw_amount: float, _absorbed: float) -> void:
 		hud.update_stats(hp, max_hp, armor, max_armor, stamina, max_stamina)
 		hud.update_minimap(global_position, head.rotation.y)
 		hud.show_damage_vignette()
-	camera_recoil += 0.2
+	camera_recoil += 0.35 # punchy feedback: you KNOW you got hit
 
 var last_attacker: String = ""
 var last_weapon: String = ""
@@ -417,18 +417,18 @@ func _net_send_state() -> void:
 
 ## Runs on the OWNER of this player when someone else shot its puppet
 @rpc("any_peer", "call_remote", "reliable")
-func _net_apply_damage(amount: float, attacker_name: String, weapon_name: String, attacker_faction: String) -> void:
+func _net_apply_damage(amount: float, attacker_name: String, weapon_name: String, attacker_faction: String, attacker_pos: Vector3 = Vector3.INF) -> void:
 	if is_puppet or is_dead:
 		return
 	var my_faction: String = "Ally" if team == "attackers" else "Enemy"
 	if attacker_faction != "" and attacker_faction == my_faction:
 		return # no friendly fire
-	take_damage(amount, attacker_name, weapon_name, attacker_faction)
+	take_damage(amount, attacker_name, weapon_name, attacker_faction, attacker_pos)
 
-func take_damage(amount: float, attacker_name: String = "", weapon_name: String = "", attacker_faction: String = "") -> float:
+func take_damage(amount: float, attacker_name: String = "", weapon_name: String = "", attacker_faction: String = "", attacker_pos: Vector3 = Vector3.INF) -> float:
 	if is_puppet:
 		# Remote copy: the owning peer applies the damage to the real player
-		_net_apply_damage.rpc_id(get_multiplayer_authority(), amount, attacker_name, weapon_name, attacker_faction)
+		_net_apply_damage.rpc_id(get_multiplayer_authority(), amount, attacker_name, weapon_name, attacker_faction, attacker_pos)
 		return amount
 	if is_dead: return 0.0
 	var final = health_component.apply_damage(amount)
@@ -437,11 +437,15 @@ func take_damage(amount: float, attacker_name: String = "", weapon_name: String 
 		last_attacker_faction = attacker_faction if attacker_faction != "" else "Enemy"
 	if weapon_name != "":
 		last_weapon = weapon_name
-		
+
 	if hud and final > 0.0:
 		var w = weapon_name if weapon_name != "" else "Unknown"
 		var a = attacker_name if attacker_name != "" else "World"
 		hud.print_to_console("Took %d damage from %s (%s)" % [int(final), a, w])
+		# Directional hit indicator: arrow around crosshair points at shooter
+		if attacker_pos != Vector3.INF:
+			var local := global_transform.basis.inverse() * (attacker_pos - global_position)
+			hud.show_damage_direction(atan2(local.x, -local.z))
 	return final
 
 func die():
@@ -702,13 +706,15 @@ func shoot_gun() -> void:
 	var result = space_state.intersect_ray(query)
 	
 	var visual_end = end_pos
+	var hit_body := false
 	if result:
 		visual_end = result.position
 		var target = result.collider
 		if target.has_method("take_damage"):
+			hit_body = true
 			var w_name = str(w.get("id", w.get("name", "Gun")))
 			var p_faction = "Ally" if team == "attackers" else ("Enemy" if team == "defenders" else "Player")
-			var final_dmg = target.take_damage(w["dmg"], player_name, w_name, p_faction)
+			var final_dmg = target.take_damage(w["dmg"], player_name, w_name, p_faction, global_position)
 			if final_dmg == null: final_dmg = w["dmg"]
 			if hud and final_dmg > 0.0: hud.show_hit_marker(final_dmg)
 			# Victim identity for console log
@@ -722,6 +728,9 @@ func shoot_gun() -> void:
 	
 	var muzzle_pos = get_current_muzzle_position()
 	create_tracer(muzzle_pos, visual_end)
+	# Every other peer sees the shot: tracer + blood puff on impact
+	if GlobalData.is_networked():
+		net_shot.rpc(muzzle_pos, visual_end, hit_body)
 
 func get_current_muzzle_position() -> Vector3:
 	if is_instance_valid(weapon_holder):
@@ -823,30 +832,67 @@ func throw_grenade():
 		}
 		mgr.spawn_utility_net(proj_path, proj.global_position, throw_dir, extra)
 
+## Remote shot broadcast: renders tracer and impact on every client
+@rpc("any_peer", "call_remote", "unreliable")
+func net_shot(start: Vector3, end: Vector3, hit_body: bool) -> void:
+	create_tracer(start, end)
+	if hit_body:
+		_spawn_blood_splatter(end)
+
+func _spawn_blood_splatter(pos: Vector3) -> void:
+	# Visible 3D red blood burst at hit point
+	var p := CPUParticles3D.new()
+	p.emitting = true
+	p.one_shot = true
+	p.explosiveness = 1.0
+	p.amount = 16
+	p.lifetime = 0.45
+	p.direction = Vector3.UP
+	p.spread = 180.0
+	p.initial_velocity_min = 2.0
+	p.initial_velocity_max = 5.0
+	p.gravity = Vector3(0, -9.8, 0)
+	var sm := StandardMaterial3D.new()
+	sm.albedo_color = Color(0.8, 0.05, 0.05)
+	sm.emission_enabled = true
+	sm.emission = Color(0.9, 0.0, 0.0)
+	sm.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	var mesh := BoxMesh.new()
+	mesh.size = Vector3(0.08, 0.08, 0.08)
+	mesh.material = sm
+	p.draw_pass_1 = mesh
+	get_tree().root.add_child(p)
+	p.global_position = pos
+	var t := get_tree().create_timer(0.6)
+	t.timeout.connect(p.queue_free)
+
 func create_tracer(start: Vector3, end: Vector3):
 	var mesh_inst = MeshInstance3D.new()
 	var cyl = CylinderMesh.new()
-	cyl.top_radius = 0.015
-	cyl.bottom_radius = 0.015
+	# Thick, bright tracer visible across map
+	cyl.top_radius = 0.04
+	cyl.bottom_radius = 0.04
 	cyl.height = start.distance_to(end)
 	mesh_inst.mesh = cyl
-	
+
 	var mat = StandardMaterial3D.new()
-	mat.albedo_color = Color(1, 0.9, 0.5, 0.8)
+	mat.albedo_color = Color(1.0, 0.85, 0.3, 0.95)
 	mat.emission_enabled = true
-	mat.emission = Color(1, 0.9, 0.5)
+	mat.emission = Color(1.0, 0.7, 0.15)
+	mat.emission_energy_multiplier = 3.0
 	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	cyl.material = mat
 	get_tree().root.add_child(mesh_inst)
 	mesh_inst.position = (start + end) / 2.0
-	
+
 	var dir = (end - start).normalized()
 	var up = Vector3.UP if abs(dir.y) < 0.99 else Vector3.RIGHT
 	mesh_inst.look_at_from_position(mesh_inst.position, end, up)
 	mesh_inst.rotation.x += PI / 2.0
-	
+
 	var tween = create_tween()
-	tween.tween_property(mat, "albedo_color:a", 0.0, 0.1)
+	tween.tween_property(mat, "albedo_color:a", 0.0, 0.22)
 	tween.tween_callback(mesh_inst.queue_free)
 
 func _check_crosshair_target() -> void:

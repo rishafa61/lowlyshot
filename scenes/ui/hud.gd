@@ -217,10 +217,36 @@ func show_hit_marker(damage_amount: float = 0.0):
 		dmg_tween.chain().tween_callback(floating_text.queue_free)
 
 
+var vignette_tween: Tween = null
+
 func show_damage_vignette():
-	blood_vignette.color = Color(1, 0, 0, 0.4)
-	var tween = create_tween()
-	tween.tween_property(blood_vignette, "color:a", 0.0, 0.6)
+	# Kill old fade so stacked hits keep flash bright
+	if vignette_tween and vignette_tween.is_valid():
+		vignette_tween.kill()
+	blood_vignette.color = Color(1, 0, 0, 0.45)
+	vignette_tween = create_tween()
+	vignette_tween.tween_property(blood_vignette, "color:a", 0.0, 0.8)
+
+## Directional hit indicator: red arrow around crosshair pointing at shooter
+func show_damage_direction(angle_rad: float) -> void:
+	var center: Vector2 = get_viewport_rect().size / 2.0
+	var arrow := Label.new()
+	arrow.text = "➤"
+	arrow.add_theme_font_size_override("font_size", 34)
+	arrow.add_theme_color_override("font_color", Color(1.0, 0.15, 0.15, 0.95))
+	arrow.add_theme_color_override("font_outline_color", Color(0, 0, 0, 1))
+	arrow.add_theme_constant_override("outline_size", 5)
+	arrow.custom_minimum_size = Vector2(44, 44)
+	arrow.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	arrow.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	arrow.size = Vector2(44, 44)
+	arrow.pivot_offset = Vector2(22, 22)
+	arrow.rotation = angle_rad - PI / 2.0 # ➤ glyph faces +x; rotate so tip aims outward
+	add_child(arrow)
+	arrow.position = center + Vector2.UP.rotated(angle_rad) * 110.0 - Vector2(22, 22)
+	var tw := create_tween().set_parallel(true)
+	tw.tween_property(arrow, "modulate:a", 0.0, 0.9).set_delay(0.25)
+	tw.chain().tween_callback(arrow.queue_free)
 
 func show_flash_vignette(duration: float):
 	blood_vignette.color = Color(1, 1, 1, 1.0)
