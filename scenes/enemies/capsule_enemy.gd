@@ -309,7 +309,23 @@ func _physics_process(delta):
 	process_ai(delta)
 	process_stance(delta)
 
+	# Push away from overlapping bots so they never clip through each other
+	_apply_bot_separation()
+
 	move_and_slide()
+
+func _apply_bot_separation() -> void:
+	# Repel every other bot within 1.2 m
+	for group_name in ["enemy", "ally"]:
+		for b in get_tree().get_nodes_in_group(group_name):
+			if b == self or not (b is CharacterBody3D) or not is_instance_valid(b):
+				continue
+			var diff: Vector3 = global_position - b.global_position
+			diff.y = 0.0
+			var d: float = diff.length()
+			if d > 0.001 and d < 1.2:
+				var push: float = (1.2 - d) * 3.5
+				velocity += diff.normalized() * push
 	
 	# AI pushes doors open
 	for i in get_slide_collision_count():

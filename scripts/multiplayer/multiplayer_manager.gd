@@ -110,12 +110,22 @@ func _balance_team_bots(team: String) -> void:
 		var sp = spawner.get_spawn_point(team)
 		var spawn_pos = Vector3.ZERO
 		if sp:
-			# Spread out around the spawner so bots don't intersect on frame 1
+			# Spread in a ring so bots never intersect on frame 1
 			var angle := randf() * TAU
 			var dist := randf_range(1.0, 4.0)
-			spawn_pos = sp.global_position + Vector3(cos(angle) * dist, 0.5, sin(angle) * dist)
+			spawn_pos = sp.global_position + Vector3(cos(angle) * dist, 2.0, sin(angle) * dist)
 		else:
-			spawn_pos = Vector3(randf_range(-10, 10), 1, randf_range(-10, 10))
+			spawn_pos = Vector3(randf_range(-10, 10), 3, randf_range(-10, 10))
+		# Drop to the floor below the spawn point (moved spawners can hang in air)
+		var space := get_world_3d().direct_space_state
+		var q := PhysicsRayQueryParameters3D.create(spawn_pos + Vector3.UP * 10, spawn_pos + Vector3.DOWN * 60)
+		var hit := space.intersect_ray(q)
+		if hit:
+			spawn_pos = hit.position + Vector3.UP * 0.3
+		# Snap onto the navmesh when one exists (prevents spawning inside geometry)
+		var nav_pt := NavigationServer3D.map_get_closest_point(get_world_3d().navigation_map, spawn_pos)
+		if nav_pt.distance_to(spawn_pos) < 30.0:
+			spawn_pos = nav_pt + Vector3.UP * 0.1
 		var bot = host_spawn_bot(scene_path, spawn_pos, team)
 		if bot:
 			team_bots[team].append(bot)
