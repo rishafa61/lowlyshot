@@ -891,9 +891,13 @@ func create_tracer(start: Vector3, end: Vector3):
 	mesh_inst.look_at_from_position(mesh_inst.position, end, up)
 	mesh_inst.rotation.x += PI / 2.0
 
-	var tween = create_tween()
+	# Tween bound to the MESH: if the shooter is freed mid-fade (bot kicked,
+	# player left), the fade still runs and the tracer can't orphan on the map
+	var tween = mesh_inst.create_tween()
 	tween.tween_property(mat, "albedo_color:a", 0.0, 0.22)
 	tween.tween_callback(mesh_inst.queue_free)
+	get_tree().create_timer(0.3).timeout.connect(func():
+		if is_instance_valid(mesh_inst): mesh_inst.queue_free)
 
 func _check_crosshair_target() -> void:
 	if not hud: return

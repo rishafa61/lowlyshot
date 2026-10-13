@@ -208,9 +208,11 @@ func create_tracer(start: Vector3, end: Vector3) -> void:
 	mesh_inst.look_at_from_position(mesh_inst.global_position, end, up)
 	mesh_inst.rotation.x += PI / 2.0
 	
-	var tween = get_tree().create_tween()
+	var tween = mesh_inst.create_tween()
 	tween.tween_property(mat, "albedo_color:a", 0.0, 0.08)
 	tween.tween_callback(mesh_inst.queue_free)
+	get_tree().create_timer(0.2).timeout.connect(func():
+		if is_instance_valid(mesh_inst): mesh_inst.queue_free)
 
 var last_attacker: String = ""
 var last_attacker_faction: String = ""
