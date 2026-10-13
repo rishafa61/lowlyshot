@@ -416,7 +416,7 @@ func process_ai(delta):
 				if randf() < 0.02: is_crouching = !is_crouching
 
 func move_along_path(speed: float, rotate_to_path: bool):
-	var goal_dist := nav_agent.target_position.distance_to(global_position)
+	var goal_dist: float = nav_agent.target_position.distance_to(global_position)
 	if nav_agent.is_navigation_finished():
 		if goal_dist < 1.5:
 			# Genuinely arrived
