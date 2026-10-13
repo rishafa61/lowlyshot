@@ -124,9 +124,11 @@ func _balance_team_bots(team: String) -> void:
 			var hit: Dictionary = space.intersect_ray(q)
 			if not hit.is_empty():
 				spawn_pos = hit["position"] + Vector3.UP * 0.3
-			var nav_pt: Vector3 = NavigationServer3D.map_get_closest_point(w3d.navigation_map, spawn_pos)
-			if nav_pt.distance_to(spawn_pos) < 30.0:
-				spawn_pos = nav_pt + Vector3.UP * 0.1
+			# Only snap when the nav server has synced at least once (skips frame-1 error)
+			if NavigationServer3D.map_get_iteration_id(w3d.navigation_map) > 0:
+				var nav_pt: Vector3 = NavigationServer3D.map_get_closest_point(w3d.navigation_map, spawn_pos)
+				if nav_pt.distance_to(spawn_pos) < 30.0:
+					spawn_pos = nav_pt + Vector3.UP * 0.1
 		var bot = host_spawn_bot(scene_path, spawn_pos, team)
 		if bot:
 			team_bots[team].append(bot)
