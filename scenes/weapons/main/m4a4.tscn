@@ -73,17 +73,29 @@ mesh = SubResource("BoxMesh_main")
 surface_material_override/0 = SubResource("Mat_black")
 
 [node name="BufferTube" type="MeshInstance3D" parent="." unique_id=657385272]
-transform = Transform3D(0.7, 0, 0, 0, 0.7, 0, 0, 0, 1.2, 0, 0.11704366, 0.2064532)
+transform = Transform3D(0.7, 0, 0, 0, 0.7, 0, 0, 0, 0.3646969, 0, 0.15088145, 0.08754903)
 mesh = SubResource("BoxMesh_thin")
 surface_material_override/0 = SubResource("Mat_black")
 
 [node name="BufferTube2" type="MeshInstance3D" parent="." unique_id=1939527483]
-transform = Transform3D(0.7, 0, 0, 0, 0.7, 0, 0, 0, 1.2, 0, 0.0791574, 0.2064532)
+transform = Transform3D(0.7, 0, 0, 0, 0.7, 0, 0, 0, 0.21014133, 0, 0.103026524, 0.14566448)
 mesh = SubResource("BoxMesh_thin")
 surface_material_override/0 = SubResource("Mat_black")
 
 [node name="Stock" type="MeshInstance3D" parent="." unique_id=156108243]
-transform = Transform3D(0.6999999, -0.00021722668, 0.00039201058, 9.398042e-05, 1.5999923, 0.0024737718, -0.00034330014, -0.0049474384, 0.7999961, 0, 0.09870139, 0.45723423)
+transform = Transform3D(0.70016843, -0.00013125317, 0.00019131751, 9.400305e-05, 0.9667506, 0.0012073037, -0.0003433828, -0.0029893515, 0.3904314, 0, 0.1226331, 0.2686107)
+mesh = SubResource("BoxMesh_main")
+surface_material_override/0 = SubResource("Mat_black")
+
+[node name="Stock2" type="CSGBox3D" parent="." unique_id=187231766]
+transform = Transform3D(0.024211373, -4.1595954e-06, 7.103483e-05, 3.250565e-06, 0.030637665, 0.00044826325, -1.1873955e-05, -9.4736715e-05, 0.14496441, 0, 0.060158595, 0.27577156)
+
+[node name="Stock4" type="CSGBox3D" parent="Stock2" unique_id=304416130]
+transform = Transform3D(1.7614428, 1.4892976e-11, -9.313226e-10, -3.6152414e-11, 0.51217425, -2.7939677e-09, 4.3655746e-11, 1.1641532e-10, 0.65280885, 0, 0, 0)
+operation = 2
+
+[node name="Stock3" type="MeshInstance3D" parent="." unique_id=2080655534]
+transform = Transform3D(0.33194587, -3.4425357e-05, 8.368351e-05, 4.4566317e-05, 0.25356135, 0.0005280824, -0.00016279584, -0.0007840534, 0.17077722, 0, 0.034013823, 0.3118957)
 mesh = SubResource("BoxMesh_main")
 surface_material_override/0 = SubResource("Mat_black")
 
@@ -98,7 +110,7 @@ mesh = SubResource("BoxMesh_2artj")
 surface_material_override/0 = SubResource("StandardMaterial3D_ibjhi")
 
 [node name="RearSight" type="CSGBox3D" parent="." unique_id=388134013]
-transform = Transform3D(0.06521858, 0, 0, 0, 0.05279296, -1.8908642e-05, 0, 3.085099e-05, 0.03235108, 0, 0.17675093, 0.09243211)
+transform = Transform3D(0.033618167, 0, 0, 0, 0.04557877, -1.891018e-05, 0, 2.6635185e-05, 0.03235371, 0, 0.17675093, 0.09243211)
 
 [node name="Subtract" type="CSGBox3D" parent="RearSight" unique_id=191839550]
 transform = Transform3D(0.7485213, 0, 0, 0, 0.5064385, 0, 0, 0, 1.045031, 0, 0.590307, 0)

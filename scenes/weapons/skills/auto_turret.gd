@@ -216,7 +216,7 @@ var last_attacker: String = ""
 var last_attacker_faction: String = ""
 var last_weapon: String = ""
 
-func take_damage(amount: float, attacker_name: String = "", w_name: String = "", attacker_faction: String = "") -> float:
+func take_damage(amount: float, attacker_name: String = "", w_name: String = "", attacker_faction: String = "", _attacker_pos: Vector3 = Vector3.INF) -> float:
 	# Friendly/ally turrets are invulnerable: no friendly fire, no enemy destruction
 	if faction != "Enemy" or is_dead:
 		return 0.0
