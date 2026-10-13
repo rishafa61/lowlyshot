@@ -416,20 +416,33 @@ func process_ai(delta):
 				if randf() < 0.02: is_crouching = !is_crouching
 
 func move_along_path(speed: float, rotate_to_path: bool):
+	var goal_dist := nav_agent.target_position.distance_to(global_position)
 	if nav_agent.is_navigation_finished():
-		velocity.x = move_toward(velocity.x, 0, 0.5)
-		velocity.z = move_toward(velocity.z, 0, 0.5)
+		if goal_dist < 1.5:
+			# Genuinely arrived
+			velocity.x = move_toward(velocity.x, 0, 0.5)
+			velocity.z = move_toward(velocity.z, 0, 0.5)
+			return
+		# ponytail: navmesh broken/unbaked (agent can't path) — steer straight at
+		# the goal so bots keep moving; rebake the navmesh in-editor for real paths.
+		var fdir := global_position.direction_to(nav_agent.target_position)
+		fdir.y = 0
+		fdir = fdir.normalized()
+		if rotate_to_path and fdir.length() > 0.1:
+			look_at(global_position + fdir, Vector3.UP)
+		velocity.x = fdir.x * speed
+		velocity.z = fdir.z * speed
 		return
-		
+
 	var next_pos = nav_agent.get_next_path_position()
 	var dir = global_position.direction_to(next_pos)
 	dir.y = 0
 	dir = dir.normalized()
-	
+
 	if rotate_to_path and dir.length() > 0.1:
 		var look_target = global_position + dir
 		look_at(look_target, Vector3.UP)
-		
+
 	velocity.x = dir.x * speed
 	velocity.z = dir.z * speed
 

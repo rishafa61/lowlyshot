@@ -110,7 +110,10 @@ func _balance_team_bots(team: String) -> void:
 		var sp = spawner.get_spawn_point(team)
 		var spawn_pos = Vector3.ZERO
 		if sp:
-			spawn_pos = sp.global_position + Vector3(randf_range(-3, 3), 0, randf_range(-3, 3))
+			# Spread out around the spawner so bots don't intersect on frame 1
+			var angle := randf() * TAU
+			var dist := randf_range(1.0, 4.0)
+			spawn_pos = sp.global_position + Vector3(cos(angle) * dist, 0.5, sin(angle) * dist)
 		else:
 			spawn_pos = Vector3(randf_range(-10, 10), 1, randf_range(-10, 10))
 		var bot = host_spawn_bot(scene_path, spawn_pos, team)

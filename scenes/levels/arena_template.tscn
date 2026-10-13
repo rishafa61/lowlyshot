@@ -48,6 +48,56 @@ material_override = SubResource("mat_walls")
 use_collision = true
 size = Vector3(1, 10, 60)
 
-[node name="CSGBox3D" type="CSGBox3D" parent="NavigationRegion3D" unique_id=1591026746]
-transform = Transform3D(4.0293937, 0, 0, 0, 4.8615065, 0, 0, 0, 11.854133, -27.493177, 2.1680923, -9.516761)
+[node name="Spawn" type="CSGBox3D" parent="NavigationRegion3D" unique_id=1591026746]
+transform = Transform3D(4.0293937, 0, 0, 0, 4.8615065, 0, 0, 0, 39.916977, -27.493177, 2.1680923, -9.516761)
+use_collision = true
+
+[node name="Slide" type="CSGBox3D" parent="NavigationRegion3D" unique_id=601111867]
+transform = Transform3D(4.029393, 0, 0, 0, 4.373271, -2.991526, 0, 2.1233811, 6.161285, -27.493177, 0.8966732, 12.460952)
+use_collision = true
+
+[node name="Slide2" type="CSGBox3D" parent="NavigationRegion3D" unique_id=115687221]
+transform = Transform3D(4.029393, 0, 0, 0, 4.8613086, 0.061763763, 0, -0.04383975, 6.848857, -27.493177, -0.7763896, 19.241974)
+use_collision = true
+
+[node name="Slide3" type="CSGBox3D" parent="NavigationRegion3D" unique_id=412320480]
+transform = Transform3D(4.029393, 0, 0, 0, 4.4100165, -2.882466, 0, 2.0459704, 6.213054, -27.493177, -1.9531488, 24.742868)
+use_collision = true
+
+[node name="Wall" type="CSGBox3D" parent="NavigationRegion3D" unique_id=1503248456]
+transform = Transform3D(0.35067323, 0, 0, 0, 4.8615065, 0, 0, 0, 39.916977, -26.02678, 7.0703845, -9.516761)
+use_collision = true
+
+[node name="CSGBox3D3" type="CSGBox3D" parent="NavigationRegion3D/Wall" unique_id=1733845845]
+transform = Transform3D(1.0000002, 0, 0, 0, 0.3638069, 0, 0, 0, 0.88464737, 0, 0, 0)
+operation = 2
+use_collision = true
+
+[node name="Spawn2" type="CSGBox3D" parent="NavigationRegion3D" unique_id=413122570]
+transform = Transform3D(-4.0293937, 0, -3.489653e-06, 0, 4.8615065, 0, 3.5226083e-07, 0, -39.916977, 27.582642, 2.1680923, 9.494313)
+use_collision = true
+
+[node name="Spawn3" type="CSGBox3D" parent="NavigationRegion3D" unique_id=2003928323]
+transform = Transform3D(-4.0293922, 0, -2.2235318e-07, 0, 9.36021, 0, 3.5226074e-07, 0, -2.5434241, 14.59341, 4.5373073, 9.494313)
+use_collision = true
+
+[node name="Slide4" type="CSGBox3D" parent="NavigationRegion3D" unique_id=338329646]
+transform = Transform3D(-4.0293937, -1.8563189e-07, -5.386365e-07, 0, 4.373271, -2.9915264, 3.5226083e-07, -2.1233814, -6.161285, 27.515306, 0.8966732, -12.482457)
+use_collision = true
+
+[node name="Slide5" type="CSGBox3D" parent="NavigationRegion3D" unique_id=1785768511]
+transform = Transform3D(-4.0293937, 3.8325934e-09, -5.9874606e-07, 0, 4.861309, 0.061763655, 3.5226083e-07, 0.043839768, -6.8488564, 27.494526, -0.7763896, -19.263186)
+use_collision = true
+
+[node name="Slide6" type="CSGBox3D" parent="NavigationRegion3D" unique_id=1819723094]
+transform = Transform3D(-4.029393, -1.7886445e-07, -5.4316246e-07, 0, 4.4100165, -2.882467, 3.5226074e-07, -2.045971, -6.213054, 27.477673, -1.9531488, -24.76385)
+use_collision = true
+
+[node name="Wall2" type="CSGBox3D" parent="NavigationRegion3D" unique_id=377068495]
+transform = Transform3D(-0.35067326, 0, -3.489653e-06, 0, 4.8615065, 0, 3.0656828e-08, 0, -39.916977, 26.116306, 7.070384, 9.5355625)
+use_collision = true
+
+[node name="CSGBox3D3" type="CSGBox3D" parent="NavigationRegion3D/Wall2" unique_id=1184776660]
+transform = Transform3D(1.0000002, 0, 0, 0, 0.3638069, 0, 0, 0, 0.88464737, 0, 0, 0)
+operation = 2
 use_collision = true
