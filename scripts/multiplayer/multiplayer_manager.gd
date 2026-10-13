@@ -13,7 +13,7 @@ enum MatchState { WAITING, WARMUP, ACTIVE, ROUND_END, MATCH_END }
 @export var target_kills: int = 30 # first to 30 kills wins
 @export var team_size: int = 5 # 5v5 (players + bots)
 ## Bots backfill empty slots in online matches too.
-@export var bots_in_online_matches: bool = true
+@export var bots_in_online_matches: bool = false
 
 # { "name": kills, "deaths" } — covers players AND bots
 var match_stats: Dictionary = {}
@@ -44,8 +44,9 @@ func _ready() -> void:
 	GlobalData.kill_occurred.connect(_on_kill_occurred)
 	if GlobalData.is_networked():
 		_setup_networking()
-		# Host's menu toggle decides whether online matches backfill with bots
-		bots_in_online_matches = GlobalSettings.online_bots_enabled
+	# Host's menu toggle decides bot backfill — read unconditionally so a
+	# network flag race can never fall back to the on-by-default export value.
+	bots_in_online_matches = GlobalSettings.online_bots_enabled
 	if is_multiplayer_authority():
 		timer_node.wait_time = 1.0
 		timer_node.timeout.connect(_on_tick)
@@ -78,7 +79,7 @@ func _balance_team_bots(team: String) -> void:
 			human_count += 1
 
 	var needed_bots = max(0, team_size - human_count)
-	if GlobalData.is_networked() and not bots_in_online_matches:
+	if not bots_in_online_matches:
 		needed_bots = 0
 
 	# Reconcile against the REAL host-side bots in the tree (team fill AND

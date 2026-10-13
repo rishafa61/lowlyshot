@@ -18,8 +18,8 @@ var previous_scene: String = "res://scenes/ui/main_menu.tscn"
 
 var current_minimap: String = ""
 
-# Multiplayer match fill (host chooses in the Play menu)
-var online_bots_enabled: bool = true
+# Multiplayer match fill (host chooses in the Play menu, off by default)
+var online_bots_enabled: bool = false
 
 const SETTINGS_PATH := "user://settings.cfg"
 
