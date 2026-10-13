@@ -29,8 +29,6 @@ var _downloading := false
 func _ready() -> void:
 	_http = HTTPRequest.new()
 	_http.timeout = 0 # zip can be big; no whole-request timeout
-	_http.follow_redirects = true # Drive uc?export=download links 302 first
-	_http.accept_gzip = true
 	add_child(_http)
 	_http.request_completed.connect(_on_request_completed)
 
