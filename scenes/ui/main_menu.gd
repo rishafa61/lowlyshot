@@ -102,8 +102,14 @@ func _init_update_button() -> void:
 			btn_update.text = "⬆ UPDATE GAME"
 	)
 	party_ui.add_child(btn_update)
-	btn_update.set_anchors_preset(Control.PRESET_TOP_RIGHT)
-	btn_update.position = Vector2(get_viewport_rect().size.x - 200, 16)
+	btn_update.anchor_left = 1.0
+	btn_update.anchor_top = 0.0
+	btn_update.anchor_right = 1.0
+	btn_update.anchor_bottom = 0.0
+	btn_update.offset_left = -200
+	btn_update.offset_top = 16
+	btn_update.offset_right = -30
+	btn_update.offset_bottom = 58
 	if updater == null:
 		return
 	updater.update_check_done.connect(func(available, latest):
@@ -327,6 +333,4 @@ func _apply_root_size() -> void:
 	await get_tree().process_frame
 	var vp_size = get_viewport_rect().size
 	size = vp_size
-	if is_instance_valid(party_ui):
-		party_ui.set_anchors_preset(Control.PRESET_FULL_RECT)
-		party_ui.size = vp_size
+	# party_ui uses PRESET_FULL_RECT anchors to match parent; setting size manually triggers engine warning.

@@ -18,7 +18,8 @@ func _ready() -> void:
 	refresh_lobbies()
 
 func _update_bounds() -> void:
-	set_deferred("size", get_viewport_rect().size)
+	# FULL_RECT anchors auto-size to the CanvasLayer viewport; no manual size.
+	pass
 
 func _build_ui() -> void:
 	set_anchors_preset(Control.PRESET_FULL_RECT)

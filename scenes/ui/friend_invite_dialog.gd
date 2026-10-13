@@ -22,7 +22,8 @@ func _ready() -> void:
 		steam_sync.lobby_joined.connect(_on_lobby_ready)
 
 func _update_bounds() -> void:
-	set_deferred("size", get_viewport_rect().size)
+	# FULL_RECT anchors auto-size to the CanvasLayer viewport; no manual size.
+	pass
 
 func _on_lobby_ready(_lobby_id: int) -> void:
 	_refresh_lobby_label()

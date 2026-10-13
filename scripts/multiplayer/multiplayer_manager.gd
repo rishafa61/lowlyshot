@@ -557,7 +557,7 @@ func net_spawn_utility(scene_path: String, pos: Vector3, dir: Vector3, extra_dat
 		return
 	_instantiate_utility_replica(scene_path, pos, dir, extra_data, owner_peer)
 
-func _instantiate_utility_replica(scene_path: String, pos: Vector3, dir: Vector3, extra_data: Dictionary, owner_peer: int) -> void:
+func _instantiate_utility_replica(scene_path: String, pos: Vector3, dir: Vector3, extra_data: Dictionary, _owner_peer: int) -> void:
 	var sc = load(scene_path) as PackedScene
 	if not sc:
 		return
