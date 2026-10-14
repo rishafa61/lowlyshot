@@ -1,5 +1,5 @@
 @tool
-class_name Updater
+class_name GDSyncUpdater
 extends Node
 
 #Copyright (c) 2023-present GD-Sync.

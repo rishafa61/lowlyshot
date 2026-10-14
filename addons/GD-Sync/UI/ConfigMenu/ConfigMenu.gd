@@ -31,7 +31,7 @@ var plugin
 
 var menu_open : bool = false
 
-var updater : Updater
+var updater : GDSyncUpdater
 
 func _ready():
 	if plugin == null: return
@@ -49,7 +49,7 @@ func _ready():
 	if ProjectSettings.has_setting("GD-Sync/scriptValidation"):
 		%ScriptValidation.button_pressed = ProjectSettings.get_setting("GD-Sync/scriptValidation")
 	
-	updater = Updater.new()
+	updater = GDSyncUpdater.new()
 	updater.update_label = %UpdateLabel
 	add_child(updater)
 
