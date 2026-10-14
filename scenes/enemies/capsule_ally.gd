@@ -143,7 +143,7 @@ func _ready():
 	current_speed_mult = active_operator.speed_mult
 	
 	start_pos = global_position
-	floor_max_angle = deg_to_rad(60.0)
+	floor_max_angle = deg_to_rad(78.0)
 	floor_snap_length = 0.4
 	_setup_nametag()
 	
