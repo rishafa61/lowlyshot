@@ -114,6 +114,7 @@ func update_weapon_model(slot: Slot) -> void:
 
 func _ready() -> void:
 	spawn_point = global_position
+	_last_safe_pos = global_position
 	# Steep map slopes (up to ~60°): treat them as walkable floor, not walls.
 	# Without this, sliding down a >45° ramp leaves you unable to walk back up.
 	floor_max_angle = deg_to_rad(60.0)
@@ -939,6 +940,7 @@ func _process(_delta: float) -> void:
 	pass
 
 var _stuck_time: float = 0.0
+var _last_safe_pos: Vector3 = Vector3.ZERO
 
 func _physics_process(delta: float) -> void:
 	if is_puppet:
@@ -1176,17 +1178,20 @@ func _physics_process(delta: float) -> void:
 	move_and_slide()
 
 	# Unstuck escape: input held but body not moving for 2.5s (wedged in map
-	# seams like the under-slide gap) -> lift free. ponytail: swap for sealed
-	# level geometry once the ramp gaps are closed in the editor.
+	# seams / under overhangs) -> teleport back to last safe grounded spot.
+	# ponytail: swap for sealed level geometry once ramp gaps are closed.
 	var wants_move: bool = input_dir.length() > 0.1 or Input.is_action_pressed("jump")
 	if wants_move and get_real_velocity().length() < 0.3:
 		_stuck_time += delta
 		if _stuck_time > 2.5:
-			global_position += Vector3.UP * 1.5
+			global_position = _last_safe_pos + Vector3.UP * 0.3
 			velocity = Vector3.ZERO
 			_stuck_time = 0.0
 	else:
 		_stuck_time = 0.0
+	# Remember last spot where we stood on solid ground and actually moved
+	if is_on_floor() and not is_on_ceiling() and get_real_velocity().length() > 1.0:
+		_last_safe_pos = global_position
 
 	# Push rigid bodies like the physics door
 	for i in get_slide_collision_count():
