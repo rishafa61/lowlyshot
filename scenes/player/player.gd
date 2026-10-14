@@ -1178,26 +1178,30 @@ func _physics_process(delta: float) -> void:
 
 	move_and_slide()
 
-	# Step-up assist: spawn/slide junctions have vertical lips a capsule can't
-	# walk over. When pushing into a wall while grounded, hop up if the ledge
-	# top is within STEP_HEIGHT and has solid floor in the wish direction.
-	const STEP_HEIGHT := 0.6
-	if is_on_floor() and is_on_wall() and input_dir.length() > 0.1:
+	# Step-up / Mantle assist: spawn platform top is 1.18m ABOVE the slide ramp,
+	# creating a flat vertical cliff that normal walking cannot climb.
+	# When pushing into a wall (grounded OR airborne pressing forward/jump),
+	# probe 1.35m up. If a walkable surface exists, mantle smoothly onto it.
+	const MANTLE_HEIGHT := 1.35
+	var wants_climb := input_dir.length() > 0.1 or Input.is_action_pressed("jump")
+	if is_on_wall() and wants_climb:
 		var space := get_world_3d().direct_space_state
-		var step_target := global_position + Vector3.UP * STEP_HEIGHT + direction * 0.25
+		var wish := direction if direction.length() > 0.1 else -global_transform.basis.z
+		var mantle_target := global_position + Vector3.UP * MANTLE_HEIGHT + wish * 0.4
 		var body_test := PhysicsShapeQueryParameters3D.new()
 		body_test.shape = collision_shape.shape
-		body_test.transform = Transform3D(Basis(), step_target)
+		body_test.transform = Transform3D(Basis(), mantle_target)
 		body_test.exclude = [get_rid()]
 		body_test.collision_mask = collision_mask
-		# Downward probe from above ledge: must hit floor, not air (prevents climbing flat walls)
+		# Downward probe from above ledge: must find solid ground within reach
 		var down_ray := PhysicsRayQueryParameters3D.create(
-			step_target, step_target + Vector3.DOWN * (STEP_HEIGHT + 0.1),
+			mantle_target, mantle_target + Vector3.DOWN * (MANTLE_HEIGHT + 0.2),
 			collision_mask, [get_rid()]
 		)
 		var hit := space.intersect_ray(down_ray)
-		if space.intersect_shape(body_test, 1).is_empty() and not hit.is_empty():
-			global_position = hit.position + Vector3.UP * 0.05
+		if not hit.is_empty() and space.intersect_shape(body_test, 1).is_empty():
+			global_position = hit.position + Vector3.UP * 0.08
+			velocity.y = max(velocity.y, 0.0)
 
 	# Unstuck escape: input held but body not moving for 2.5s (wedged in map
 	# seams / under overhangs) -> teleport back to last safe grounded spot.

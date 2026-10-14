@@ -316,18 +316,18 @@ func _physics_process(delta):
 
 	move_and_slide()
 
-	# Step-up assist over map seams / lips (up to 0.6 m)
-	if is_on_floor() and is_on_wall():
+	# Step-up / Mantle assist over spawn cliff (1.18m vertical drop)
+	if is_on_wall():
 		var space := get_world_3d().direct_space_state
 		var fwd := -global_transform.basis.z
-		var step_target := global_position + Vector3.UP * 0.6 + fwd * 0.3
+		var step_target := global_position + Vector3.UP * 1.35 + fwd * 0.4
 		var down_ray := PhysicsRayQueryParameters3D.create(
-			step_target, step_target + Vector3.DOWN * 0.7,
+			step_target, step_target + Vector3.DOWN * 1.5,
 			collision_mask, [get_rid()]
 		)
 		var hit := space.intersect_ray(down_ray)
 		if not hit.is_empty():
-			global_position = hit.position + Vector3.UP * 0.05
+			global_position = hit.position + Vector3.UP * 0.08
 
 func _apply_bot_separation() -> void:
 	# Repel every other bot within 1.2 m
