@@ -310,6 +310,19 @@ func _physics_process(delta):
 
 	move_and_slide()
 
+	# Step-up assist over map seams / lips (up to 0.6 m)
+	if is_on_floor() and is_on_wall():
+		var space := get_world_3d().direct_space_state
+		var fwd := -global_transform.basis.z
+		var step_target := global_position + Vector3.UP * 0.6 + fwd * 0.3
+		var down_ray := PhysicsRayQueryParameters3D.create(
+			step_target, step_target + Vector3.DOWN * 0.7,
+			collision_mask, [get_rid()]
+		)
+		var hit := space.intersect_ray(down_ray)
+		if not hit.is_empty():
+			global_position = hit.position + Vector3.UP * 0.05
+
 func _apply_bot_separation() -> void:
 	for group_name in ["enemy", "ally"]:
 		for b in get_tree().get_nodes_in_group(group_name):
