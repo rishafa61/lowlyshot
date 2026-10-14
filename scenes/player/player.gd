@@ -114,6 +114,12 @@ func update_weapon_model(slot: Slot) -> void:
 
 func _ready() -> void:
 	spawn_point = global_position
+	# Steep map slopes (up to ~60°): treat them as walkable floor, not walls.
+	# Without this, sliding down a >45° ramp leaves you unable to walk back up.
+	floor_max_angle = deg_to_rad(60.0)
+	floor_snap_length = 0.4
+	floor_stop_on_slope = true
+	floor_block_on_wall = false
 	# Online match: a player node owned by ANOTHER peer is only a puppet (no input/camera/HUD)
 	is_puppet = GlobalData.is_networked() and not is_multiplayer_authority()
 	if is_puppet:

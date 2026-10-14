@@ -26,25 +26,25 @@ use_collision = true
 size = Vector3(60, 1, 60)
 
 [node name="WallN" type="CSGBox3D" parent="NavigationRegion3D" unique_id=1295882764]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 4.5, -30)
+transform = Transform3D(1, 0, 0, 0, 6.0722384, 0, 0, 0, 1, 0, 25.742573, -30.000004)
 material_override = SubResource("mat_walls")
 use_collision = true
 size = Vector3(60, 10, 1)
 
 [node name="WallS" type="CSGBox3D" parent="NavigationRegion3D" unique_id=2021673930]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 4.5, 30)
+transform = Transform3D(1, 0, 0, 0, 6.0722384, 0, 0, 0, 1, 0, 25.742573, 30.000004)
 material_override = SubResource("mat_walls")
 use_collision = true
 size = Vector3(60, 10, 1)
 
 [node name="WallE" type="CSGBox3D" parent="NavigationRegion3D" unique_id=493111787]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 30, 4.5, 0)
+transform = Transform3D(1, 0, 0, 0, 6.0722384, 0, 0, 0, 1, 30, 25.742573, 0)
 material_override = SubResource("mat_walls")
 use_collision = true
 size = Vector3(1, 10, 60)
 
 [node name="WallW" type="CSGBox3D" parent="NavigationRegion3D" unique_id=1615149119]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -30, 4.5, 0)
+transform = Transform3D(1, 0, 0, 0, 6.0722384, 0, 0, 0, 1, -30, 25.742573, 0)
 material_override = SubResource("mat_walls")
 use_collision = true
 size = Vector3(1, 10, 60)
@@ -79,8 +79,32 @@ transform = Transform3D(-4.0293937, 0, -3.489653e-06, 0, 4.8615065, 0, 3.5226083
 use_collision = true
 
 [node name="Spawn3" type="CSGBox3D" parent="NavigationRegion3D" unique_id=2003928323]
-transform = Transform3D(-4.0293922, 0, -2.2235318e-07, 0, 9.36021, 0, 3.5226074e-07, 0, -2.5434241, 14.59341, 4.5373073, 9.494313)
+transform = Transform3D(-15.249314, 0, -2.223532e-07, 0, 9.36021, 0, 1.3331377e-06, 0, -2.5434244, 2.7135394, 4.5373073, 9.494313)
 use_collision = true
+
+[node name="Spawn6" type="CSGBox3D" parent="NavigationRegion3D" unique_id=893179529]
+transform = Transform3D(-4.0411115, 0, -1.3327185e-06, 0, 9.36021, 0, 3.5328532e-07, 0, -15.244526, -0.8272023, 4.5373073, -7.3654623)
+use_collision = true
+size = Vector3(0.15515137, 1, 1)
+
+[node name="Spawn7" type="CSGBox3D" parent="NavigationRegion3D" unique_id=660123063]
+transform = Transform3D(-4.0411115, 0, -1.3327185e-06, 0, 9.36021, 0, 3.5328537e-07, 0, -15.244526, 10.405566, 4.5373073, -22.199348)
+use_collision = true
+size = Vector3(0.15515137, 1, 1)
+
+[node name="Spawn8" type="CSGBox3D" parent="NavigationRegion3D" unique_id=764533051]
+transform = Transform3D(-4.0411115, 0, -1.3327185e-06, 0, 9.36021, 0, 3.5328537e-07, 0, -15.244526, -14.515001, 4.5373073, -22.19935)
+use_collision = true
+size = Vector3(0.15515137, 1, 1)
+
+[node name="Spawn4" type="CSGBox3D" parent="NavigationRegion3D" unique_id=1935665627]
+transform = Transform3D(-15.249314, 0, -2.223532e-07, 0, 9.36021, 0, 1.3331377e-06, 0, -2.5434244, 2.7135394, 4.5373073, 28.399014)
+use_collision = true
+
+[node name="Spawn5" type="CSGBox3D" parent="NavigationRegion3D" unique_id=312948626]
+transform = Transform3D(-15.249324, 0, -1.5101095e-06, 0, 9.36021, 0, 1.3331387e-06, 0, -17.273651, 2.7135394, 9.9559, 18.77568)
+use_collision = true
+size = Vector3(1, 0.15625, 1)
 
 [node name="Slide4" type="CSGBox3D" parent="NavigationRegion3D" unique_id=338329646]
 transform = Transform3D(-4.0293937, -1.8563189e-07, -5.386365e-07, 0, 4.373271, -2.9915264, 3.5226083e-07, -2.1233814, -6.161285, 27.515306, 0.8966732, -12.482457)
