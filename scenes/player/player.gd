@@ -938,6 +938,8 @@ func _check_crosshair_target() -> void:
 func _process(_delta: float) -> void:
 	pass
 
+var _stuck_time: float = 0.0
+
 func _physics_process(delta: float) -> void:
 	if is_puppet:
 		_puppet_physics(delta)
@@ -1163,6 +1165,19 @@ func _physics_process(delta: float) -> void:
 			velocity.z += accel_speed * direction.z
 
 	move_and_slide()
+
+	# Unstuck escape: input held but body not moving for 2.5s (wedged in map
+	# seams like the under-slide gap) -> lift free. ponytail: swap for sealed
+	# level geometry once the ramp gaps are closed in the editor.
+	var wants_move: bool = input_dir.length() > 0.1 or Input.is_action_pressed("jump")
+	if wants_move and get_real_velocity().length() < 0.3:
+		_stuck_time += delta
+		if _stuck_time > 2.5:
+			global_position += Vector3.UP * 1.5
+			velocity = Vector3.ZERO
+			_stuck_time = 0.0
+	else:
+		_stuck_time = 0.0
 
 	# Push rigid bodies like the physics door
 	for i in get_slide_collision_count():
