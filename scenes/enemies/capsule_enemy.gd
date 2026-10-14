@@ -314,6 +314,30 @@ func _physics_process(delta):
 	# Push away from overlapping bots so they never clip through each other
 	_apply_bot_separation()
 
+	# Stair step-up: glide up step risers up to 0.5m
+	var fwd := -global_transform.basis.z
+	if is_on_floor():
+		var space := get_world_3d().direct_space_state
+		var feet := global_position
+		var low_ray := PhysicsRayQueryParameters3D.create(
+			feet + Vector3.UP * 0.08, feet + Vector3.UP * 0.08 + fwd * 0.5,
+			collision_mask, [get_rid()])
+		var low := space.intersect_ray(low_ray)
+		if not low.is_empty():
+			var high_ray := PhysicsRayQueryParameters3D.create(
+				feet + Vector3.UP * 0.55, feet + Vector3.UP * 0.55 + fwd * 0.65,
+				collision_mask, [get_rid()])
+			if space.intersect_ray(high_ray).is_empty():
+				var tread_ray := PhysicsRayQueryParameters3D.create(
+					low.position + fwd * 0.15 + Vector3.UP * 0.55,
+					low.position + fwd * 0.15 + Vector3.DOWN * 0.1,
+					collision_mask, [get_rid()])
+				var tread := space.intersect_ray(tread_ray)
+				if not tread.is_empty() and tread.normal.dot(Vector3.UP) > 0.6:
+					var rise: float = tread.position.y - feet.y
+					if rise > 0.03 and rise <= 0.5:
+						global_position.y = tread.position.y + 0.02
+
 	move_and_slide()
 
 	# Step-up / Mantle assist over spawn cliff (1.18m vertical drop)

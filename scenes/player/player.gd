@@ -14,6 +14,7 @@ const JUMP_VELOCITY: float = 6.5
 const MOUSE_SENSITIVITY: float = 0.002
 const CROUCH_HEIGHT: float = 1.0
 const STAND_HEIGHT: float = 2.0
+const MAX_STEP_HEIGHT: float = 0.5
 const CROUCH_SPEED: float = 8.0
 const LEAN_POS: float = 0.6
 const LEAN_ROT: float = deg_to_rad(15.0)
@@ -1176,21 +1177,48 @@ func _physics_process(delta: float) -> void:
 		floor_max_angle = deg_to_rad(78.0)
 		floor_snap_length = 0.4
 
+	# Smooth stair climb: detect a riser in our path and glide onto its tread.
+	# Runs BEFORE move_and_slide so the lift counts for this frame's motion.
+	# ponytail: ray-based; replace with ramp meshes if stairs get curved.
+	if is_on_floor() and input_dir.length() > 0.1:
+		var space := get_world_3d().direct_space_state
+		var probe_dist: float = clamp(velocity.length() * delta * 2.0, 0.4, 0.7)
+		var feet := global_position
+		var low_ray := PhysicsRayQueryParameters3D.create(
+			feet + Vector3.UP * 0.08, feet + Vector3.UP * 0.08 + direction * probe_dist,
+			collision_mask, [get_rid()])
+		var low := space.intersect_ray(low_ray)
+		if not low.is_empty():
+			var high_from := feet + Vector3.UP * (MAX_STEP_HEIGHT + 0.06)
+			var high_ray := PhysicsRayQueryParameters3D.create(
+				high_from, high_from + direction * (probe_dist + 0.15),
+				collision_mask, [get_rid()])
+			if space.intersect_ray(high_ray).is_empty():
+				var tread_from := low.position + direction * 0.15 + Vector3.UP * (MAX_STEP_HEIGHT + 0.06)
+				var tread_ray := PhysicsRayQueryParameters3D.create(
+					tread_from, tread_from + Vector3.DOWN * (MAX_STEP_HEIGHT + 0.1),
+					collision_mask, [get_rid()])
+				var tread := space.intersect_ray(tread_ray)
+				if not tread.is_empty() and tread.normal.dot(Vector3.UP) > 0.6:
+					var rise: float = tread.position.y - feet.y
+					if rise > 0.03 and rise <= MAX_STEP_HEIGHT:
+						global_position.y = tread.position.y + 0.02
+
 	move_and_slide()
 
-	# Step-up / Mantle assist: spawn platform top is 1.18m ABOVE the slide ramp,
-	# creating a flat vertical cliff that normal walking cannot climb.
-	# When pushing into a wall (grounded OR airborne pressing forward/jump),
-	# probe 1.35m up. If a walkable surface exists, mantle smoothly onto it.
+	# Mantle assist: spawn platform top is 1.18m ABOVE the slide ramp — taller
+	# than any step, so jump/push into it to vault up ledges up to 1.35m.
 	const MANTLE_HEIGHT := 1.35
 	var wants_climb := input_dir.length() > 0.1 or Input.is_action_pressed("jump")
 	if is_on_wall() and wants_climb:
 		var space := get_world_3d().direct_space_state
 		var wish := direction if direction.length() > 0.1 else -global_transform.basis.z
+		var body_h: float = collision_shape.shape.height if collision_shape.shape is CapsuleShape3D else 2.0
 		var mantle_target := global_position + Vector3.UP * MANTLE_HEIGHT + wish * 0.4
 		var body_test := PhysicsShapeQueryParameters3D.new()
 		body_test.shape = collision_shape.shape
-		body_test.transform = Transform3D(Basis(), mantle_target)
+		# CapsuleShape3D origin is its CENTER, not its feet — offset by half height
+		body_test.transform = Transform3D(Basis(), mantle_target + Vector3.UP * (body_h / 2.0))
 		body_test.exclude = [get_rid()]
 		body_test.collision_mask = collision_mask
 		# Downward probe from above ledge: must find solid ground within reach
