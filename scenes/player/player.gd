@@ -1194,7 +1194,7 @@ func _physics_process(delta: float) -> void:
 				high_from, high_from + direction * (probe_dist + 0.15),
 				collision_mask, [get_rid()])
 			if space.intersect_ray(high_ray).is_empty():
-				var tread_from := low.position + direction * 0.15 + Vector3.UP * (MAX_STEP_HEIGHT + 0.06)
+				var tread_from: Vector3 = low.position + direction * 0.15 + Vector3.UP * (MAX_STEP_HEIGHT + 0.06)
 				var tread_ray := PhysicsRayQueryParameters3D.create(
 					tread_from, tread_from + Vector3.DOWN * (MAX_STEP_HEIGHT + 0.1),
 					collision_mask, [get_rid()])
