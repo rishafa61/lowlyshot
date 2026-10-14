@@ -1164,6 +1164,15 @@ func _physics_process(delta: float) -> void:
 			velocity.x += accel_speed * direction.x
 			velocity.z += accel_speed * direction.z
 
+	# Anti-velcro: while moving UP, steep slopes act as walls (slide past them
+	# instead of sticking); grounded/falling, they act as walkable 60° floor.
+	if velocity.y > 0.5:
+		floor_max_angle = deg_to_rad(45.0)
+		floor_snap_length = 0.0
+	else:
+		floor_max_angle = deg_to_rad(60.0)
+		floor_snap_length = 0.4
+
 	move_and_slide()
 
 	# Unstuck escape: input held but body not moving for 2.5s (wedged in map
