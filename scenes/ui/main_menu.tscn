@@ -170,7 +170,7 @@ grow_horizontal = 0
 grow_vertical = 2
 theme_override_constants/margin_top = 40
 theme_override_constants/margin_right = 40
-theme_override_constants/margin_bottom = 40
+theme_override_constants/margin_bottom = 110
 
 [node name="VBoxContainer" type="VBoxContainer" parent="RightPanel"]
 layout_mode = 2
@@ -386,9 +386,9 @@ anchor_top = 1.0
 anchor_right = 0.5
 anchor_bottom = 1.0
 offset_left = -158.0
-offset_top = -188.0
+offset_top = -228.0
 offset_right = -88.0
-offset_bottom = -98.0
+offset_bottom = -138.0
 grow_horizontal = 2
 grow_vertical = 0
 
@@ -400,9 +400,9 @@ anchor_top = 1.0
 anchor_right = 0.5
 anchor_bottom = 1.0
 offset_left = -76.0
-offset_top = -188.0
+offset_top = -228.0
 offset_right = -6.0
-offset_bottom = -98.0
+offset_bottom = -138.0
 grow_horizontal = 2
 grow_vertical = 0
 
@@ -414,9 +414,9 @@ anchor_top = 1.0
 anchor_right = 0.5
 anchor_bottom = 1.0
 offset_left = 6.0
-offset_top = -188.0
+offset_top = -228.0
 offset_right = 76.0
-offset_bottom = -98.0
+offset_bottom = -138.0
 grow_horizontal = 2
 grow_vertical = 0
 
@@ -428,8 +428,8 @@ anchor_top = 1.0
 anchor_right = 0.5
 anchor_bottom = 1.0
 offset_left = 88.0
-offset_top = -188.0
+offset_top = -228.0
 offset_right = 158.0
-offset_bottom = -98.0
+offset_bottom = -138.0
 grow_horizontal = 2
 grow_vertical = 0
