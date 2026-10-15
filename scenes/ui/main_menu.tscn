@@ -381,39 +381,55 @@ mouse_filter = 2
 [node name="Slot1" parent="PartyUI" instance=ExtResource("3_party_slot")]
 layout_mode = 1
 anchors_preset = 0
-offset_left = 318.0
-offset_top = 288.0
-offset_right = 388.0
-offset_bottom = 378.0
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -158.0
+offset_top = -160.0
+offset_right = -88.0
+offset_bottom = -70.0
 grow_horizontal = 2
-grow_vertical = 2
+grow_vertical = 0
 
 [node name="Slot2" parent="PartyUI" instance=ExtResource("3_party_slot")]
 layout_mode = 1
 anchors_preset = 0
-offset_left = 808.0
-offset_top = 275.0
-offset_right = 878.0
-offset_bottom = 365.0
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -76.0
+offset_top = -160.0
+offset_right = -6.0
+offset_bottom = -70.0
 grow_horizontal = 2
-grow_vertical = 2
+grow_vertical = 0
 
 [node name="Slot3" parent="PartyUI" instance=ExtResource("3_party_slot")]
 layout_mode = 1
 anchors_preset = 0
-offset_left = 875.0
-offset_top = 320.0
-offset_right = 945.0
-offset_bottom = 410.0
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = 6.0
+offset_top = -160.0
+offset_right = 76.0
+offset_bottom = -70.0
 grow_horizontal = 2
-grow_vertical = 2
+grow_vertical = 0
 
 [node name="Slot4" parent="PartyUI" instance=ExtResource("3_party_slot")]
 layout_mode = 1
 anchors_preset = 0
-offset_left = 262.0
-offset_top = 322.0
-offset_right = 332.0
-offset_bottom = 412.0
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = 88.0
+offset_top = -160.0
+offset_right = 158.0
+offset_bottom = -70.0
 grow_horizontal = 2
-grow_vertical = 2
+grow_vertical = 0
