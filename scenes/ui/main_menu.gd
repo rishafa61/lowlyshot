@@ -35,7 +35,8 @@ var maps = {
 		{"name": "Test Arena", "scene": "res://scenes/levels/test_arena.tscn", "desc": "A simple sandbox arena to practice movement and aim."}
 	],
 	"Multiplayer": [
-		{"name": "Team Deathmatch", "scene": "res://scenes/levels/multiplayer_arena.tscn", "desc": "5v5 Arena. Pick a side, eliminate the enemy team."}
+		{"name": "Team Deathmatch", "scene": "res://scenes/levels/multiplayer_arena.tscn", "desc": "5v5 Arena. Pick a side, eliminate the enemy team."},
+		{"name": "Ground War", "scene": "res://scenes/levels/ground_war.tscn", "desc": "10v10 King of the Hill. Capture the Flagpoint and hold it — first team to 300 points wins."}
 	]
 }
 
@@ -158,8 +159,8 @@ func _init_party_system() -> void:
 	squad_bar.alignment = BoxContainer.ALIGNMENT_CENTER
 	squad_bar.add_theme_constant_override("separation", 16)
 	squad_bar.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
-	squad_bar.offset_top = -64
-	squad_bar.offset_bottom = -16
+	squad_bar.offset_top = -80
+	squad_bar.offset_bottom = -28
 	squad_bar.mouse_filter = Control.MOUSE_FILTER_PASS
 	party_ui.add_child(squad_bar)
 
