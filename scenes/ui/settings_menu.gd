@@ -20,9 +20,14 @@ extends Control
 @onready var slider_scope = $Content/TabGameplayPanel/HBoxScopeSens/SliderScopeSens
 @onready var spin_hip = $Content/TabGameplayPanel/HBoxHipSens/SpinBoxHip
 @onready var spin_scope = $Content/TabGameplayPanel/HBoxScopeSens/SpinBoxScope
+@onready var check_fullscreen = $Content/TabVisualPanel/HBoxFullscreen/CheckFullscreen
 
 func _ready():
 	btn_back.pressed.connect(_on_back_pressed)
+
+	check_fullscreen.button_pressed = GlobalSettings.fullscreen
+	check_fullscreen.text = "On" if GlobalSettings.fullscreen else "Off"
+	check_fullscreen.toggled.connect(_on_fullscreen_toggled)
 	
 	tabs["Visual"].pressed.connect(func(): set_tab("Visual"))
 	tabs["Audio"].pressed.connect(func(): set_tab("Audio"))
@@ -67,6 +72,11 @@ func _on_scope_changed(val: float):
 func _on_scope_changed_from_spin(val: float):
 	GlobalSettings.scope_sensitivity_mult = val
 	slider_scope.value = val
+
+
+func _on_fullscreen_toggled(on: bool) -> void:
+	GlobalSettings.set_fullscreen(on)
+	check_fullscreen.text = "On" if on else "Off"
 
 
 func _on_back_pressed():
