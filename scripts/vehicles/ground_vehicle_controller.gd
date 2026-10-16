@@ -159,7 +159,7 @@ func _process(delta: float) -> void:
 
 func _physics_process(delta: float) -> void:
 	var driver = occupants[0] if occupants.size() > 0 else null
-	var driving := driver != null and driver.get("is_dead") != true
+	var driving: bool = driver != null and driver.get("is_dead") != true
 	if driving:
 		_drive_input(delta)
 		if _engine_sfx == null:
