@@ -58,6 +58,12 @@ var held_object: RigidBody3D = null
 var respawn_timer: float = 0.0
 const EXHAUST_RECOVERY: float = 30.0
 
+# Vehicle piloting (see scripts/vehicles/aircraft_controller.gd)
+var is_piloting: bool = false
+var _pre_pilot_parent: Node = null
+var _pre_pilot_layer: int = 1
+var _pre_pilot_mask: int = 1
+
 # Weapon Loadout State
 enum Slot { RIFLE, PISTOL, MELEE, GRENADE }
 var active_slot = Slot.PISTOL
@@ -127,8 +133,7 @@ func _ready() -> void:
 	if is_puppet:
 		_setup_puppet()
 		return
-	if GlobalData.is_networked():
-		camera.make_current()
+	camera.make_current() # tscn current was stripped pre-add (puppet hijack fix); always reclaim the view
 	Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
 	
 	# Load Operator
@@ -458,6 +463,9 @@ func take_damage(amount: float, attacker_name: String = "", weapon_name: String 
 
 func die():
 	is_dead = true
+	Sfx.stop_loop(_sfx_move)
+	_sfx_move = null
+	_sfx_move_state = ""
 	var killer = last_attacker if last_attacker != "" else "World"
 	var k_faction = last_attacker_faction if last_attacker_faction != "" else "Enemy"
 	var gun = last_weapon if last_weapon != "" else "Combat"
@@ -547,6 +555,7 @@ func _unhandled_input(event: InputEvent) -> void:
 			get_viewport().set_input_as_handled()
 		return
 	if is_dead: return
+	if is_piloting: return # Aircraft owns all input while piloting
 	if event is InputEventMouseMotion:
 		var current_sens = MOUSE_SENSITIVITY * GlobalSettings.hip_sensitivity_mult
 		if is_aiming:
@@ -655,6 +664,10 @@ func switch_weapon(slot: Slot) -> void:
 func start_reload():
 	is_reloading = true
 	reload_timer = 0.0
+	# Reload sound only for weapons with the rifle asset
+	var wid := str(weapons[active_slot].get("id", ""))
+	if wid in ["ak47", "m4a4"]:
+		Sfx.oneshot3d("rifle_reload", self, 6.0, 40.0, 0.0)
 
 func finish_reload():
 	is_reloading = false
@@ -736,6 +749,15 @@ func shoot_gun() -> void:
 	
 	var muzzle_pos = get_current_muzzle_position()
 	create_tracer(muzzle_pos, visual_end)
+	# Fire sound: sniper / hold-trigger / single-shot per weapon state
+	var wid := str(w.get("id", ""))
+	if wid == "m700":
+		Sfx.oneshot3d("sniper_shot", self, 18.0, 160.0, 2.0)
+	elif wid in ["ak47", "m4a4"]:
+		Sfx.oneshot3d("rifle_hold" if w.get("auto", false) else "rifle_single", self, 14.0, 120.0, 1.0)
+	else:
+		# ponytail: glock / desert_hawk have no dedicated assets yet — reuse rifle
+		Sfx.oneshot3d("rifle_single", self, 14.0, 120.0, 1.0)
 	# Every other peer sees the shot: tracer + blood puff on impact
 	if GlobalData.is_networked():
 		net_shot.rpc(muzzle_pos, visual_end, hit_body)
@@ -846,6 +868,9 @@ func net_shot(start: Vector3, end: Vector3, hit_body: bool) -> void:
 	create_tracer(start, end)
 	if hit_body:
 		_spawn_blood_splatter(end)
+	# Peers hear the remote shooter's gun quietly through 3D attenuation
+	if is_puppet:
+		Sfx.oneshot3d("rifle_single", self, 14.0, 120.0, 0.0)
 
 func _spawn_blood_splatter(pos: Vector3) -> void:
 	# Visible 3D red blood burst at hit point
@@ -874,12 +899,12 @@ func _spawn_blood_splatter(pos: Vector3) -> void:
 	var t := get_tree().create_timer(0.6)
 	t.timeout.connect(p.queue_free)
 
-func create_tracer(start: Vector3, end: Vector3):
+func create_tracer(start: Vector3, end: Vector3, radius: float = 0.04):
 	var mesh_inst = MeshInstance3D.new()
 	var cyl = CylinderMesh.new()
 	# Thick, bright tracer visible across map
-	cyl.top_radius = 0.04
-	cyl.bottom_radius = 0.04
+	cyl.top_radius = radius
+	cyl.bottom_radius = radius
 	cyl.height = start.distance_to(end)
 	mesh_inst.mesh = cyl
 
@@ -887,7 +912,7 @@ func create_tracer(start: Vector3, end: Vector3):
 	mat.albedo_color = Color(1.0, 0.85, 0.3, 0.95)
 	mat.emission_enabled = true
 	mat.emission = Color(1.0, 0.7, 0.15)
-	mat.emission_energy_multiplier = 3.0
+	mat.emission_energy_multiplier = 4.0 if radius > 0.05 else 3.0
 	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	cyl.material = mat
@@ -902,7 +927,8 @@ func create_tracer(start: Vector3, end: Vector3):
 	# Tween bound to the MESH: if the shooter is freed mid-fade (bot kicked,
 	# player left), the fade still runs and the tracer can't orphan on the map
 	var tween = mesh_inst.create_tween()
-	tween.tween_property(mat, "albedo_color:a", 0.0, 0.22)
+	var fade_time: float = 0.4 if radius > 0.05 else 0.22
+	tween.tween_property(mat, "albedo_color:a", 0.0, fade_time)
 	tween.tween_callback(mesh_inst.queue_free)
 
 func _check_crosshair_target() -> void:
@@ -942,6 +968,8 @@ func _process(_delta: float) -> void:
 
 var _stuck_time: float = 0.0
 var _last_safe_pos: Vector3 = Vector3.ZERO
+var _sfx_move: AudioStreamPlayer3D = null
+var _sfx_move_state := ""
 
 func _physics_process(delta: float) -> void:
 	if is_puppet:
@@ -949,6 +977,9 @@ func _physics_process(delta: float) -> void:
 		return
 	if GlobalData.is_networked():
 		_net_send_state()
+	# Aircraft has control: suspend all character simulation / input
+	if is_piloting:
+		return
 	# Spectator camera drives everything; skip normal player sim
 	if is_spectating:
 		velocity = Vector3.ZERO
@@ -1076,7 +1107,6 @@ func _physics_process(delta: float) -> void:
 	var target_height := STAND_HEIGHT
 	var current_speed := speed_normal
 	var is_sprinting := false
-
 	if is_sliding:
 		target_height = CROUCH_HEIGHT
 		slide_timer -= delta
@@ -1099,6 +1129,20 @@ func _physics_process(delta: float) -> void:
 	stamina = clamp(stamina, 0.0, max_stamina)
 	if stamina <= 0.0: is_exhausted = true
 	elif stamina >= EXHAUST_RECOVERY: is_exhausted = false
+
+	# Footstep / slide loops: state-based, positional (quieter with distance)
+	var hspeed := Vector2(velocity.x, velocity.z).length()
+	var move_state := ""
+	if is_sliding:
+		move_state = "slide"
+	elif is_on_floor() and hspeed > 1.0:
+		move_state = "run" if (is_sprinting or hspeed > speed_normal * 1.3) else "walk"
+	if move_state != _sfx_move_state:
+		_sfx_move_state = move_state
+		Sfx.stop_loop(_sfx_move)
+		_sfx_move = null
+		if move_state != "":
+			_sfx_move = Sfx.loop3d(move_state, self, 3.0, 28.0, -8.0)
 
 	if is_on_floor() and not is_sliding:
 		var speed_factor = Vector2(velocity.x, velocity.z).length()
@@ -1255,3 +1299,46 @@ func _physics_process(delta: float) -> void:
 			c.get_collider().apply_central_impulse(-c.get_normal() * 2.0)
 			if c.get_collider().get_parent().has_method("register_interaction"):
 					c.get_collider().get_parent().register_interaction()
+
+
+# ---------------- Vehicle piloting ----------------
+
+## Called by an aircraft controller: suspend character control, take the seat.
+func enter_aircraft(seat: Node3D) -> void:
+	if is_piloting or is_dead:
+		return
+	is_piloting = true
+	velocity = Vector3.ZERO
+	_pre_pilot_parent = get_parent()
+	_pre_pilot_layer = collision_layer
+	_pre_pilot_mask = collision_mask
+	reparent(seat)
+	transform = Transform3D.IDENTITY
+	collision_layer = 0
+	collision_mask = 0
+	weapon_holder.visible = false
+	flashlight.visible = false
+	camera.current = false
+	if hud:
+		hud.hide_hover_name()
+		hud.toggle_aircraft_hud(true)
+
+
+## Called by the aircraft controller: leave the seat, restore character control.
+## eject_vel != ZERO flings the player airborne (ejection seat).
+func exit_aircraft(exit_pos: Vector3, face_dir: Vector3, eject_vel: Vector3 = Vector3.ZERO) -> void:
+	if not is_piloting:
+		return
+	is_piloting = false
+	if _pre_pilot_parent and is_instance_valid(_pre_pilot_parent):
+		reparent(_pre_pilot_parent)
+	global_position = exit_pos
+	rotation = Vector3(0.0, atan2(-face_dir.x, -face_dir.z), 0.0)
+	velocity = eject_vel
+	collision_layer = _pre_pilot_layer
+	collision_mask = _pre_pilot_mask
+	weapon_holder.visible = true
+	camera.current = true
+	if hud:
+		hud.hide_hover_name()
+		hud.toggle_aircraft_hud(false)

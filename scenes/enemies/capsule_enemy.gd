@@ -83,6 +83,8 @@ var primary_weapons = [
 ]
 
 # Movement Stats — base values; operator speed_mult applied at runtime
+var _sfx_move: AudioStreamPlayer3D = null
+var _sfx_move_state := ""
 const WALK_SPEED = 2.5
 const RUN_SPEED = 5.5
 const SLIDE_SPEED = 9.0
@@ -185,6 +187,12 @@ func _find_nearest_target() -> void:
 			if d < closest_dist:
 				closest_dist = d
 				target = pt
+
+func _get_flagpoint() -> Node3D:
+	var flags := get_tree().get_nodes_in_group("flagpoint")
+	if flags.is_empty():
+		return null
+	return flags[0] as Node3D
 
 func _equip_random_primary() -> void:
 	# Clear any existing weapons
@@ -343,7 +351,6 @@ func _physics_process(delta):
 	# Step-up / Mantle assist over spawn cliff (1.18m vertical drop)
 	if is_on_wall():
 		var space := get_world_3d().direct_space_state
-		var fwd := -global_transform.basis.z
 		var step_target := global_position + Vector3.UP * 1.35 + fwd * 0.4
 		var down_ray := PhysicsRayQueryParameters3D.create(
 			step_target, step_target + Vector3.DOWN * 1.5,
@@ -352,6 +359,20 @@ func _physics_process(delta):
 		var hit := space.intersect_ray(down_ray)
 		if not hit.is_empty():
 			global_position = hit.position + Vector3.UP * 0.08
+
+	# Footstep / slide loops (positional, quieter with distance)
+	var hspeed := Vector2(velocity.x, velocity.z).length()
+	var move_state := ""
+	if is_sliding:
+		move_state = "slide"
+	elif is_on_floor() and hspeed > 1.0:
+		move_state = "run" if hspeed > WALK_SPEED * 1.4 else "walk"
+	if move_state != _sfx_move_state:
+		_sfx_move_state = move_state
+		Sfx.stop_loop(_sfx_move)
+		_sfx_move = null
+		if move_state != "":
+			_sfx_move = Sfx.loop3d(move_state, self, 3.0, 28.0, -8.0)
 
 func _apply_bot_separation() -> void:
 	# Repel every other bot within 1.2 m
@@ -385,12 +406,26 @@ func process_ai(delta):
 	if not target or target.get("is_dead") or not sees_target:
 		# ROAM STATE
 		is_crouching = false
+		var flag := _get_flagpoint()
 		roam_timer -= delta
 		if roam_timer <= 0 or nav_agent.is_navigation_finished():
-			var random_pos = start_pos + Vector3(randf_range(-8, 8), 0, randf_range(-8, 8))
+			var random_pos: Vector3
+			if flag != null:
+				# Objective play: rush the flag via the north ramp and fight over it
+				random_pos = flag.global_position + Vector3(randf_range(-3.0, 3.0), 0.0, randf_range(5.0, 15.0))
+			else:
+				random_pos = start_pos + Vector3(randf_range(-8, 8), 0, randf_range(-8, 8))
 			nav_agent.target_position = random_pos
 			roam_timer = randf_range(3.0, 6.0)
-		move_along_path(WALK_SPEED * current_speed_mult, true)
+		# Sprint to the objective, walk once on it
+		var spd := RUN_SPEED if (flag != null and global_position.distance_to(flag.global_position) > 15.0) else WALK_SPEED
+		# Occasional slide while sprinting: burst of speed
+		if spd > WALK_SPEED and is_on_floor() and not is_sliding and randf() < 0.004:
+			is_sliding = true
+			slide_timer = 0.9
+		if is_sliding:
+			spd = SLIDE_SPEED
+		move_along_path(spd * current_speed_mult, true)
 	else:
 		# COMBAT STATE
 		var dist = global_position.distance_to(target.global_position)
@@ -543,6 +578,7 @@ func can_see_target() -> bool:
 
 func shoot():
 	ammo -= 1
+	Sfx.oneshot3d("rifle_single", self, 14.0, 120.0, 0.0)
 	# Use equipped primary fire rate if available
 	if equipped_primary and equipped_primary.has("fire_rate"):
 		fire_cooldown = equipped_primary["fire_rate"]

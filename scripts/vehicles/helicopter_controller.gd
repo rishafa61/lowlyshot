@@ -1,0 +1,517 @@
+class_name HelicopterController
+extends RigidBody3D
+## Chinook CH-47 tandem-rotor helicopter controller.
+## 6 seats: seat 0 = pilot (controls flight + mouse camera),
+## seats 1..5 = passengers (mouse camera only).
+## Arcade flight physics: collective (W/S/Shift/Ctrl), yaw (A/D),
+## pitch/roll (mouse), auto-leveling hover, ground-only exit.
+
+signal pilot_entered(pilot: Node3D)
+signal pilot_exited
+signal destroyed
+
+# --- Tuning ---
+@export_group("Helicopter Stats")
+@export var heli_name: String = "CH-47 Chinook"
+@export var max_hp: float = 900.0
+@export var prompt_text: String = "Press F to Board Heli"
+@export var mouse_sens: float = 0.0035
+
+@export_group("Flight Tuning")
+@export var max_lift_accel: float = 24.0      ## m/s^2 at full collective + boost (~2.4 Gs)
+@export var hover_lift_ratio: float = 0.42    ## collective value that cancels gravity (~9.8 / 24.0 = ~0.41)
+@export var max_horiz_speed: float = 45.0     ## m/s top horizontal (~160 km/h)
+@export var max_climb_speed: float = 14.0     ## m/s max vertical rate
+@export var max_pitch_deg: float = 24.0       ## max nose down/up pitch
+@export var max_roll_deg: float = 14.0        ## max bank angle — kept low so horizontal mouse doesn't flip heli
+@export var pitch_sens: float = 0.004        ## mouse pitch -> tilt speed
+@export var roll_sens: float = 0.004         ## mouse roll -> tilt speed (rate-based: reverses instantly)
+@export var tilt_input_cap: float = 1.4      ## max tilt speed from mouse (rad/s of target change)
+@export var tilt_vel_decay: float = 3.0      ## tilt input speed bleeds off when mouse stops
+@export var level_pull: float = 1.0          ## rad/s spring pulling the bank/pitch back to level
+@export var attitude_rate: float = 6.0       ## how fast airframe attitude follows targets (kinematic slerp)
+@export var level_rate: float = 3.6           ## auto-leveling return rate (snaps back flat quickly)
+@export var yaw_rate: float = 1.6             ## rad/s yaw speed (A/D)
+@export var drag_horiz: float = 0.35          ## air resistance for stable hover
+@export var drag_vert: float = 0.45
+@export var tilt_thrust_accel: float = 35.0   ## m/s^2 horizontal push per rad of mouse tilt (arcade cyclic)
+@export var alt_assist: float = 4.0           ## m/s^2 vertical compensation per rad of tilt (holds altitude in forward flight)
+@export var exit_max_speed: float = 2.2       ## slower than this + grounded = walk out; faster/airborne = bail out
+@export var bail_power_loss_delay: float = 3.0 ## seconds after the pilot bails before the engine dies
+
+const GRAVITY := 9.8
+const GROUND_RAY := 1.9 ## wheel contact sits ~1.67m below center; ray must be shorter so
+						## "grounded" means the gear actually touches, not hovering nearby
+
+var hp: float
+var is_destroyed := false
+
+# Engine / collective state
+var engine_power: float = 0.0    ## 0..1 (spools up when pilot seated)
+var collective: float = 0.0      ## 0..1
+var rotor_rpm: float = 0.0       ## rad/s for visual spinning
+var rotor_angle: float = 0.0
+
+# Flight inputs from pilot
+var _target_pitch: float = 0.0   ## rad
+var _target_roll: float = 0.0    ## rad
+var _tilt_vel := Vector2.ZERO    ## x = pitch input rate, y = roll input rate (rad/s)
+var _yaw: float = 0.0            ## integrated heading — drives kinematic attitude
+
+# Camera
+var _cam_yaw: float = 0.0
+var _cam_pitch: float = -0.2
+
+# Seats & occupants (index 0 is pilot, 1..5 are passengers)
+var seats: Array[Marker3D] = []
+var occupants: Array = []
+var _prompt_player: Node3D = null
+var _is_abandoned := false        ## pilot bailed mid-air — engine dies after bail_power_loss_delay
+var _pilotless_time := 0.0
+var _last_bailed_pilot: Node3D = null
+var _rotor_sfx: AudioStreamPlayer3D = null
+
+@onready var interact_area: Area3D = get_node_or_null("InteractArea")
+@onready var chase_pivot: Node3D = get_node_or_null("ChasePivot")
+@onready var chase_arm: SpringArm3D = get_node_or_null("ChasePivot/ChaseArm")
+@onready var chase_cam: Camera3D = get_node_or_null("ChasePivot/ChaseArm/ChaseCamera")
+@onready var rotor_front: Node3D = get_node_or_null("Model/RotorFront")
+@onready var rotor_rear: Node3D = get_node_or_null("Model/RotorRear")
+
+func _ready() -> void:
+	gravity_scale = 0.0 ## applied manually in _apply_flight
+	contact_monitor = true
+	max_contacts_reported = 4
+	can_sleep = false ## forces drive flight; a sleeping body would ignore them mid-hover
+	body_entered.connect(_on_impact)
+	hp = max_hp
+	_yaw = global_transform.basis.get_euler(EULER_ORDER_YXZ).y # sync heading with scene-authored basis
+	_setup_seats()
+	if chase_arm != null:
+		chase_arm.add_excluded_object(get_rid())
+	if interact_area != null:
+		interact_area.collision_mask |= 1
+		interact_area.body_entered.connect(_on_body_entered)
+		interact_area.body_exited.connect(_on_body_exited)
+
+func _setup_seats() -> void:
+	var seats_node := get_node_or_null("Seats")
+	if seats_node != null:
+		for c in seats_node.get_children():
+			if c is Marker3D:
+				seats.append(c)
+				occupants.append(null)
+	if seats.is_empty():
+		push_warning("%s: no Marker3D found under Seats node" % name)
+
+func has_free_seat() -> bool:
+	return occupants.has(null)
+
+func get_driver() -> Node3D:
+	return occupants[0] if occupants.size() > 0 else null
+
+func is_grounded() -> bool:
+	var space := get_world_3d().direct_space_state
+	var query := PhysicsRayQueryParameters3D.create(
+		global_position,
+		global_position + Vector3.DOWN * GROUND_RAY,
+		collision_mask,
+		[get_rid()]
+	)
+	return not space.intersect_ray(query).is_empty()
+
+func can_exit() -> bool:
+	return true ## player can exit anytime — grounded walks out, airborne bails out
+
+func can_walk_out() -> bool:
+	return is_grounded() and linear_velocity.length() <= exit_max_speed
+
+# --- Enter / Exit ---
+
+func _on_body_entered(body: Node3D) -> void:
+	if not body.is_in_group("player") or bool(body.get("is_piloting")):
+		return
+	if not has_free_seat():
+		return
+	var hud = body.get("hud")
+	if hud == null:
+		return
+	_prompt_player = body
+	hud.show_hover_name(prompt_text, false)
+
+func _on_body_exited(body: Node3D) -> void:
+	if body == _prompt_player:
+		_prompt_player = null
+		if body.get("hud") != null:
+			body.get("hud").hide_hover_name()
+
+func _unhandled_input(event: InputEvent) -> void:
+	if not event.is_action_pressed("vehicle_interact"):
+		return
+	# Try enter
+	if _prompt_player != null and bool(_prompt_player.get("is_piloting")) != true and has_free_seat():
+		_enter(_prompt_player)
+		return
+	# Try exit: any seated local player with HUD can press F
+	for i in occupants.size():
+		var occ = occupants[i]
+		if occ != null and occ.get("hud") != null:
+			_exit(i)
+			return
+
+func _input(event: InputEvent) -> void:
+	# Local driver / passenger mouse look
+	var has_local := false
+	for occ in occupants:
+		if occ != null and occ.get("hud") != null:
+			has_local = true
+			break
+	if not has_local:
+		return
+	if event is InputEventMouseMotion:
+		var is_driver := occupants.size() > 0 and occupants[0] != null and occupants[0].get("hud") != null
+		var freelook := Input.is_action_pressed("camera_freelook") # ALT held
+		if is_driver and not freelook:
+			# Rate-style tilt control: mouse sets a tilt SPEED, not a stored angle.
+			# An opposite mouse flick reverses the bank instantly — no unwinding.
+			_tilt_vel.x = clampf(_tilt_vel.x - event.relative.y * pitch_sens, -tilt_input_cap, tilt_input_cap)
+			_tilt_vel.y = clampf(_tilt_vel.y + event.relative.x * roll_sens, -tilt_input_cap, tilt_input_cap)
+		else:
+			# ALT held (driver) or passenger: camera orbits, heli keeps its tilt
+			_cam_yaw -= event.relative.x * mouse_sens
+			_cam_pitch = clampf(_cam_pitch - event.relative.y * mouse_sens, -0.7, 0.4)
+
+func _enter(player: Node3D) -> void:
+	var idx := occupants.find(null)
+	if idx == -1 or is_destroyed:
+		return
+	occupants[idx] = player
+	_prompt_player = null
+	if idx == 0:
+		_is_abandoned = false
+		_pilotless_time = 0.0
+		_last_bailed_pilot = null
+	player.enter_aircraft(seats[idx])
+	if idx == 0 and chase_cam != null:
+		chase_cam.current = true
+		_cam_yaw = 0.0
+		_cam_pitch = -0.2
+	pilot_entered.emit(player)
+	_update_hud()
+
+func _exit(idx: int) -> void:
+	if idx < 0 or idx >= occupants.size() or occupants[idx] == null:
+		return
+	var player: Node3D = occupants[idx]
+	occupants[idx] = null
+	if idx == 0 and chase_cam != null:
+		chase_cam.current = false
+	var side := 3.2 if seats[idx].position.x >= 0.0 else -3.2
+	var exit_pos := seats[idx].global_position + global_basis * Vector3(side, 0.4, 0.0)
+	if can_walk_out():
+		# Walk out on the ground
+		player.exit_aircraft(exit_pos, -global_basis.z, linear_velocity * 0.3)
+		pilot_exited.emit()
+		# Pilot often steps out still inside the trigger: re-arm the prompt.
+		if _prompt_player == null and interact_area != null and interact_area.get_overlapping_bodies().has(player):
+			_on_body_entered(player)
+	else:
+		# Bail out mid-air: fling the player clear. If the pilot left, the heli
+		# loses power after bail_power_loss_delay, dives, and explodes on impact.
+		exit_pos += global_basis * Vector3(0.0, 1.2, 0.0)
+		player.exit_aircraft(exit_pos, -global_basis.z, linear_velocity * 0.5 + Vector3.UP * 9.0)
+		pilot_exited.emit()
+		if idx == 0:
+			_is_abandoned = true
+			_pilotless_time = 0.0
+			_last_bailed_pilot = player
+
+# --- Process & Physics ---
+
+func _process(delta: float) -> void:
+	_animate_rotors(delta)
+	_update_camera(delta)
+	_update_hud()
+
+func _animate_rotors(delta: float) -> void:
+	var target_rpm: float = engine_power * 32.0 ## rad/s
+	rotor_rpm = move_toward(rotor_rpm, target_rpm, delta * 12.0)
+	rotor_angle += rotor_rpm * delta
+	# Chinook tandem counter-rotation: front rotates CCW (+Y), rear CW (-Y)
+	if rotor_front != null:
+		rotor_front.rotation.y = rotor_angle
+	if rotor_rear != null:
+		rotor_rear.rotation.y = -rotor_angle
+
+func _update_camera(delta: float) -> void:
+	if chase_pivot == null or chase_arm == null or chase_cam == null:
+		return
+	if not chase_cam.current:
+		return
+	# ALT released: ease camera back behind the heli so the pilot faces forward
+	if not Input.is_action_pressed("camera_freelook"):
+		_cam_yaw = lerp_angle(_cam_yaw, 0.0, minf(delta * 3.0, 1.0))
+		_cam_pitch = lerp(_cam_pitch, -0.2, minf(delta * 3.0, 1.0))
+	var target_yaw: float = _cam_yaw
+	var target_pitch: float = _cam_pitch
+	if Input.is_action_pressed("lean_left"): # Q
+		target_yaw = -PI * 0.5
+		target_pitch = -0.1
+	elif Input.is_action_pressed("lean_right"): # E
+		target_yaw = PI * 0.5
+		target_pitch = -0.1
+	var w: float = minf(delta * 9.0, 1.0)
+	chase_pivot.rotation.y = lerp_angle(chase_pivot.rotation.y, target_yaw, w)
+	chase_arm.rotation.x = lerp(chase_arm.rotation.x, target_pitch, w)
+
+func _physics_process(delta: float) -> void:
+	var driver := get_driver()
+	var has_driver := driver != null and bool(driver.get("is_dead")) != true
+	var grounded := is_grounded()
+
+	# Rotor audio: spins while a pilot is aboard; fades out on power loss/exit.
+	var rotor_wanted := has_driver or engine_power > 0.05
+	if rotor_wanted and _rotor_sfx == null:
+		_rotor_sfx = Sfx.loop3d("heli", self, 10.0, 120.0, 0.0)
+	if _rotor_sfx:
+		_rotor_sfx.volume_db = lerpf(-20.0, 0.0, engine_power)
+	if not rotor_wanted and _rotor_sfx != null:
+		Sfx.stop_loop(_rotor_sfx)
+		_rotor_sfx = null
+
+	if has_driver:
+		_process_pilot_input(delta)
+	else:
+		if _is_abandoned:
+			_pilotless_time += delta
+		if _is_abandoned and _pilotless_time >= bail_power_loss_delay:
+			# Total power loss: rotors stop, nose drops, heli falls — explodes on touchdown
+			engine_power = 0.0
+			collective = 0.0
+			_target_pitch = deg_to_rad(max_pitch_deg)
+			_target_roll = 0.0
+			if grounded:
+				_explode()
+				return
+		elif _is_abandoned:
+			# Dying phase: hovers on fading power until the countdown ends
+			engine_power = move_toward(engine_power, 1.0, delta * 1.0)
+			collective = move_toward(collective, hover_lift_ratio, delta * 0.5)
+			_target_pitch = move_toward(_target_pitch, 0.0, delta * 2.0)
+			_target_roll = move_toward(_target_roll, 0.0, delta * 2.0)
+		else:
+			# Pilotless but not abandoned (parked / walk-out): settle gently
+			engine_power = move_toward(engine_power, 0.0, delta * 1.0)
+			collective = move_toward(collective, 0.0, delta * 1.2)
+			_target_pitch = move_toward(_target_pitch, 0.0, delta * 2.0)
+			_target_roll = move_toward(_target_roll, 0.0, delta * 2.0)
+
+	_apply_flight(delta, grounded, Input.is_action_pressed("crouch") and has_driver)
+
+func _process_pilot_input(delta: float) -> void:
+	# Engine spool up to full power
+	var target_eng := 1.0
+	if Input.is_action_pressed("sprint"): # Shift: increase engine boost
+		target_eng = 1.2
+	engine_power = move_toward(engine_power, target_eng, delta * 1.2)
+
+	# Collective: W = climb, S = descend, CTRL = landing cut
+	var coll_rate := 0.95
+	var cutting_landing := Input.is_action_pressed("crouch")
+	if Input.is_action_pressed("move_forward"): # W: collective up
+		collective = move_toward(collective, 1.0, coll_rate * delta)
+	elif Input.is_action_pressed("move_backward"): # S: collective down
+		collective = move_toward(collective, 0.0, coll_rate * delta)
+	if cutting_landing: # CTRL: reduce collective for landing + auto-level airframe
+		collective = move_toward(collective, 0.0, coll_rate * 1.8 * delta)
+		_target_pitch = move_toward(_target_pitch, 0.0, delta * level_rate * 2.0)
+		_target_roll = move_toward(_target_roll, 0.0, delta * level_rate * 2.0)
+
+	# Auto-center collective to hover if neither W nor S pressed
+	if not Input.is_action_pressed("move_forward") and not Input.is_action_pressed("move_backward") and not cutting_landing:
+		# Hover bias: gently pull collective toward the gravity-canceling sweet spot
+		collective = move_toward(collective, hover_lift_ratio, delta * 0.25)
+
+	# Yaw: A = left (positive Y rot), D = right (negative Y rot)
+	_yaw = wrapf(_yaw - Input.get_axis("move_left", "move_right") * yaw_rate * delta, -PI, PI)
+
+	# Integrate rate-style tilt into target angles + clamp strictly to limits
+	_target_pitch = clampf(_target_pitch + _tilt_vel.x * delta, -deg_to_rad(max_pitch_deg), deg_to_rad(max_pitch_deg))
+	_target_roll = clampf(_target_roll + _tilt_vel.y * delta, -deg_to_rad(max_roll_deg), deg_to_rad(max_roll_deg))
+
+	# Decay mouse velocity so when mouse stops, tilt stops growing
+	_tilt_vel.x = move_toward(_tilt_vel.x, 0.0, delta * tilt_vel_decay)
+	_tilt_vel.y = move_toward(_tilt_vel.y, 0.0, delta * tilt_vel_decay)
+
+	# Auto-level: when not actively tilting, pull the bank and pitch back to zero
+	if absf(_tilt_vel.x) < 0.05:
+		_target_pitch = move_toward(_target_pitch, 0.0, delta * level_pull)
+	if absf(_tilt_vel.y) < 0.05:
+		_target_roll = move_toward(_target_roll, 0.0, delta * level_pull)
+
+func _apply_flight(delta: float, grounded: bool, landing_cut: bool = false) -> void:
+	# 1. Total lift force along airframe's UP axis
+	var lift_magnitude := max_lift_accel * collective * engine_power * mass
+	var lift_force := global_basis.y * lift_magnitude
+	apply_central_force(lift_force)
+
+	# 2. Gravity (always straight down) — heavier fall once power drops
+	var grav_mult := 1.8 if (_is_abandoned and _pilotless_time >= bail_power_loss_delay) else 1.0
+	apply_central_force(Vector3.DOWN * GRAVITY * grav_mult * mass)
+
+	# 2.5 Tilt thrust: mouse tilt is the cyclic — leaning the nose forward
+	#     actively accelerates the heli that direction (arcade model).
+	#     pitch tilts +, thrust toward the nose direction.
+	var nose_fwd := -global_basis.z
+	nose_fwd.y = 0.0
+	if nose_fwd.length_squared() > 0.001:
+		nose_fwd = nose_fwd.normalized()
+		apply_central_force(nose_fwd * _target_pitch * tilt_thrust_accel * mass)
+	# 2.6 roll tilts +, thrust toward the right-side direction.
+	var right_dir := global_basis.x
+	right_dir.y = 0.0
+	if right_dir.length_squared() > 0.001:
+		right_dir = right_dir.normalized()
+		apply_central_force(right_dir * _target_roll * tilt_thrust_accel * mass)
+	# 2.7 Altitude assist: pitched/banked body loses vertical lift — compensate
+	#     so leaning forward doesn't sink the heli into the ground.
+	var tilt_up := global_basis.y.dot(Vector3.UP)
+	if tilt_up > 0.01:
+		apply_central_force(Vector3.UP * (1.0 - tilt_up) * alt_assist * mass)
+
+	# 3. Horizontal and vertical aerodynamic drag
+	var local_vel := global_basis.inverse() * linear_velocity
+	var horiz_drag := Vector3(local_vel.x, 0.0, local_vel.z) * drag_horiz * mass
+	var vert_drag := Vector3(0.0, local_vel.y, 0.0) * drag_vert * mass
+	var drag_vec: Vector3 = global_basis * (horiz_drag + vert_drag)
+	apply_central_force(-drag_vec)
+
+	# 3.5 Horizontal speed cap (max_horiz_speed ~160 km/h)
+	var horiz_vel := Vector3(linear_velocity.x, 0.0, linear_velocity.z)
+	if horiz_vel.length() > max_horiz_speed:
+		horiz_vel = horiz_vel.normalized() * max_horiz_speed
+		linear_velocity.x = horiz_vel.x
+		linear_velocity.z = horiz_vel.z
+
+	# 4. Attitude: fully kinematic. Orientation slerps toward an upright target
+	#    built from heading + mouse tilt; physics is never allowed to rotate the
+	#    body (angular_velocity zeroed). Flipping, spinning out, and corner-wedging
+	#    are impossible by construction — collisions only affect position.
+	#    Sign convention: +_target_pitch (mouse fwd) = nose down,
+	#                    +_target_roll  (mouse right) = bank right.
+	if landing_cut or (grounded and collective < 0.3):
+		_target_pitch = 0.0
+		_target_roll = 0.0
+	var target_basis := Basis(Vector3.UP, _yaw) \
+			* Basis(Vector3.RIGHT, -_target_pitch) \
+			* Basis(Vector3.BACK, -_target_roll)
+	global_transform.basis = global_transform.basis.slerp(target_basis, 1.0 - exp(-attitude_rate * delta)).orthonormalized()
+	angular_velocity = Vector3.ZERO
+	# Wedge recovery: if a collision (blast/hard touchdown) left the airframe
+	# sideways against the terrain, gently pop it upward so it unwedges cleanly.
+	if is_grounded() and global_basis.y.dot(Vector3.UP) < 0.85:
+		apply_central_force(Vector3.UP * 2.2 * GRAVITY * mass)
+
+	# 5. Ground friction when landed
+	if grounded and collective < 0.35:
+		linear_velocity.x = move_toward(linear_velocity.x, 0.0, delta * 8.0)
+		linear_velocity.z = move_toward(linear_velocity.z, 0.0, delta * 8.0)
+		if linear_velocity.y < 0.0:
+			linear_velocity.y = 0.0
+
+# --- HUD ---
+
+func _update_hud() -> void:
+	var used := 0
+	for o in occupants:
+		if o != null: used += 1
+	var free_seats := occupants.size() - used
+	for occ in occupants:
+		if occ == null:
+			continue
+		var hud = occ.get("hud")
+		if hud != null and hud.has_method("update_aircraft_hud"):
+			var is_pilot: bool = (occ == occupants[0])
+			hud.update_aircraft_hud({
+				"kind": "helicopter",
+				"name": heli_name,
+				"speed": linear_velocity.length() * 3.6,
+				"climb": linear_velocity.y,
+				"alt": global_position.y,
+				"throttle": collective,
+				"engine": engine_power,
+				"hp": hp,
+				"max_hp": max_hp,
+				"seats_free": free_seats,
+				"seats_total": occupants.size(),
+				"is_pilot": is_pilot,
+				"grounded": is_grounded(),
+				"can_walk_out": can_walk_out(),
+			})
+
+# --- Damage & destruction ---
+
+func take_damage(amount: float, attacker_name: String = "", _weapon_name: String = "", attacker_faction: String = "", pos: Vector3 = Vector3.INF) -> float:
+	if is_destroyed:
+		return 0.0
+	hp = maxf(hp - amount, 0.0)
+	if hp <= 0.0:
+		_explode(attacker_name, attacker_faction)
+	return amount
+
+func _explode(attacker_name: String = "", attacker_faction: String = "") -> void:
+	if is_destroyed:
+		return
+	is_destroyed = true
+	if chase_cam != null:
+		chase_cam.current = false
+	for i in occupants.size():
+		var occ = occupants[i]
+		if occ == null:
+			continue
+		occupants[i] = null
+		var side := 3.0 if seats[i].position.x >= 0.0 else -3.0
+		var exit_pos := seats[i].global_position + global_basis * Vector3(side, 1.2, 0.0)
+		occ.exit_aircraft(exit_pos, -global_basis.z, Vector3.UP * 8.0 + linear_velocity * 0.5)
+		occ.take_damage(9999.0, heli_name, "Helicopter Crash", attacker_faction if attacker_faction != "" else "World", global_position)
+	_blast_area(global_position, 16.0, 320.0, 80.0, attacker_name, attacker_faction)
+	destroyed.emit()
+	queue_free()
+
+func _on_impact(body: Node) -> void:
+	if is_destroyed:
+		return
+	if body == _last_bailed_pilot:
+		return
+	for occ in occupants:
+		if body == occ: return
+	if _is_abandoned and _pilotless_time >= bail_power_loss_delay:
+		_explode()
+		return
+	var speed := linear_velocity.length()
+	# Hard crash: excessive vertical speed or inverted impact
+	if (speed > 16.0 and global_basis.y.dot(Vector3.UP) < 0.3) or speed > 32.0:
+		_explode()
+
+func _blast_area(pos: Vector3, radius: float, center_dmg: float, outer_dmg: float, att_name: String, att_fac: String) -> void:
+	var space := get_world_3d().direct_space_state
+	var query := PhysicsShapeQueryParameters3D.new()
+	var sphere := SphereShape3D.new()
+	sphere.radius = radius
+	query.shape = sphere
+	query.transform = Transform3D(Basis(), pos)
+	query.collide_with_areas = true
+	query.collide_with_bodies = true
+	query.exclude = [get_rid()]
+	var hit: Array = []
+	for res in space.intersect_shape(query, 32):
+		var collider = res.collider
+		if collider == null or not (collider as Object).has_method("take_damage"):
+			continue
+		if collider in hit or collider == _last_bailed_pilot:
+			continue
+		hit.append(collider)
+		var dist: float = pos.distance_to(collider.global_position)
+		var dmg: float = AircraftOrdnance.compute_blast_damage(dist, radius, center_dmg, outer_dmg)
+		if dmg > 0.0:
+			collider.take_damage(dmg, att_name if att_name != "" else heli_name, "Helicopter Explosion", att_fac if att_fac != "" else "World", pos)
