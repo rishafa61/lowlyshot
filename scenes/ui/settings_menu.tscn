@@ -28,10 +28,10 @@ color = Color(0.1, 0.1, 0.12, 1)
 layout_mode = 1
 anchors_preset = 10
 anchor_right = 1.0
-offset_left = 20.0
-offset_top = 20.0
-offset_right = -20.0
-offset_bottom = 70.0
+offset_left = 60.0
+offset_top = 24.0
+offset_right = -60.0
+offset_bottom = 74.0
 grow_horizontal = 2
 
 [node name="BtnBack" type="Button" parent="TopBar"]
@@ -77,13 +77,13 @@ layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_top = 80.0
+offset_top = 84.0
 grow_horizontal = 2
 grow_vertical = 2
-theme_override_constants/margin_left = 100
+theme_override_constants/margin_left = 120
 theme_override_constants/margin_top = 40
-theme_override_constants/margin_right = 100
-theme_override_constants/margin_bottom = 40
+theme_override_constants/margin_right = 120
+theme_override_constants/margin_bottom = 48
 
 [node name="TabVisualPanel" type="VBoxContainer" parent="Content"]
 layout_mode = 2

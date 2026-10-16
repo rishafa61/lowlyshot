@@ -93,6 +93,119 @@ text = "SPECTATING: None (A/D to cycle)"
 horizontal_alignment = 1
 vertical_alignment = 1
 
+[node name="AircraftHUD" type="Control" parent="."]
+visible = false
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="HeatBar" type="ProgressBar" parent="AircraftHUD"]
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -70.0
+offset_top = 34.0
+offset_right = 70.0
+offset_bottom = 41.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+max_value = 100.0
+value = 0.0
+show_percentage = false
+
+[node name="OverheatLabel" type="Label" parent="AircraftHUD"]
+visible = false
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -70.0
+offset_top = 44.0
+offset_right = 70.0
+offset_bottom = 62.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 0.25, 0.2, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 4
+theme_override_font_sizes/font_size = 14
+text = "OVERHEATED"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="LoadoutPanel" type="Label" parent="AircraftHUD"]
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -320.0
+offset_top = -130.0
+offset_right = 320.0
+offset_bottom = -20.0
+grow_horizontal = 2
+grow_vertical = 0
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.9, 0.95, 1, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 4
+theme_override_font_sizes/font_size = 15
+text = ""
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="HeliGuide" type="PanelContainer" parent="AircraftHUD"]
+visible = false
+anchors_preset = 4
+anchor_top = 0.5
+anchor_bottom = 0.5
+offset_left = 24.0
+offset_top = -140.0
+offset_right = 260.0
+offset_bottom = 140.0
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="VBox" type="VBoxContainer" parent="AircraftHUD/HeliGuide"]
+layout_mode = 2
+mouse_filter = 2
+
+[node name="Title" type="Label" parent="AircraftHUD/HeliGuide/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.85, 0.3, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 3
+theme_override_font_sizes/font_size = 14
+text = "HELICOPTER GUIDE"
+
+[node name="HSeparator" type="HSeparator" parent="AircraftHUD/HeliGuide/VBox"]
+layout_mode = 2
+
+[node name="GuideText" type="Label" parent="AircraftHUD/HeliGuide/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.92, 0.92, 0.95, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 2
+theme_override_font_sizes/font_size = 12
+text = "[W] Collective Up (Climb)
+[S] Collective Down (Descend)
+[A / D] Yaw Left / Right
+[Mouse Y] Pitch (Fwd / Back)
+[Mouse X] Roll (Tilt Left / Right)
+[ALT + Mouse] Look Around (Camera Only)
+[SHIFT] Engine Boost
+[CTRL] Landing Cut (Hold)
+[Q / E] Side View Snap
+[F] Exit / Bail Out"
+
 [node name="CrosshairContainer" type="CenterContainer" parent="."]
 anchors_preset = 15
 anchor_right = 1.0

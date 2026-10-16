@@ -35,7 +35,7 @@ func _ready():
 	tabs["Utility"].pressed.connect(func(): set_tab("Utility"))
 	btn_action.pressed.connect(_on_action_pressed)
 	
-	currency_label.text = "$ " + str(GlobalData.money)
+	currency_label.visible = false
 	set_tab("Primary")
 
 func set_tab(tab_name: String):
@@ -56,12 +56,17 @@ func set_tab(tab_name: String):
 		btn.text = item["name"]
 		if item.get("equipped", false):
 			btn.text += "\n(Equipped)"
+		if item == selected_item:
+			btn.modulate = Color(1, 0.85, 0.4) # highlight current preview
 		
 		btn.pressed.connect(func(): select_item(item))
 		grid.add_child(btn)
 		
-	# Auto select first
-	if GlobalData.weapons[tab_name].size() > 0:
+	# Keep the current preview when refreshing (e.g. after equipping);
+	# only fall back to the first item when nothing valid is selected.
+	if selected_item != null and selected_item in GlobalData.weapons[tab_name]:
+		select_item(selected_item)
+	elif GlobalData.weapons[tab_name].size() > 0:
 		select_item(GlobalData.weapons[tab_name][0])
 
 # ponytail: MAX_STAT only scales 0-100 bar fills; add per-category max tracking when adding high-tier gear.
@@ -98,10 +103,7 @@ func select_item(item):
 func update_action_button():
 	if not selected_item: return
 	
-	if not selected_item["owned"]:
-		btn_action.text = "BUY: $" + str(selected_item["price"])
-		btn_action.modulate = Color(1, 1, 0, 1) # Yellowish
-	elif selected_item.get("equipped", false):
+	if selected_item.get("equipped", false):
 		btn_action.text = "EQUIPPED"
 		btn_action.modulate = Color(0.5, 0.5, 0.5, 1) # Gray out
 	else:
@@ -111,16 +113,7 @@ func update_action_button():
 func _on_action_pressed():
 	if not selected_item: return
 	
-	if not selected_item["owned"]:
-		if GlobalData.money >= selected_item["price"]:
-			GlobalData.money -= selected_item["price"]
-			currency_label.text = "$ " + str(GlobalData.money)
-			selected_item["owned"] = true
-			update_action_button()
-			set_tab(current_tab) # Refresh grid names
-		else:
-			print("Not enough GlobalData.money!")
-	elif not selected_item.get("equipped", false):
+	if not selected_item.get("equipped", false):
 		# Unequip all others in this category
 		for i in GlobalData.weapons[current_tab]:
 			i["equipped"] = false

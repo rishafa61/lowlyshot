@@ -50,6 +50,14 @@ func _build_player(data: Dictionary) -> Node3D:
 	player.name = str(peer_id) # unique per peer for multiplayer sync
 	player.position = data.get("pos", Vector3(0, 2, 0))
 	player.rotation.y = float(data.get("yaw", 0.0))
+	# Never enter the tree owning the view: the tscn saves Camera3D current=true,
+	# and a remote puppet's camera would possess the viewport for one frame
+	# (until _setup_puppet frees it), then Godot falls back to the first camera
+	# in the tree — e.g. an idle vehicle's chase cam. Local players re-possess
+	# in player.gd _ready().
+	var cam: Camera3D = player.get_node_or_null("Head/Camera3D")
+	if cam:
+		cam.current = false
 	# Authority + team must be set BEFORE the node enters the tree (_ready reads them)
 	player.set_multiplayer_authority(peer_id)
 	if "team" in player:
@@ -78,7 +86,11 @@ func spawn_player(peer_id: int = 1, team: String = "") -> Node3D:
 	if sp:
 		player.global_position = sp.global_position
 	spawned_data[peer_id] = data
-	if GlobalData.is_networked() and multiplayer.is_server():
+	var is_net := false
+	var gd = get_node_or_null("/root/GlobalData")
+	if gd and gd.has_method("is_networked"):
+		is_net = gd.is_networked()
+	if is_net and multiplayer.is_server():
 		var mgr = get_parent()
 		if mgr is MultiplayerManager:
 			mgr.replicate_spawn(data)
@@ -87,7 +99,11 @@ func spawn_player(peer_id: int = 1, team: String = "") -> Node3D:
 func despawn_player(peer_id: int = 1) -> void:
 	_remove_local(peer_id)
 	spawned_data.erase(peer_id)
-	if GlobalData.is_networked() and multiplayer.is_server():
+	var is_net2 := false
+	var gd2 = get_node_or_null("/root/GlobalData")
+	if gd2 and gd2.has_method("is_networked"):
+		is_net2 = gd2.is_networked()
+	if is_net2 and multiplayer.is_server():
 		var mgr = get_parent()
 		if mgr is MultiplayerManager:
 			mgr.replicate_despawn(peer_id)

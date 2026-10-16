@@ -70,7 +70,11 @@ func _ready() -> void:
 		for path in WEAPON_CATALOG[category]:
 			var res = load(path)
 			if res is WeaponData:
-				weapons[category].append(res.to_dict())
+				var d: Dictionary = res.to_dict()
+				# ponytail: store monetization removed — everything owned.
+				# Re-add price/owned checks here when the shop returns.
+				d["owned"] = true
+				weapons[category].append(d)
 
 # Helpers to get the currently equipped item dictionary for the Player script
 func get_equipped_primary() -> Dictionary:

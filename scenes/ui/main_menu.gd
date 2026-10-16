@@ -159,8 +159,8 @@ func _init_party_system() -> void:
 	squad_bar.alignment = BoxContainer.ALIGNMENT_CENTER
 	squad_bar.add_theme_constant_override("separation", 16)
 	squad_bar.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
-	squad_bar.offset_top = -120
-	squad_bar.offset_bottom = -68
+	squad_bar.offset_top = -160
+	squad_bar.offset_bottom = -104
 	squad_bar.mouse_filter = Control.MOUSE_FILTER_PASS
 	party_ui.add_child(squad_bar)
 

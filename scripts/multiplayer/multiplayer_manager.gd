@@ -11,6 +11,11 @@ enum MatchState { WAITING, WARMUP, ACTIVE, ROUND_END, MATCH_END }
 @export var warmup_time: int = 5
 @export var round_time: int = 600 # 10 minute deathmatch
 @export var target_kills: int = 30 # first to 30 kills wins
+## King-of-the-Hill point cap (FlagPoint ticks). 0 = kills-only win (TDM).
+## While > 0, kills no longer award team score — only flags do.
+@export var score_limit: int = 0
+## HUD header / scoreboard title.
+@export var mode_title: String = "TEAM DEATHMATCH"
 @export var team_size: int = 5 # 5v5 (players + bots)
 ## Bots backfill empty slots in online matches too.
 @export var bots_in_online_matches: bool = false
@@ -299,9 +304,11 @@ func _on_kill_occurred(killer: String, killer_faction: String, weapon: String, v
 
 		# Team scores: EVERY entity (bot, player, turret) awards a score to their team
 		if killer != "" and killer != "World" and team_scores.has(killer_team):
-			team_scores[killer_team] += 1
-			if team_scores[killer_team] >= target_kills:
-				set_state(MatchState.MATCH_END)
+			# In KOTH (score_limit > 0), kills track individual stats but don't tick the match score
+			if score_limit <= 0:
+				team_scores[killer_team] += 1
+				if team_scores[killer_team] >= target_kills:
+					set_state(MatchState.MATCH_END)
 
 		# Update players_data mirror for backward-compat with RPC
 		for peer_id in players_data.keys():

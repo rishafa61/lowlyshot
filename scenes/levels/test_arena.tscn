@@ -4,9 +4,9 @@
 [ext_resource type="PackedScene" path="res://scenes/enemies/bullseye.tscn" id="2_bullseye"]
 [ext_resource type="PackedScene" path="res://scenes/enemies/moving_bullseye.tscn" id="3_moving"]
 [ext_resource type="PackedScene" uid="uid://b8q017oaeihsd" path="res://scenes/enemies/capsule_enemy.tscn" id="5_capsule"]
+[ext_resource type="Script" uid="uid://bx7fdmsynxfjv" path="res://scripts/levels/test_arena_net.gd" id="6_net"]
 [ext_resource type="PackedScene" uid="uid://cgk3khdoin2gt" path="res://scenes/objects/door.tscn" id="door_scene"]
 [ext_resource type="PackedScene" uid="uid://dy55w0og5y8q0" path="res://scenes/objects/flickering_light.tscn" id="light_scene"]
-[ext_resource type="Script" path="res://scripts/levels/test_arena_net.gd" id="6_net"]
 
 [sub_resource type="Environment" id="Environment_test"]
 background_mode = 1
@@ -47,6 +47,7 @@ shadow_enabled = true
 navigation_mesh = SubResource("NavigationMesh_4brh2")
 
 [node name="Floor" type="CSGBox3D" parent="Geometry/NavigationRegion3D" unique_id=1133337741]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 6.382718, 0, 0, 0)
 material_override = SubResource("StandardMaterial3D_3wevi")
 use_collision = true
 size = Vector3(40, 1, 40)

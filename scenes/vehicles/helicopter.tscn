@@ -1,0 +1,226 @@
+[gd_scene format=3 uid="uid://yn7qwa5wloog"]
+
+[ext_resource type="Script" uid="uid://dqg5jpctj6qni" path="res://scripts/vehicles/helicopter_controller.gd" id="1_script"]
+
+[sub_resource type="PhysicsMaterial" id="mat_physics"]
+friction = 0.9
+
+[sub_resource type="BoxShape3D" id="shape_body"]
+size = Vector3(2.6, 2.4, 10.5)
+
+[sub_resource type="BoxShape3D" id="shape_rear_pylon"]
+size = Vector3(1.2, 1.6, 2.4)
+
+[sub_resource type="StandardMaterial3D" id="mat_body"]
+albedo_color = Color(0.36, 0.4, 0.32, 1)
+metallic = 0.25
+roughness = 0.7
+
+[sub_resource type="BoxMesh" id="mesh_nose"]
+material = SubResource("mat_body")
+size = Vector3(2, 1.4, 1.6)
+
+[sub_resource type="StandardMaterial3D" id="mat_glass"]
+albedo_color = Color(0.35, 0.45, 0.5, 0.45)
+metallic = 0.6
+roughness = 0.05
+
+[sub_resource type="BoxMesh" id="mesh_glass_f"]
+material = SubResource("mat_glass")
+size = Vector3(1.7, 0.85, 0.1)
+
+[sub_resource type="BoxMesh" id="mesh_glass_side"]
+material = SubResource("mat_glass")
+size = Vector3(0.08, 0.65, 3.4)
+
+[sub_resource type="BoxMesh" id="mesh_sponson"]
+material = SubResource("mat_body")
+size = Vector3(0.55, 1.1, 5.2)
+
+[sub_resource type="BoxMesh" id="mesh_pylon"]
+material = SubResource("mat_body")
+size = Vector3(1, 1.5, 2.2)
+
+[sub_resource type="StandardMaterial3D" id="mat_dark"]
+albedo_color = Color(0.13, 0.14, 0.13, 1)
+metallic = 0.4
+roughness = 0.55
+
+[sub_resource type="CylinderMesh" id="mesh_mast"]
+material = SubResource("mat_dark")
+top_radius = 0.28
+bottom_radius = 0.32
+height = 1.1
+
+[sub_resource type="BoxMesh" id="mesh_blade"]
+material = SubResource("mat_dark")
+size = Vector3(0.5, 0.06, 10.5)
+
+[sub_resource type="CylinderMesh" id="mesh_gear_wheel"]
+material = SubResource("mat_dark")
+top_radius = 0.32
+bottom_radius = 0.32
+height = 0.22
+
+[sub_resource type="SphereShape3D" id="shape_interact"]
+radius = 3.5
+
+[node name="Helicopter" type="RigidBody3D" unique_id=943340291 groups=["vehicles"]]
+mass = 3600.0
+physics_material_override = SubResource("mat_physics")
+center_of_mass_mode = 1
+center_of_mass = Vector3(0, -0.2, 0)
+script = ExtResource("1_script")
+
+[node name="ColBody" type="CollisionShape3D" parent="." unique_id=1784276577]
+shape = SubResource("shape_body")
+
+[node name="ColRearPylon" type="CollisionShape3D" parent="." unique_id=992492682]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 3.2)
+shape = SubResource("shape_rear_pylon")
+
+[node name="Model" type="Node3D" parent="." unique_id=471454881]
+
+[node name="Fuselage" type="CSGBox3D" parent="Model" unique_id=1981273386]
+transform = Transform3D(2.4493654, 0, 0, 0, 2.073757, 0, 0, 0, 9.241346, 0, 0.28256607, 0)
+
+[node name="Fuselage2" type="CSGBox3D" parent="Model/Fuselage" unique_id=1922369544]
+transform = Transform3D(0.89808756, 0, 0, 0, 0.8409103, 0, 0, 0, 1.0000001, 0, 0, 0.032973804)
+operation = 2
+
+[node name="Nose" type="MeshInstance3D" parent="Model" unique_id=1310146180]
+transform = Transform3D(0.7487003, 0, 0, 0, 1, 0, 0, 0, 1.0854028, 0, 0.0013157427, -5.3)
+mesh = SubResource("mesh_nose")
+
+[node name="Nose2" type="MeshInstance3D" parent="Model" unique_id=1293061835]
+transform = Transform3D(0.5844007, 0, 0, 0, 0.46986473, 0, 0, 0, 0.6216702, 0, -0.64769554, -5.4166107)
+mesh = SubResource("mesh_nose")
+
+[node name="Nose3" type="MeshInstance3D" parent="Model" unique_id=2019799686]
+transform = Transform3D(0.5844007, 0, 0, 0, 0.46986473, 0, 0, 0, 0.6216702, 0, 0.9035033, -5.260407)
+mesh = SubResource("mesh_nose")
+
+[node name="GlassF" type="MeshInstance3D" parent="Model" unique_id=1013244972]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.25131574, -6.2055407)
+mesh = SubResource("mesh_glass_f")
+
+[node name="GlassFL" type="MeshInstance3D" parent="Model" unique_id=1653098627]
+transform = Transform3D(-0.3418833, 0, -0.9393167, 0, 1, 0, 0.9393167, 0, -0.3418833, -1, 0.25131574, -5.4)
+mesh = SubResource("mesh_glass_f")
+
+[node name="GlassFR" type="MeshInstance3D" parent="Model" unique_id=285035231]
+transform = Transform3D(-0.3418833, 0, 0.9393167, 0, 0.99999994, 0, -0.9393167, 0, -0.3418833, 1, 0.25131574, -5.45)
+mesh = SubResource("mesh_glass_f")
+
+[node name="GlassL" type="MeshInstance3D" parent="Model" unique_id=1329436132]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.24, 0.5796907, -0.5)
+mesh = SubResource("mesh_glass_side")
+
+[node name="GlassR" type="MeshInstance3D" parent="Model" unique_id=1253131629]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.24, 0.5796907, -0.5)
+mesh = SubResource("mesh_glass_side")
+
+[node name="SponsonL" type="MeshInstance3D" parent="Model" unique_id=2119053135]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.4, -0.35, -0.3)
+mesh = SubResource("mesh_sponson")
+
+[node name="SponsonR" type="MeshInstance3D" parent="Model" unique_id=658907313]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.4, -0.35, -0.3)
+mesh = SubResource("mesh_sponson")
+
+[node name="PylonFront" type="MeshInstance3D" parent="Model" unique_id=1274796540]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.4, -4.2794533)
+mesh = SubResource("mesh_pylon")
+
+[node name="PylonRear" type="MeshInstance3D" parent="Model" unique_id=1340464670]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.0171542, 3.2)
+mesh = SubResource("mesh_pylon")
+
+[node name="RotorFront" type="Node3D" parent="Model" unique_id=1933933194]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.25, -4.2794533)
+
+[node name="Mast" type="MeshInstance3D" parent="Model/RotorFront" unique_id=503782879]
+mesh = SubResource("mesh_mast")
+
+[node name="BladeA" type="MeshInstance3D" parent="Model/RotorFront" unique_id=815665376]
+mesh = SubResource("mesh_blade")
+
+[node name="BladeB" type="MeshInstance3D" parent="Model/RotorFront" unique_id=153163436]
+transform = Transform3D(0.5, 0, 0.866025, 0, 1, 0, -0.866025, 0, 0.5, 0, 0, 0)
+mesh = SubResource("mesh_blade")
+
+[node name="BladeC" type="MeshInstance3D" parent="Model/RotorFront" unique_id=128417303]
+transform = Transform3D(-0.5, 0, 0.866025, 0, 1, 0, -0.866025, 0, -0.5, 0, 0, 0)
+mesh = SubResource("mesh_blade")
+
+[node name="RotorRear" type="Node3D" parent="Model" unique_id=1903682664]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.8671541, 3.2)
+
+[node name="Mast" type="MeshInstance3D" parent="Model/RotorRear" unique_id=2078405413]
+mesh = SubResource("mesh_mast")
+
+[node name="BladeA" type="MeshInstance3D" parent="Model/RotorRear" unique_id=1219228084]
+mesh = SubResource("mesh_blade")
+
+[node name="BladeB" type="MeshInstance3D" parent="Model/RotorRear" unique_id=1696394162]
+transform = Transform3D(0.5, 0, 0.866025, 0, 1, 0, -0.866025, 0, 0.5, 0, 0, 0)
+mesh = SubResource("mesh_blade")
+
+[node name="BladeC" type="MeshInstance3D" parent="Model/RotorRear" unique_id=127444939]
+transform = Transform3D(-0.5, 0, 0.866025, 0, 1, 0, -0.866025, 0, -0.5, 0, 0, 0)
+mesh = SubResource("mesh_blade")
+
+[node name="GearFL" type="MeshInstance3D" parent="Model" unique_id=530319848]
+transform = Transform3D(-4.371139e-08, -1, 0, 1, -4.371139e-08, 0, 0, 0, 1, -1.35, -0.97446823, -3.3)
+mesh = SubResource("mesh_gear_wheel")
+
+[node name="GearFR" type="MeshInstance3D" parent="Model" unique_id=444825286]
+transform = Transform3D(-4.371139e-08, -1, 0, 1, -4.371139e-08, 0, 0, 0, 1, 1.35, -0.97446823, -3.3)
+mesh = SubResource("mesh_gear_wheel")
+
+[node name="GearRL" type="MeshInstance3D" parent="Model" unique_id=1561677998]
+transform = Transform3D(-4.371139e-08, -1, 0, 1, -4.371139e-08, 0, 0, 0, 1, -1.35, -0.97446823, 2.8)
+mesh = SubResource("mesh_gear_wheel")
+
+[node name="GearRR" type="MeshInstance3D" parent="Model" unique_id=1526398139]
+transform = Transform3D(-4.371139e-08, -1, 0, 1, -4.371139e-08, 0, 0, 0, 1, 1.35, -0.97446823, 2.8)
+mesh = SubResource("mesh_gear_wheel")
+
+[node name="Seats" type="Node3D" parent="." unique_id=1535623785]
+
+[node name="Pilot" type="Marker3D" parent="Seats" unique_id=1199571415]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.5, 0.3, -3.9)
+
+[node name="Pass1" type="Marker3D" parent="Seats" unique_id=2014014153]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.5, 0.3, -3.9)
+
+[node name="Pass2" type="Marker3D" parent="Seats" unique_id=1812386346]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.5, 0.3, -1.6)
+
+[node name="Pass3" type="Marker3D" parent="Seats" unique_id=587940628]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.5, 0.3, -1.6)
+
+[node name="Pass4" type="Marker3D" parent="Seats" unique_id=418714274]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.5, 0.3, 0.9)
+
+[node name="Pass5" type="Marker3D" parent="Seats" unique_id=1465835639]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.5, 0.3, 0.9)
+
+[node name="InteractArea" type="Area3D" parent="." unique_id=1647333597]
+collision_layer = 0
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="InteractArea" unique_id=216701478]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -3.368484)
+shape = SubResource("shape_interact")
+
+[node name="ChasePivot" type="Node3D" parent="." unique_id=850725131]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.6, 0)
+
+[node name="ChaseArm" type="SpringArm3D" parent="ChasePivot" unique_id=873352878]
+transform = Transform3D(1, 0, 0, 0, 0.995, -0.105, 0, 0.105, 0.995, 0, 0, 0)
+spring_length = 14.0
+
+[node name="ChaseCamera" type="Camera3D" parent="ChasePivot/ChaseArm" unique_id=1876094652]
+fov = 72.0
+near = 0.3
+far = 1200.0

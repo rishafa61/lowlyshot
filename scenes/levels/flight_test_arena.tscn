@@ -1,0 +1,106 @@
+[gd_scene format=3 uid="uid://cflightarena1"]
+
+[ext_resource type="PackedScene" uid="uid://cb4a3b8u7c8a" path="res://scenes/player/player.tscn" id="1_player"]
+[ext_resource type="PackedScene" path="res://scenes/vehicles/vehicle_spawner.tscn" id="3_vspawner"]
+
+[sub_resource type="ProceduralSkyMaterial" id="SkyMat_flight"]
+sky_top_color = Color(0.24, 0.47, 0.85, 1)
+sky_horizon_color = Color(0.7, 0.79, 0.88, 1)
+ground_bottom_color = Color(0.25, 0.28, 0.2, 1)
+ground_horizon_color = Color(0.7, 0.76, 0.7, 1)
+
+[sub_resource type="Sky" id="Sky_flight"]
+sky_material = SubResource("SkyMat_flight")
+
+[sub_resource type="Environment" id="Env_flight"]
+background_mode = 2
+sky = SubResource("Sky_flight")
+ambient_light_source = 3
+tonemap_mode = 2
+
+[sub_resource type="StandardMaterial3D" id="Mat_Ground"]
+albedo_color = Color(0.36, 0.45, 0.28, 1)
+
+[sub_resource type="StandardMaterial3D" id="Mat_Runway"]
+albedo_color = Color(0.18, 0.18, 0.19, 1)
+roughness = 0.9
+
+[sub_resource type="StandardMaterial3D" id="Mat_Ring"]
+albedo_color = Color(0.95, 0.65, 0.1, 1)
+emission_enabled = true
+emission = Color(0.95, 0.55, 0.05, 1)
+emission_energy_multiplier = 1.4
+
+[sub_resource type="StandardMaterial3D" id="Mat_Tower"]
+albedo_color = Color(0.55, 0.55, 0.58, 1)
+roughness = 0.8
+
+[node name="FlightTestArena" type="Node3D" unique_id=270372809]
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=622990711]
+environment = SubResource("Env_flight")
+
+[node name="Sun" type="DirectionalLight3D" parent="." unique_id=1734046643]
+transform = Transform3D(0.866025, -0.433013, 0.25, 0, 0.5, 0.866025, -0.5, -0.75, 0.433013, 0, 120, 0)
+light_energy = 1.2
+shadow_enabled = true
+
+[node name="Ground" type="CSGBox3D" parent="." unique_id=1229382484]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.5, 0)
+material_override = SubResource("Mat_Ground")
+use_collision = true
+size = Vector3(1200, 1, 1200)
+
+[node name="Runway" type="CSGBox3D" parent="." unique_id=53948912]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.05, 60)
+material_override = SubResource("Mat_Runway")
+use_collision = true
+size = Vector3(28, 0.1, 200)
+
+[node name="VehicleSpawner" parent="." unique_id=1834324255 instance=ExtResource("3_vspawner")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.2343235, 1.02, 101.00868)
+
+[node name="Player" parent="." unique_id=721692377 instance=ExtResource("1_player")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5.5, 1.05, 134)
+
+[node name="Ring1" type="CSGTorus3D" parent="." unique_id=958401344]
+transform = Transform3D(1, 0, 0, 0, -4.37114e-08, 1, 0, -1, -4.37114e-08, 0, 60, -100)
+material_override = SubResource("Mat_Ring")
+inner_radius = 16.0
+outer_radius = 20.0
+sides = 24
+ring_sides = 8
+
+[node name="Ring2" type="CSGTorus3D" parent="." unique_id=1019457152]
+transform = Transform3D(1, 0, 0, 0, -4.37114e-08, 1, 0, -1, -4.37114e-08, 90, 90, -300)
+material_override = SubResource("Mat_Ring")
+inner_radius = 16.0
+outer_radius = 20.0
+sides = 24
+ring_sides = 8
+
+[node name="Ring3" type="CSGTorus3D" parent="." unique_id=1548175546]
+transform = Transform3D(1, 0, 0, 0, -4.37114e-08, 1, 0, -1, -4.37114e-08, -90, 70, -450)
+material_override = SubResource("Mat_Ring")
+inner_radius = 16.0
+outer_radius = 20.0
+sides = 24
+ring_sides = 8
+
+[node name="Tower1" type="CSGBox3D" parent="." unique_id=311884250]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -160, 40, -200)
+material_override = SubResource("Mat_Tower")
+use_collision = true
+size = Vector3(14, 80, 14)
+
+[node name="Tower2" type="CSGBox3D" parent="." unique_id=373868485]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 180, 55, -350)
+material_override = SubResource("Mat_Tower")
+use_collision = true
+size = Vector3(16, 110, 16)
+
+[node name="Tower3" type="CSGBox3D" parent="." unique_id=398987532]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 60, 25, -600)
+material_override = SubResource("Mat_Tower")
+use_collision = true
+size = Vector3(12, 50, 12)

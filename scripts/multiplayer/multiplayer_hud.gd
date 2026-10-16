@@ -253,6 +253,11 @@ func _show_match_end_screen() -> void:
 	scoreboard.visible = true
 	match_end_overlay.visible = true
 
+func _physics_process(_delta: float) -> void:
+	# Flag ownership changes don't fire sync signals — poll for a live header
+	if manager and manager.score_limit > 0:
+		update_header()
+
 func _on_time_tick(t: int) -> void:
 	var mins = floori(float(t) / 60.0)
 	var secs = t % 60
@@ -261,9 +266,23 @@ func _on_time_tick(t: int) -> void:
 func update_header() -> void:
 	if not manager:
 		return
+	round_label.text = manager.mode_title
 	var a = manager.team_scores.get("attackers", 0)
 	var d = manager.team_scores.get("defenders", 0)
-	objective_label.text = "ATT %d — %d DEF   |   First to %d" % [a, d, manager.target_kills]
+	if manager.score_limit > 0:
+		var flag_status := "NEUTRAL"
+		var flags := get_tree().get_nodes_in_group("flagpoint")
+		if not flags.is_empty():
+			var f = flags[0]
+			if f.get("contested"):
+				flag_status = "CONTESTED"
+			elif f.get("owner_team") == "attackers":
+				flag_status = "HELD BY ATTACKERS"
+			elif f.get("owner_team") == "defenders":
+				flag_status = "HELD BY DEFENDERS"
+		objective_label.text = "ATT %d — %d DEF   |   FLAG: %s (Cap: %d)" % [a, d, flag_status, manager.score_limit]
+	else:
+		objective_label.text = "ATT %d — %d DEF   |   First to %d" % [a, d, manager.target_kills]
 
 func refresh_scoreboard() -> void:
 	if not scoreboard_list:
@@ -274,7 +293,7 @@ func refresh_scoreboard() -> void:
 		return
 	var a = manager.team_scores.get("attackers", 0)
 	var d = manager.team_scores.get("defenders", 0)
-	scoreboard_title.text = "TEAM DEATHMATCH   —   ATTACKERS %d : %d DEFENDERS" % [a, d]
+	scoreboard_title.text = "%s   —   ATTACKERS %d : %d DEFENDERS" % [manager.mode_title, a, d]
 	var ally_names: Array = []
 	var enemy_names: Array = []
 
@@ -351,9 +370,9 @@ func pick_side(team: String) -> void:
 	if not manager:
 		return
 	if multiplayer.has_multiplayer_peer():
-		# Cap humans at 5 per side: full team stays on picker with notice
+		# Cap humans at team_size per side: full team stays on picker with notice
 		if not manager.can_join_team(team):
-			lbl_team_full.text = "%s IS FULL (5 MAX) — PICK OTHER SIDE" % team.to_upper()
+			lbl_team_full.text = "%s IS FULL (%d MAX) — PICK OTHER SIDE" % [team.to_upper(), manager.team_size]
 			return
 		manager.request_join_team.rpc_id(1, team)
 	else:

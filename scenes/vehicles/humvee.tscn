@@ -1,0 +1,270 @@
+[gd_scene format=3 uid="uid://dq40s1eqc835x"]
+
+[ext_resource type="Script" uid="uid://bqvvqsbqnljhn" path="res://scripts/vehicles/humvee_controller.gd" id="1_script"]
+
+[sub_resource type="BoxShape3D" id="shape_body"]
+size = Vector3(2.05, 1.5, 4.8)
+
+[sub_resource type="StandardMaterial3D" id="mat_khaki"]
+albedo_color = Color(0.49230695, 0.4422555, 0.28832802, 1)
+roughness = 0.85
+
+[sub_resource type="BoxMesh" id="mesh_cab"]
+material = SubResource("mat_khaki")
+size = Vector3(2, 0.094433606, 2.2)
+
+[sub_resource type="BoxMesh" id="mesh_hood"]
+material = SubResource("mat_khaki")
+size = Vector3(1.95, 0.55, 1.5)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_2artj"]
+albedo_color = Color(0.40311685, 0.36009896, 0.22766057, 1)
+
+[sub_resource type="StandardMaterial3D" id="mat_glass"]
+albedo_color = Color(0.1, 0.14, 0.17, 1)
+metallic = 0.6
+roughness = 0.15
+
+[sub_resource type="BoxMesh" id="mesh_glass_f"]
+material = SubResource("mat_glass")
+size = Vector3(1.7, 0.5, 0.06)
+
+[sub_resource type="BoxMesh" id="mesh_glass_s"]
+material = SubResource("mat_glass")
+size = Vector3(0.06, 0.45, 1.6)
+
+[sub_resource type="StandardMaterial3D" id="mat_dark"]
+albedo_color = Color(0.16, 0.15, 0.13, 1)
+metallic = 0.5
+roughness = 0.5
+
+[sub_resource type="BoxMesh" id="mesh_bumper"]
+material = SubResource("mat_dark")
+size = Vector3(2.1, 0.28, 0.24)
+
+[sub_resource type="StandardMaterial3D" id="mat_tire"]
+albedo_color = Color(0.09, 0.09, 0.09, 1)
+roughness = 0.95
+
+[sub_resource type="CylinderMesh" id="mesh_wheel"]
+material = SubResource("mat_tire")
+height = 0.36
+
+[sub_resource type="SphereShape3D" id="shape_interact"]
+radius = 4.5
+
+[node name="Humvee" type="VehicleBody3D" unique_id=1926513395 groups=["vehicles"]]
+mass = 2400.0
+center_of_mass_mode = 1
+center_of_mass = Vector3(0, -0.35, 0)
+script = ExtResource("1_script")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=187750648]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.1, 0)
+shape = SubResource("shape_body")
+
+[node name="Model" type="Node3D" parent="." unique_id=697232138]
+
+[node name="Cab3" type="MeshInstance3D" parent="Model" unique_id=1472259048]
+transform = Transform3D(0.09014559, 0, 0, 0, -7.4911945e-08, -0.8184726, 0, 1.7137856, -3.5776573e-08, 0.89193135, 0.7354976, -0.7870362)
+mesh = SubResource("mesh_cab")
+
+[node name="Cab4" type="MeshInstance3D" parent="Model" unique_id=594778783]
+transform = Transform3D(0.09014559, 0, 0, 0, -7.4911945e-08, -0.8184726, 0, 1.7137856, -3.5776573e-08, -0.89152867, 0.73584974, -0.78779745)
+mesh = SubResource("mesh_cab")
+
+[node name="Cab14" type="MeshInstance3D" parent="Model" unique_id=251473446]
+transform = Transform3D(0.079661936, 0, 0, 0, -1.2545097e-07, -0.8184726, 0, 2.869984, -3.5776573e-08, 0.78822595, 0.7354976, -1.1692472)
+mesh = SubResource("mesh_cab")
+
+[node name="Cab15" type="MeshInstance3D" parent="Model" unique_id=1334892108]
+transform = Transform3D(0.079661936, 0, 0, 0, -1.2545097e-07, -0.8184726, 0, 2.869984, -3.5776573e-08, -0.78782326, 0.73584974, -1.170522)
+mesh = SubResource("mesh_cab")
+
+[node name="Cab9" type="MeshInstance3D" parent="Model" unique_id=886151334]
+transform = Transform3D(0.061541323, 0, 0, 0, -7.4911945e-08, -0.8184726, 0, 1.7137856, -3.5776573e-08, 0.6089748, 0.7354976, 0.67387736)
+mesh = SubResource("mesh_cab")
+
+[node name="Cab10" type="MeshInstance3D" parent="Model" unique_id=1566115286]
+transform = Transform3D(0.061541323, 0, 0, 0, -7.4911945e-08, -0.8184726, 0, 1.7137856, -3.5776573e-08, -0.6085721, 0.73584974, 0.6731161)
+mesh = SubResource("mesh_cab")
+
+[node name="Cab11" type="MeshInstance3D" parent="Model" unique_id=278667542]
+transform = Transform3D(0.053564288, 0, 0, 0, 0.9574962, -0.6788153, 0, 1.4213595, 0.45728263, 0.5300651, 0.8284354, 1.2894015)
+mesh = SubResource("mesh_cab")
+
+[node name="Cab12" type="MeshInstance3D" parent="Model" unique_id=1478647939]
+transform = Transform3D(0.053564288, 0, 0, 0, 0.9574962, -0.6788153, 0, 1.4213595, 0.45728263, -0.52966243, 0.82830215, 1.2885735)
+mesh = SubResource("mesh_cab")
+
+[node name="Hood" type="MeshInstance3D" parent="Model" unique_id=1896621741]
+transform = Transform3D(1, 0, 0, 0, 0.5606437, 0, 0, 0, 1, 0, 0.023637772, -1.55)
+mesh = SubResource("mesh_hood")
+
+[node name="Hood2" type="MeshInstance3D" parent="Model" unique_id=1110169358]
+transform = Transform3D(0.878244, 0, 0, 0, 0.5557145, 0.13231337, 0, -0.07418065, 0.9912079, 0, 0.5910017, -1.55)
+mesh = SubResource("mesh_hood")
+
+[node name="Hood3" type="MeshInstance3D" parent="Model" unique_id=525097859]
+transform = Transform3D(0.8128527, 0, 0, 0, 0.32588753, -1.5984839e-06, 0, 6.4529337e-07, 0.81267, 0, 0.24815017, -1.7599208)
+mesh = SubResource("mesh_hood")
+
+[node name="Cab" type="MeshInstance3D" parent="Model" unique_id=67100431]
+transform = Transform3D(0.8394195, 0, 0, 0, 1.4193109, 0, 0, 0, 0.2638417, 0, 1.3735124, -0.6070919)
+mesh = SubResource("mesh_cab")
+
+[node name="Cab5" type="MeshInstance3D" parent="Model" unique_id=1835949266]
+transform = Transform3D(0.8394196, 0, 0, 0, 1.4183186, 0.019928228, 0, -0.053067513, 0.53261536, 0, 1.3735124, -0.021795452)
+mesh = SubResource("mesh_cab")
+
+[node name="Cab6" type="MeshInstance3D" parent="Model" unique_id=1473914528]
+transform = Transform3D(0.8394195, 0, 0, 0, 1.4193109, 0, 0, 0, 0.7277581, 0, 0.18560445, -0.021795452)
+mesh = SubResource("mesh_cab")
+
+[node name="Cab7" type="MeshInstance3D" parent="Model" unique_id=1552429563]
+transform = Transform3D(-2.0488992e-08, -1.4193108, 0, 0.46873352, -6.2040044e-08, 0, 0, 0, 0.8292607, -0.7653855, 0.4264263, -0.021795452)
+mesh = SubResource("mesh_cab")
+
+[node name="Cab8" type="MeshInstance3D" parent="Model" unique_id=1897466841]
+transform = Transform3D(-2.0488992e-08, -1.4193108, 0, 0.46873352, -6.2040044e-08, 0, 0, 0, 0.8292607, 0.7774164, 0.426, -0.022)
+mesh = SubResource("mesh_cab")
+
+[node name="Cab2" type="MeshInstance3D" parent="Model" unique_id=166427657]
+transform = Transform3D(0.8495235, 0, 0, 0, 0.9243039, 0.047599513, 0, -0.38165727, 0.11527729, 0, 1.3205744, -1.0158617)
+mesh = SubResource("mesh_cab")
+
+[node name="Cab13" type="MeshInstance3D" parent="Model" unique_id=666509486]
+transform = Transform3D(0.8495235, 0, 0, 0, 0.9243039, 0.047599513, 0, -0.38165727, 0.11527729, 0, 1.1869112, -1.2297958)
+mesh = SubResource("mesh_cab")
+
+[node name="Bed2" type="CSGBox3D" parent="Model" unique_id=695550071]
+transform = Transform3D(1.4611591, 0, 0, 0, 0.20284078, 0, 0, 0, 3.2892942, 0, 0.028224587, 1.3987408)
+material = SubResource("StandardMaterial3D_2artj")
+
+[node name="Bed5" type="CSGBox3D" parent="Model" unique_id=1812692918]
+transform = Transform3D(1.0810801, 0, 0, 0, 0.5894557, 0, 0, 0, 0.19479284, 0, 0.4941857, 0.857067)
+material = SubResource("StandardMaterial3D_2artj")
+
+[node name="Bed6" type="CSGBox3D" parent="Model" unique_id=466642833]
+transform = Transform3D(1.0810801, 0, 0, 0, 0.7028229, 0.03591692, 0, -0.3550443, 0.07109884, 0, 0.48083997, 2.942071)
+material = SubResource("StandardMaterial3D_2artj")
+
+[node name="Bed3" type="CSGBox3D" parent="Model" unique_id=1299856397]
+transform = Transform3D(0.19146216, 0, 0, 0, 0.53469706, 0, 0, 0, 3.2892942, -0.62980586, 0.4051968, 1.3987408)
+material = SubResource("StandardMaterial3D_2artj")
+
+[node name="Bed7" type="CSGBox3D" parent="Model" unique_id=1916697571]
+transform = Transform3D(0.12, 0, 0, 0, 0.336, 0, 0, 0, 2.068, -0.63, 0.7, 1.599)
+material = SubResource("StandardMaterial3D_2artj")
+
+[node name="Bed4" type="CSGBox3D" parent="Model" unique_id=635977350]
+transform = Transform3D(0.19146216, 0, 0, 0, 0.53469706, 0, 0, 0, 3.2892942, 0.6270722, 0.405, 1.399)
+material = SubResource("StandardMaterial3D_2artj")
+
+[node name="Bed8" type="CSGBox3D" parent="Model" unique_id=1705482637]
+transform = Transform3D(0.129, 0, 0, 0, 0.361, 0, 0, 0, 2.221, 0.627, 0.705, 1.599)
+material = SubResource("StandardMaterial3D_2artj")
+
+[node name="Windshield" type="MeshInstance3D" parent="Model" unique_id=963394593]
+transform = Transform3D(1.0002505, 0, 0, 0, 1.0002505, 0, 0, 0, 1, 0, 0.88582075, -1.3286669)
+mesh = SubResource("mesh_glass_f")
+
+[node name="GlassL" type="MeshInstance3D" parent="Model" unique_id=1052298633]
+transform = Transform3D(0.7600764, 0, 0, 0, 2.004087, 0, 0, 0, 1, -0.7676772, 0.85, -0.25)
+mesh = SubResource("mesh_glass_s")
+
+[node name="GlassR" type="MeshInstance3D" parent="Model" unique_id=1111433945]
+transform = Transform3D(0.7600764, 0, 0, 0, 2.004087, 0, 0, 0, 1, 0.7676772, 0.85, -0.25)
+mesh = SubResource("mesh_glass_s")
+
+[node name="BumperF" type="MeshInstance3D" parent="Model" unique_id=1236834175]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.04293856, -2.2744634)
+mesh = SubResource("mesh_bumper")
+
+[node name="BumperR" type="MeshInstance3D" parent="Model" unique_id=989070916]
+transform = Transform3D(0.72293776, 0, 0, 0, 1, 0, 0, 0, 0.49783826, 0, -0.1, 3.0278773)
+mesh = SubResource("mesh_bumper")
+
+[node name="WheelFL" type="VehicleWheel3D" parent="." unique_id=1879129665]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.98, -0.1, -1.45)
+use_as_traction = true
+use_as_steering = true
+wheel_friction_slip = 3.5
+suspension_travel = 0.3
+suspension_stiffness = 45.0
+damping_compression = 0.85
+damping_relaxation = 0.9
+
+[node name="WheelMesh" type="MeshInstance3D" parent="WheelFL" unique_id=543067981]
+transform = Transform3D(-4.371139e-08, -1, 0, 1, -4.371139e-08, 0, 0, 0, 1, 0, 0, 0)
+mesh = SubResource("mesh_wheel")
+
+[node name="WheelFR" type="VehicleWheel3D" parent="." unique_id=1987892684]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.98, -0.1, -1.45)
+use_as_traction = true
+use_as_steering = true
+wheel_friction_slip = 3.5
+suspension_travel = 0.3
+suspension_stiffness = 45.0
+damping_compression = 0.85
+damping_relaxation = 0.9
+
+[node name="WheelMesh" type="MeshInstance3D" parent="WheelFR" unique_id=1165446316]
+transform = Transform3D(-4.371139e-08, -1, 0, 1, -4.371139e-08, 0, 0, 0, 1, 0, 0, 0)
+mesh = SubResource("mesh_wheel")
+
+[node name="WheelRL" type="VehicleWheel3D" parent="." unique_id=808126721]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.98, -0.1, 1.45)
+use_as_traction = true
+wheel_friction_slip = 3.5
+suspension_travel = 0.3
+suspension_stiffness = 45.0
+damping_compression = 0.85
+damping_relaxation = 0.9
+
+[node name="WheelMesh" type="MeshInstance3D" parent="WheelRL" unique_id=636387167]
+transform = Transform3D(-4.371139e-08, -1, 0, 1, -4.371139e-08, 0, 0, 0, 1, 0, 0, 0)
+mesh = SubResource("mesh_wheel")
+
+[node name="WheelRR" type="VehicleWheel3D" parent="." unique_id=1725329996]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.98, -0.1, 1.45)
+use_as_traction = true
+wheel_friction_slip = 3.5
+suspension_travel = 0.3
+suspension_stiffness = 45.0
+damping_compression = 0.85
+damping_relaxation = 0.9
+
+[node name="WheelMesh" type="MeshInstance3D" parent="WheelRR" unique_id=1200303915]
+transform = Transform3D(-4.371139e-08, -1, 0, 1, -4.371139e-08, 0, 0, 0, 1, 0, 0, 0)
+mesh = SubResource("mesh_wheel")
+
+[node name="Seats" type="Node3D" parent="." unique_id=46435357]
+
+[node name="Driver" type="Marker3D" parent="Seats" unique_id=1074889679]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.55, 0.35, -0.45)
+
+[node name="FrontPass" type="Marker3D" parent="Seats" unique_id=603522522]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.55, 0.35, -0.45)
+
+[node name="RearLeft" type="Marker3D" parent="Seats" unique_id=1569169411]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.55, 0.35, 0.9)
+
+[node name="RearRight" type="Marker3D" parent="Seats" unique_id=956555506]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.55, 0.35, 0.9)
+
+[node name="InteractArea" type="Area3D" parent="." unique_id=1694914727]
+collision_layer = 0
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="InteractArea" unique_id=1910418694]
+shape = SubResource("shape_interact")
+
+[node name="ChasePivot" type="Node3D" parent="." unique_id=1460619678]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.7, 0)
+
+[node name="ChaseArm" type="SpringArm3D" parent="ChasePivot" unique_id=1351722291]
+transform = Transform3D(1, 0, 0, 0, 0.978, 0.208, 0, -0.208, 0.978, 0, 0, 0)
+spring_length = 8.0
+
+[node name="ChaseCamera" type="Camera3D" parent="ChasePivot/ChaseArm" unique_id=872100823]
+fov = 70.0
