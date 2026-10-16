@@ -451,7 +451,7 @@ func _update_hud() -> void:
 
 # --- Damage & destruction ---
 
-func take_damage(amount: float, attacker_name: String = "", _weapon_name: String = "", attacker_faction: String = "", pos: Vector3 = Vector3.INF) -> float:
+func take_damage(amount: float, attacker_name: String = "", _weapon_name: String = "", attacker_faction: String = "", _pos: Vector3 = Vector3.INF) -> float:
 	if is_destroyed:
 		return 0.0
 	hp = maxf(hp - amount, 0.0)

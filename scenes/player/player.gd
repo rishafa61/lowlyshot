@@ -749,12 +749,10 @@ func shoot_gun() -> void:
 	
 	var muzzle_pos = get_current_muzzle_position()
 	create_tracer(muzzle_pos, visual_end)
-	# Fire sound: sniper / hold-trigger / single-shot per weapon state
+	# Fire sound: one single-shot per bullet — holding trigger just repeats fast
 	var wid := str(w.get("id", ""))
 	if wid == "m700":
 		Sfx.oneshot3d("sniper_shot", self, 18.0, 160.0, 2.0)
-	elif wid in ["ak47", "m4a4"]:
-		Sfx.oneshot3d("rifle_hold" if w.get("auto", false) else "rifle_single", self, 14.0, 120.0, 1.0)
 	else:
 		# ponytail: glock / desert_hawk have no dedicated assets yet — reuse rifle
 		Sfx.oneshot3d("rifle_single", self, 14.0, 120.0, 1.0)

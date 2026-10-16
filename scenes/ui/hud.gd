@@ -25,6 +25,13 @@ extends CanvasLayer
 @onready var killfeed_container = $KillfeedContainer
 @onready var crosshair_name = $CrosshairName
 @onready var spectator_label = $SpectatorLabel
+@onready var aircraft_hud = $AircraftHUD
+@onready var heat_bar = $AircraftHUD/HeatBar
+@onready var overheat_label = $AircraftHUD/OverheatLabel
+@onready var loadout_label = $AircraftHUD/LoadoutPanel
+@onready var heli_guide = $AircraftHUD/HeliGuide
+@onready var heli_guide_title = $AircraftHUD/HeliGuide/VBox/Title
+@onready var heli_guide_text = $AircraftHUD/HeliGuide/VBox/GuideText
 
 # Console nodes
 @onready var console_container = $ConsoleLayer/ConsoleContainer
@@ -151,6 +158,65 @@ func toggle_combat_hud(show_hud: bool) -> void:
 		reload_bar.hide()
 		cook_bar.hide()
 		hide_hover_name()
+
+## Aircraft mode: hide the player HUD but KEEP the crosshair (aiming) and
+## show the aircraft panel (loadout, heat bar, hull).
+func toggle_aircraft_hud(show_aircraft: bool) -> void:
+	for node in [$StatsMargin, $WeaponMargin, $AmmoMargin, $StaminaContainer, $SkillMargin, $ProgressContainer, $MinimapMargin, $BowUI, $SkillDurationLabel]:
+		node.visible = not show_aircraft
+	aircraft_hud.visible = show_aircraft
+	if not show_aircraft:
+		heat_bar.value = 0.0
+		overheat_label.hide()
+		heli_guide.hide()
+
+func update_aircraft_hud(d: Dictionary) -> void:
+	if d.get("kind", "aircraft") == "helicopter":
+		var pct := 100.0 * float(d.hp) / maxf(float(d.max_hp), 1.0)
+		heat_bar.value = pct
+		heat_bar.modulate = Color(0.3, 1.0, 0.4) if pct > 50.0 else (Color(1.0, 0.75, 0.25) if pct > 25.0 else Color(1.0, 0.25, 0.2))
+		overheat_label.visible = false
+		var climb_txt := ("CLIMB" if d.climb >= 0.0 else "DESC")
+		var exit_txt := ("LANDED - F TO WALK OUT" if d.get("can_walk_out", false) else "AIRBORNE - F TO BAIL OUT")
+		var heli_lines := [
+			"%s  HULL %d/%d" % [str(d.get("name", "Heli")), int(d.hp), int(d.max_hp)],
+			"ALT %5.1f m   SPD %3.0f km/h" % [d.get("alt", 0.0), d.speed],
+			"%s %+.1f m/s   COLL %3.0f%%  ENG %3.0f%%" % [climb_txt, d.climb, d.get("throttle", 0.0) * 100.0, d.get("engine", 0.0) * 100.0],
+			"SEATS %d/%d occupied" % [d.get("seats_total", 6) - d.get("seats_free", 6), d.get("seats_total", 6)],
+			exit_txt
+		]
+		loadout_label.text = "\n".join(heli_lines)
+		heli_guide.visible = true
+		heli_guide_title.text = "HELICOPTER — %s" % ("PILOT" if bool(d.get("is_pilot", false)) else "PASSENGER")
+		return
+	heli_guide.visible = false
+	if d.get("kind", "aircraft") == "humvee":
+		var pct := 100.0 * float(d.hp) / maxf(float(d.max_hp), 1.0)
+		heat_bar.value = pct
+		heat_bar.modulate = Color(0.3, 1.0, 0.4) if pct > 50.0 else (Color(1.0, 0.75, 0.25) if pct > 25.0 else Color(1.0, 0.25, 0.2))
+		overheat_label.visible = false
+		var humvee_lines := [
+			"%s   SPD %3.0f km/h   HULL %d/%d" % [str(d.get("name", "Vehicle")), d.speed, int(d.hp), int(d.max_hp)],
+			"SEATS %d/%d occupied" % [d.get("seats_total", 4) - d.get("seats_free", 4), d.get("seats_total", 4)],
+			"[W/S] Drive/Reverse   [A/D] Steer   [SPACE] Handbrake",
+			"[F] Exit Vehicle"
+		]
+		loadout_label.text = "\n".join(humvee_lines)
+		return
+	heat_bar.value = d.heat
+	heat_bar.modulate = Color(1.6, 0.3, 0.3) if d.overheated else Color(1.0, 0.75, 0.25)
+	overheat_label.visible = d.overheated
+	var missile_l := "READY" if d.missile_l <= 0.0 else "%.1fs" % d.missile_l
+	var missile_r := "READY" if d.missile_r <= 0.0 else "%.1fs" % d.missile_r
+	var gat := "OVERHEAT" if d.overheated else ("HEAT %d%%" % int(d.heat))
+	var lines := [
+		"SPD %3.0f   THR %3d%%   HULL %d/%d" % [d.speed, roundi(d.throttle * 100.0), int(d.hp), int(d.max_hp)],
+		("%s[1] GAU-8  %s  " % [">" if d.slot == 0 else " ", gat]),
+		("%s[2] AGM-65  LMB(L):%s   RMB(R):%s" % [">" if d.slot == 1 else " ", missile_l, missile_r]),
+		("%s[3] MK-82  x%d" % [">" if d.slot == 2 else " ", d.bombs]),
+		("%s[4] FLARE  x%d  (press 4)" % [">" if d.slot == 3 else " ", d.flares]),
+	]
+	loadout_label.text = "\n".join(lines)
 
 func show_spectating(name_text: String, faction: String, is_first_person: bool = false) -> void:
 	var mode_str = "POV" if is_first_person else "3RD"
