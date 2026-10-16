@@ -370,6 +370,7 @@ func _fire_gatling() -> void:
 				hud.show_hit_marker(GATLING_DMG)
 		_spawn_spark(hit_pos, hit.normal)
 	var start := muzzle.global_position + global_basis * Vector3(0, 0, -1.0)
+	Sfx.pool_fire3d("rifle_single", self, 18.0, 160.0, 3.0)
 	if active_pilot != null and active_pilot.has_method("create_tracer"):
 		active_pilot.create_tracer(start, hit_pos, 0.14) # fat tracer: visible at 100+ m/s
 
@@ -470,6 +471,8 @@ func take_damage(amount: float, _attacker_name: String = "", _weapon_name: Strin
 	return amount
 
 func _explode() -> void:
+	Sfx.stop_loop(_engine_sfx)
+	_engine_sfx = null
 	if is_destroyed:
 		return
 	is_destroyed = true

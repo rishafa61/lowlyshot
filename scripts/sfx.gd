@@ -5,7 +5,6 @@ extends Node
 
 const SOUNDS := {
 	"rifle_single": "res://assets/sounds/Rifle - Single Shot.wav",
-	"rifle_hold": "res://assets/sounds/Rifle - Hold Trigger.wav",
 	"rifle_reload": "res://assets/sounds/Rifle - Reload.wav",
 	"sniper_shot": "res://assets/sounds/Sniper - Shot.wav",
 	"walk": "res://assets/sounds/Player - Walk.wav",
@@ -24,7 +23,9 @@ func _ready() -> void:
 	for key in SOUNDS:
 		var s: AudioStream = load(SOUNDS[key])
 		if s:
-			_streams[key] = s
+			# Duplicate: imported resources are read-only; we own an editable
+			# copy so loop points etc. can be set at runtime.
+			_streams[key] = s.duplicate()
 		else:
 			push_warning("Sfx: missing sound file %s" % SOUNDS[key])
 
@@ -56,6 +57,24 @@ func loop3d(key: String, at: Node3D, unit_size := 10.0, max_dist := 80.0, vol_db
 		p.stream = wav
 	p.play()
 	return p
+
+## High-rate pooled 3D sound (for miniguns/gatlings at 8-15 Hz). Reuses 4
+## pre-allocated players attached to the source so there's zero heap churn.
+func pool_fire3d(key: String, at: Node3D, unit_size := 14.0, max_dist := 140.0, vol_db := 0.0) -> void:
+	if not _streams.has(key) or at == null or not is_instance_valid(at):
+		return
+	var pool: Array = at.get_meta("_sfx_pool_" + key, [])
+	if pool.is_empty():
+		for i in 4:
+			var p := _make_player(key, at, unit_size, max_dist, vol_db)
+			pool.append(p)
+		at.set_meta("_sfx_pool_" + key, pool)
+	var idx: int = at.get_meta("_sfx_idx_" + key, 0)
+	var p: AudioStreamPlayer3D = pool[idx]
+	if is_instance_valid(p):
+		p.pitch_scale = randf_range(0.96, 1.04) # slight variation avoids machine-gun phasing
+		p.play()
+	at.set_meta("_sfx_idx_" + key, (idx + 1) % pool.size())
 
 func stop_loop(p: AudioStreamPlayer3D) -> void:
 	if p and is_instance_valid(p):
