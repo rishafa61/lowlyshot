@@ -16,7 +16,7 @@ extends Control
 @onready var stats_box: VBoxContainer = $Margin/VBox/Main/Mid/Detail/Panel/StatsBox
 @onready var weapon_list: VBoxContainer = $Margin/VBox/Main/Mid/WeaponList
 @onready var group_list: VBoxContainer = $Margin/VBox/Main/Mid/GroupList
-@onready var preview_char: Node3D = $Margin/VBox/Main/Right/Preview/Standby
+@onready var preview_char: Node3D = $Margin/VBox/Main/Right/Preview/SubViewport/Standby
 
 const SLOT_DEFS := [
 	{"key": "Primary", "cat": "Primary", "label": "Primary Weapon"},
