@@ -37,11 +37,20 @@ func _execute_skill(_target: Node3D):
 	mat.albedo_color = Color(0, 1, 0, 0.5)
 	mat.emission_enabled = true
 	mat.emission = Color(0, 1, 0, 1)
-	enemy_ref.mesh.material_overlay = mat
+	if "body" in enemy_ref and enemy_ref.body and enemy_ref.body.has_method("set_overlay"):
+		enemy_ref.body.set_overlay(mat)
+	elif "mesh" in enemy_ref and enemy_ref.mesh and "material_overlay" in enemy_ref.mesh:
+		enemy_ref.mesh.material_overlay = mat
 	
 	var tween = create_tween()
 	tween.tween_interval(1.0)
-	tween.tween_callback(func(): if enemy_ref: enemy_ref.mesh.material_overlay = null)
+	tween.tween_callback(func():
+		if not is_instance_valid(enemy_ref): return
+		if "body" in enemy_ref and enemy_ref.body and enemy_ref.body.has_method("clear_overlay"):
+			enemy_ref.body.clear_overlay()
+		elif "mesh" in enemy_ref and enemy_ref.mesh and "material_overlay" in enemy_ref.mesh:
+			enemy_ref.mesh.material_overlay = null
+	)
 
 func _apply_decaying_speed():
 	if not enemy_ref: return

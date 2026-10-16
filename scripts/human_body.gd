@@ -9,9 +9,14 @@ const DEFAULT_CLOTHES := Color(0.36, 0.40, 0.33)
 
 var _tint_mats: Array[StandardMaterial3D] = []
 var _flash_tween: Tween
+var _pending_tint: Color = DEFAULT_CLOTHES
+var _has_pending_tint := false
 
 func _ready() -> void:
 	_init_tint_parts(self)
+	if _has_pending_tint:
+		set_tint(_pending_tint)
+		_has_pending_tint = false
 
 func _init_tint_parts(root: Node) -> void:
 	for n in root.get_children():
@@ -25,6 +30,11 @@ func _init_tint_parts(root: Node) -> void:
 			_init_tint_parts(n)
 
 func set_tint(c: Color) -> void:
+	_pending_tint = c
+	if _tint_mats.is_empty():
+		# Parts not built yet (called before _ready) — replay on ready
+		_has_pending_tint = true
+		return
 	for m in _tint_mats:
 		m.albedo_color = c
 

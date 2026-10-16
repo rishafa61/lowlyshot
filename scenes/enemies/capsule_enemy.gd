@@ -2,6 +2,7 @@ extends CharacterBody3D
 
 @onready var visuals = $Visuals
 @onready var body: HumanBody = $Visuals/Body
+@onready var mesh: Node3D = $Visuals/Body # Compatibility alias for skills/overlays
 @onready var weapon_holder = $Visuals/WeaponHolder
 @onready var nav_agent = $NavigationAgent3D
 @onready var eyes = $Eyes
@@ -617,13 +618,13 @@ func shoot():
 		if equipped_primary and equipped_primary.has("id"):
 			w_name = equipped_primary["id"]
 		# Hostile check: enemy bots consider anyone in group "enemy" as friendly teammate
-		var body = hit.get_parent() if hit is Area3D else hit
-		var friendly = hit.is_in_group("enemy") or (body and body != hit and body.is_in_group("enemy"))
+		var hit_body = hit.get_parent() if hit is Area3D else hit
+		var friendly = hit.is_in_group("enemy") or (hit_body and hit_body != hit and hit_body.is_in_group("enemy"))
 		if not friendly:
 			if hit.has_method("take_damage"):
 				hit.take_damage(dmg, bot_name, w_name, "Enemy")
-			elif body and body != hit and body.has_method("take_damage"):
-				body.take_damage(dmg, bot_name, w_name, "Enemy")
+			elif hit_body and hit_body != hit and hit_body.has_method("take_damage"):
+				hit_body.take_damage(dmg, bot_name, w_name, "Enemy")
 
 	create_tracer(ray_start, visual_end)
 
@@ -684,7 +685,6 @@ func receive_damage(base_dmg: float, part: String = "upper", attacker_name: Stri
 
 	if flash_tween:
 		flash_tween.kill()
-	flash_tween = create_tween()
 	var normal_color = _get_operator_color(active_operator.op_name) if active_operator else Color(0.8, 0.8, 0.8)
 	body.flash_hit(normal_color)
 
