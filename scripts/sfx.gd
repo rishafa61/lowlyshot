@@ -66,8 +66,8 @@ func pool_fire3d(key: String, at: Node3D, unit_size := 14.0, max_dist := 140.0, 
 	var pool: Array = at.get_meta("_sfx_pool_" + key, [])
 	if pool.is_empty():
 		for i in 4:
-			var p := _make_player(key, at, unit_size, max_dist, vol_db)
-			pool.append(p)
+			var player_node := _make_player(key, at, unit_size, max_dist, vol_db)
+			pool.append(player_node)
 		at.set_meta("_sfx_pool_" + key, pool)
 	var idx: int = at.get_meta("_sfx_idx_" + key, 0)
 	var p: AudioStreamPlayer3D = pool[idx]

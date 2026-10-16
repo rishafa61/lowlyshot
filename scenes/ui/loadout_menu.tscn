@@ -1,58 +1,7 @@
-[gd_scene load_steps=10 format=3]
+[gd_scene load_steps=3 format=3]
 
 [ext_resource type="Script" path="res://scenes/ui/loadout_menu.gd" id="1_script"]
-
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_bg"]
-bg_color = Color(0.12, 0.12, 0.15, 1)
-
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_panel"]
-bg_color = Color(0.18, 0.18, 0.22, 0.8)
-corner_radius_top_left = 8
-corner_radius_top_right = 8
-corner_radius_bottom_right = 8
-corner_radius_bottom_left = 8
-
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_tab"]
-bg_color = Color(0.2, 0.2, 0.25, 1)
-corner_radius_top_left = 4
-corner_radius_top_right = 4
-corner_radius_bottom_right = 4
-corner_radius_bottom_left = 4
-
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_tab_active"]
-bg_color = Color(0.4, 0.4, 0.5, 1)
-corner_radius_top_left = 4
-corner_radius_top_right = 4
-corner_radius_bottom_right = 4
-corner_radius_bottom_left = 4
-
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_bar_bg"]
-bg_color = Color(0.1, 0.1, 0.1, 1)
-corner_radius_top_left = 2
-corner_radius_top_right = 2
-corner_radius_bottom_right = 2
-corner_radius_bottom_left = 2
-
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_bar_fill"]
-bg_color = Color(0.2, 0.6, 1, 1)
-corner_radius_top_left = 2
-corner_radius_top_right = 2
-corner_radius_bottom_right = 2
-corner_radius_bottom_left = 2
-
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_btn_equip"]
-bg_color = Color(0.95, 0.55, 0.15, 1)
-corner_radius_top_left = 8
-corner_radius_top_right = 8
-corner_radius_bottom_right = 8
-corner_radius_bottom_left = 8
-
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_btn_buy"]
-bg_color = Color(0.8, 0.8, 0.2, 1)
-corner_radius_top_left = 8
-corner_radius_top_right = 8
-corner_radius_bottom_right = 8
-corner_radius_bottom_left = 8
+[ext_resource type="PackedScene" path="res://scenes/ui/standby_character.tscn" id="2_char"]
 
 [node name="LoadoutMenu" type="Control"]
 layout_mode = 3
@@ -70,197 +19,239 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-color = Color(0.1, 0.1, 0.12, 1)
+color = Color(0.08, 0.1, 0.13, 1)
 
-[node name="TopBar" type="HBoxContainer" parent="."]
-layout_mode = 1
-anchors_preset = 10
-anchor_right = 1.0
-offset_left = 60.0
-offset_top = 24.0
-offset_right = -60.0
-offset_bottom = 74.0
-grow_horizontal = 2
-
-[node name="BtnBack" type="Button" parent="TopBar"]
-custom_minimum_size = Vector2(100, 0)
-layout_mode = 2
-theme_override_font_sizes/font_size = 20
-theme_override_styles/normal = SubResource("StyleBoxFlat_panel")
-text = "< BACK"
-
-[node name="Spacer1" type="Control" parent="TopBar"]
-layout_mode = 2
-size_flags_horizontal = 3
-
-[node name="TabPrimary" type="Button" parent="TopBar"]
-custom_minimum_size = Vector2(120, 0)
-layout_mode = 2
-theme_override_font_sizes/font_size = 18
-theme_override_styles/normal = SubResource("StyleBoxFlat_tab_active")
-text = "PRIMARY"
-
-[node name="TabSecondary" type="Button" parent="TopBar"]
-custom_minimum_size = Vector2(120, 0)
-layout_mode = 2
-theme_override_font_sizes/font_size = 18
-theme_override_styles/normal = SubResource("StyleBoxFlat_tab")
-text = "SECONDARY"
-
-[node name="TabMelee" type="Button" parent="TopBar"]
-custom_minimum_size = Vector2(120, 0)
-layout_mode = 2
-theme_override_font_sizes/font_size = 18
-theme_override_styles/normal = SubResource("StyleBoxFlat_tab")
-text = "MELEE"
-
-[node name="TabUtility" type="Button" parent="TopBar"]
-custom_minimum_size = Vector2(120, 0)
-layout_mode = 2
-theme_override_font_sizes/font_size = 18
-theme_override_styles/normal = SubResource("StyleBoxFlat_tab")
-text = "UTILITY"
-
-[node name="Spacer2" type="Control" parent="TopBar"]
-layout_mode = 2
-size_flags_horizontal = 3
-
-[node name="Currency" type="Label" parent="TopBar"]
-layout_mode = 2
-theme_override_colors/font_color = Color(1, 0.8, 0, 1)
-theme_override_font_sizes/font_size = 24
-text = "$ 2500"
-vertical_alignment = 1
-
-[node name="Content" type="HBoxContainer" parent="."]
+[node name="Margin" type="MarginContainer" parent="."]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = 80.0
-offset_top = 110.0
-offset_right = -80.0
-offset_bottom = -48.0
 grow_horizontal = 2
 grow_vertical = 2
-theme_override_constants/separation = 40
+theme_override_constants/margin_left = 60
+theme_override_constants/margin_top = 30
+theme_override_constants/margin_right = 60
+theme_override_constants/margin_bottom = 30
 
-[node name="LeftPanel" type="VBoxContainer" parent="Content"]
-custom_minimum_size = Vector2(300, 0)
+[node name="VBox" type="VBoxContainer" parent="Margin"]
+layout_mode = 2
+theme_override_constants/separation = 16
+
+[node name="TopBar" type="HBoxContainer" parent="Margin/VBox"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="BtnLB" type="Button" parent="Margin/VBox/TopBar"]
+custom_minimum_size = Vector2(50, 36)
+layout_mode = 2
+text = "LB"
+
+[node name="Tab01" type="Button" parent="Margin/VBox/TopBar"]
+custom_minimum_size = Vector2(130, 36)
+layout_mode = 2
+text = "Loadout 01"
+
+[node name="Tab02" type="Button" parent="Margin/VBox/TopBar"]
+custom_minimum_size = Vector2(130, 36)
+layout_mode = 2
+text = "Loadout 02"
+
+[node name="Tab03" type="Button" parent="Margin/VBox/TopBar"]
+custom_minimum_size = Vector2(130, 36)
+layout_mode = 2
+text = "Loadout 03"
+
+[node name="Tab04" type="Button" parent="Margin/VBox/TopBar"]
+custom_minimum_size = Vector2(130, 36)
+layout_mode = 2
+text = "Loadout 04"
+
+[node name="BtnRB" type="Button" parent="Margin/VBox/TopBar"]
+custom_minimum_size = Vector2(50, 36)
+layout_mode = 2
+text = "RB"
+
+[node name="Spacer" type="Control" parent="Margin/VBox/TopBar"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Main" type="HBoxContainer" parent="Margin/VBox"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 24
+
+[node name="Left" type="VBoxContainer" parent="Margin/VBox/Main"]
+custom_minimum_size = Vector2(260, 0)
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="SlotPrimary" type="PanelContainer" parent="Margin/VBox/Main/Left"]
+custom_minimum_size = Vector2(0, 110)
 layout_mode = 2
 
-[node name="ItemName" type="Label" parent="Content/LeftPanel"]
+[node name="VBox" type="VBoxContainer" parent="Margin/VBox/Main/Left/SlotPrimary"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 32
-text = "M700"
+alignment = 1
 
-[node name="HSeparator" type="HSeparator" parent="Content/LeftPanel"]
+[node name="NameLabel" type="Label" parent="Margin/VBox/Main/Left/SlotPrimary/VBox"]
+layout_mode = 2
+text = "AK-47"
+horizontal_alignment = 1
+
+[node name="SubLabel" type="Label" parent="Margin/VBox/Main/Left/SlotPrimary/VBox"]
+layout_mode = 2
+text = "Primary Weapon"
+horizontal_alignment = 1
+
+[node name="SlotSecondary" type="PanelContainer" parent="Margin/VBox/Main/Left"]
+custom_minimum_size = Vector2(0, 110)
+layout_mode = 2
+
+[node name="VBox" type="VBoxContainer" parent="Margin/VBox/Main/Left/SlotSecondary"]
+layout_mode = 2
+alignment = 1
+
+[node name="NameLabel" type="Label" parent="Margin/VBox/Main/Left/SlotSecondary/VBox"]
+layout_mode = 2
+text = "Glock"
+horizontal_alignment = 1
+
+[node name="SubLabel" type="Label" parent="Margin/VBox/Main/Left/SlotSecondary/VBox"]
+layout_mode = 2
+text = "Secondary Weapon"
+horizontal_alignment = 1
+
+[node name="SlotHeavy" type="PanelContainer" parent="Margin/VBox/Main/Left"]
+custom_minimum_size = Vector2(0, 110)
+layout_mode = 2
+
+[node name="VBox" type="VBoxContainer" parent="Margin/VBox/Main/Left/SlotHeavy"]
+layout_mode = 2
+alignment = 1
+
+[node name="NameLabel" type="Label" parent="Margin/VBox/Main/Left/SlotHeavy/VBox"]
+layout_mode = 2
+text = "Combat Knife"
+horizontal_alignment = 1
+
+[node name="SubLabel" type="Label" parent="Margin/VBox/Main/Left/SlotHeavy/VBox"]
+layout_mode = 2
+text = "Heavy Weapon"
+horizontal_alignment = 1
+
+[node name="SlotEquip1" type="PanelContainer" parent="Margin/VBox/Main/Left"]
+custom_minimum_size = Vector2(0, 110)
+layout_mode = 2
+
+[node name="VBox" type="VBoxContainer" parent="Margin/VBox/Main/Left/SlotEquip1"]
+layout_mode = 2
+alignment = 1
+
+[node name="NameLabel" type="Label" parent="Margin/VBox/Main/Left/SlotEquip1/VBox"]
+layout_mode = 2
+text = "Frag Grenade"
+horizontal_alignment = 1
+
+[node name="SubLabel" type="Label" parent="Margin/VBox/Main/Left/SlotEquip1/VBox"]
+layout_mode = 2
+text = "Equipment 01"
+horizontal_alignment = 1
+
+[node name="SlotEquip2" type="PanelContainer" parent="Margin/VBox/Main/Left"]
+custom_minimum_size = Vector2(0, 110)
+layout_mode = 2
+
+[node name="VBox" type="VBoxContainer" parent="Margin/VBox/Main/Left/SlotEquip2"]
+layout_mode = 2
+alignment = 1
+
+[node name="NameLabel" type="Label" parent="Margin/VBox/Main/Left/SlotEquip2/VBox"]
+layout_mode = 2
+text = "Flashbang"
+horizontal_alignment = 1
+
+[node name="SubLabel" type="Label" parent="Margin/VBox/Main/Left/SlotEquip2/VBox"]
+layout_mode = 2
+text = "Equipment 02"
+horizontal_alignment = 1
+
+[node name="Mid" type="VBoxContainer" parent="Margin/VBox/Main"]
+custom_minimum_size = Vector2(520, 0)
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="CatHeader" type="PanelContainer" parent="Margin/VBox/Main/Mid"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="Margin/VBox/Main/Mid/CatHeader"]
+layout_mode = 2
+text = "Assault Rifles"
+
+[node name="Detail" type="PanelContainer" parent="Margin/VBox/Main/Mid"]
+layout_mode = 2
+
+[node name="Panel" type="VBoxContainer" parent="Margin/VBox/Main/Mid/Detail"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="ItemName" type="Label" parent="Margin/VBox/Main/Mid/Detail/Panel"]
+layout_mode = 2
+text = "M4A4"
+
+[node name="ItemDesc" type="Label" parent="Margin/VBox/Main/Mid/Detail/Panel"]
+layout_mode = 2
+text = "Versatile combat rifle."
+
+[node name="StatsBox" type="VBoxContainer" parent="Margin/VBox/Main/Mid/Detail/Panel"]
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="BtnEquip" type="Button" parent="Margin/VBox/Main/Mid/Detail/Panel"]
+custom_minimum_size = Vector2(0, 48)
+layout_mode = 2
+text = "EQUIP"
+
+[node name="WeaponList" type="VBoxContainer" parent="Margin/VBox/Main/Mid"]
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="GroupList" type="VBoxContainer" parent="Margin/VBox/Main/Mid"]
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="Right" type="VBoxContainer" parent="Margin/VBox/Main"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Preview" type="SubViewportContainer" parent="Margin/VBox/Main/Right"]
+layout_mode = 2
+size_flags_vertical = 3
+stretch = true
+
+[node name="SubViewport" type="SubViewport" parent="Margin/VBox/Main/Right/Preview"]
+transparent_bg = true
+handle_input_locally = false
+size = Vector2i(500, 700)
+render_target_update_mode = 4
+
+[node name="Camera3D" type="Camera3D" parent="Margin/VBox/Main/Right/Preview/SubViewport"]
+transform = Transform3D(-0.99999, 0, 0.00438, 0, 1, 0, -0.00438, 0, -0.99999, 0.0, 1.25, -2.8)
+current = true
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="Margin/VBox/Main/Right/Preview/SubViewport"]
+transform = Transform3D(0.866, -0.433, 0.25, 0, 0.5, 0.866, -0.5, -0.75, 0.433, 0, 3, 0)
+
+[node name="Standby" parent="Margin/VBox/Main/Right/Preview/SubViewport" instance=ExtResource("2_char")]
+
+[node name="BottomBar" type="HBoxContainer" parent="Margin/VBox"]
 layout_mode = 2
 theme_override_constants/separation = 20
 
-[node name="Stats" type="VBoxContainer" parent="Content/LeftPanel"]
+[node name="BtnBack" type="Button" parent="Margin/VBox/BottomBar"]
+custom_minimum_size = Vector2(120, 44)
 layout_mode = 2
-theme_override_constants/separation = 15
+text = "< BACK"
 
-[node name="StatDmg" type="VBoxContainer" parent="Content/LeftPanel/Stats"]
+[node name="HintEquip" type="Label" parent="Margin/VBox/BottomBar"]
 layout_mode = 2
-[node name="Header" type="HBoxContainer" parent="Content/LeftPanel/Stats/StatDmg"]
-layout_mode = 2
-[node name="Label" type="Label" parent="Content/LeftPanel/Stats/StatDmg/Header"]
-layout_mode = 2
-size_flags_horizontal = 3
-text = "Damage"
-[node name="Value" type="Label" parent="Content/LeftPanel/Stats/StatDmg/Header"]
-layout_mode = 2
-text = "35"
-[node name="ProgressBar" type="ProgressBar" parent="Content/LeftPanel/Stats/StatDmg"]
-custom_minimum_size = Vector2(0, 10)
-layout_mode = 2
-theme_override_styles/background = SubResource("StyleBoxFlat_bar_bg")
-theme_override_styles/fill = SubResource("StyleBoxFlat_bar_fill")
-value = 60.0
-show_percentage = false
-
-[node name="StatRng" type="VBoxContainer" parent="Content/LeftPanel/Stats"]
-layout_mode = 2
-[node name="Header" type="HBoxContainer" parent="Content/LeftPanel/Stats/StatRng"]
-layout_mode = 2
-[node name="Label" type="Label" parent="Content/LeftPanel/Stats/StatRng/Header"]
-layout_mode = 2
-size_flags_horizontal = 3
-text = "Range"
-[node name="Value" type="Label" parent="Content/LeftPanel/Stats/StatRng/Header"]
-layout_mode = 2
-text = "60"
-[node name="ProgressBar" type="ProgressBar" parent="Content/LeftPanel/Stats/StatRng"]
-custom_minimum_size = Vector2(0, 10)
-layout_mode = 2
-theme_override_styles/background = SubResource("StyleBoxFlat_bar_bg")
-theme_override_styles/fill = SubResource("StyleBoxFlat_bar_fill")
-value = 80.0
-show_percentage = false
-
-[node name="StatStab" type="VBoxContainer" parent="Content/LeftPanel/Stats"]
-layout_mode = 2
-[node name="Header" type="HBoxContainer" parent="Content/LeftPanel/Stats/StatStab"]
-layout_mode = 2
-[node name="Label" type="Label" parent="Content/LeftPanel/Stats/StatStab/Header"]
-layout_mode = 2
-size_flags_horizontal = 3
-text = "Stability"
-[node name="Value" type="Label" parent="Content/LeftPanel/Stats/StatStab/Header"]
-layout_mode = 2
-text = "50"
-[node name="ProgressBar" type="ProgressBar" parent="Content/LeftPanel/Stats/StatStab"]
-custom_minimum_size = Vector2(0, 10)
-layout_mode = 2
-theme_override_styles/background = SubResource("StyleBoxFlat_bar_bg")
-theme_override_styles/fill = SubResource("StyleBoxFlat_bar_fill")
-value = 40.0
-show_percentage = false
-
-[node name="StatFr" type="VBoxContainer" parent="Content/LeftPanel/Stats"]
-layout_mode = 2
-[node name="Header" type="HBoxContainer" parent="Content/LeftPanel/Stats/StatFr"]
-layout_mode = 2
-[node name="Label" type="Label" parent="Content/LeftPanel/Stats/StatFr/Header"]
-layout_mode = 2
-size_flags_horizontal = 3
-text = "Fire Rate"
-[node name="Value" type="Label" parent="Content/LeftPanel/Stats/StatFr/Header"]
-layout_mode = 2
-text = "10"
-[node name="ProgressBar" type="ProgressBar" parent="Content/LeftPanel/Stats/StatFr"]
-custom_minimum_size = Vector2(0, 10)
-layout_mode = 2
-theme_override_styles/background = SubResource("StyleBoxFlat_bar_bg")
-theme_override_styles/fill = SubResource("StyleBoxFlat_bar_fill")
-value = 30.0
-show_percentage = false
-
-[node name="Spacer" type="Control" parent="Content/LeftPanel"]
-layout_mode = 2
-size_flags_vertical = 3
-
-[node name="BtnAction" type="Button" parent="Content/LeftPanel"]
-custom_minimum_size = Vector2(0, 60)
-layout_mode = 2
-theme_override_font_sizes/font_size = 24
-theme_override_styles/normal = SubResource("StyleBoxFlat_btn_equip")
-text = "EQUIPPED"
-
-[node name="RightPanel" type="PanelContainer" parent="Content"]
-layout_mode = 2
-size_flags_horizontal = 3
-theme_override_styles/panel = SubResource("StyleBoxFlat_panel")
-
-[node name="ScrollContainer" type="ScrollContainer" parent="Content/RightPanel"]
-layout_mode = 2
-horizontal_scroll_mode = 0
-
-[node name="GridContainer" type="GridContainer" parent="Content/RightPanel/ScrollContainer"]
-layout_mode = 2
-size_flags_horizontal = 3
-theme_override_constants/h_separation = 20
-theme_override_constants/v_separation = 20
-columns = 3
+text = "[E] Equip Selected"

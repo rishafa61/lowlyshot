@@ -9,6 +9,9 @@ extends Node3D
 func _ready() -> void:
 	_show_equipped_weapon()
 
+func refresh() -> void:
+	_show_equipped_weapon()
+
 ## Shows the stand-in weapon that matches the equipped primary loadout.
 func _show_equipped_weapon() -> void:
 	var primary: Dictionary = GlobalData.get_equipped_primary()
