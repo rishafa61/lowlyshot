@@ -18,8 +18,12 @@ const SOUNDS := {
 }
 
 var _streams := {}
+const SFX_BUS := "SFX"
+const MUSIC_BUS := "Music"
 
 func _ready() -> void:
+	_ensure_bus(SFX_BUS)
+	_ensure_bus(MUSIC_BUS)
 	for key in SOUNDS:
 		var s: AudioStream = load(SOUNDS[key])
 		if s:
@@ -28,6 +32,28 @@ func _ready() -> void:
 			_streams[key] = s.duplicate()
 		else:
 			push_warning("Sfx: missing sound file %s" % SOUNDS[key])
+	apply_volumes()
+
+func _ensure_bus(bus_name: String) -> void:
+	if AudioServer.bus_count > 0 and AudioServer.get_bus_index(bus_name) != -1:
+		return
+	AudioServer.add_bus()
+	var idx := AudioServer.bus_count - 1
+	AudioServer.set_bus_name(idx, bus_name)
+	AudioServer.set_bus_send(idx, "Master")
+
+## Reads GlobalSettings volumes into the SFX/Music buses. Call after any
+## slider change — bus gain multiplies on top of each player's volume_db,
+## so persistent loops (rotor/engine) update live too.
+func apply_volumes() -> void:
+	var gs = get_node_or_null("/root/GlobalSettings")
+	var sfx_vol := 100.0
+	var bgm_vol := 80.0
+	if gs != null:
+		sfx_vol = float(gs.get("sfx_vol"))
+		bgm_vol = float(gs.get("bgm_vol"))
+	AudioServer.set_bus_volume_db(AudioServer.get_bus_index(SFX_BUS), linear_to_db(maxf(sfx_vol / 100.0, 0.0001)))
+	AudioServer.set_bus_volume_db(AudioServer.get_bus_index(MUSIC_BUS), linear_to_db(maxf(bgm_vol / 100.0, 0.0001)))
 
 func has(key: String) -> bool:
 	return _streams.has(key)
@@ -86,6 +112,7 @@ func _make_player(key: String, at: Node3D, unit_size: float, max_dist: float, vo
 	p.unit_size = unit_size
 	p.max_distance = max_dist
 	p.volume_db = vol_db
+	p.bus = SFX_BUS # settings slider controls this bus — applies to every game sound
 	p.attenuation_model = AudioStreamPlayer3D.ATTENUATION_INVERSE_DISTANCE
 	at.add_child(p)
 	return p

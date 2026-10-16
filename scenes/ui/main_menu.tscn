@@ -159,6 +159,14 @@ theme_override_styles/normal = SubResource("StyleBoxFlat_btn_normal")
 text = "SETTING"
 alignment = 0
 
+[node name="BtnExit" type="Button" parent="LeftNav/VBoxContainer" unique_id=2067349436]
+custom_minimum_size = Vector2(0, 50)
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+theme_override_styles/normal = SubResource("StyleBoxFlat_btn_normal")
+text = "EXIT"
+alignment = 0
+
 [node name="RightPanel" type="MarginContainer" parent="." unique_id=257387440]
 layout_mode = 1
 anchors_preset = 11

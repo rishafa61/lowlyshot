@@ -33,6 +33,39 @@ var _cam_pitch: float = -0.15
 
 var _engine_sfx: AudioStreamPlayer3D = null
 
+# --- Network puppet ---
+var _net_puppet := false
+var _net_target_pos := Vector3.ZERO
+var _net_target_quat := Quaternion.IDENTITY
+var _net_target_vel := Vector3.ZERO
+var _net_send_timer := 0.0
+
+func _net_send_state(delta: float) -> void:
+	_net_send_timer += delta
+	if _net_send_timer < 0.05:
+		return
+	_net_send_timer = 0.0
+	var mgr = get_tree().current_scene
+	if mgr and mgr.has_method("send_vehicle_state"):
+		var eng := clampf(absf(engine_force) / maxf(engine_power, 1.0), 0.0, 1.0)
+		mgr.send_vehicle_state(String(get_path()), global_position, global_basis.get_euler(), linear_velocity, eng)
+
+func _notify_release() -> void:
+	var mgr = get_tree().current_scene
+	if mgr and mgr.has_method("send_vehicle_release"):
+		mgr.send_vehicle_release(String(get_path()))
+
+func net_set_target(pos: Vector3, rot: Vector3, vel: Vector3, _eng: float = 0.0) -> void:
+	_net_puppet = true
+	freeze = true
+	_net_target_pos = pos
+	_net_target_quat = Basis.from_euler(rot).get_rotation_quaternion()
+	_net_target_vel = vel
+
+func net_release_puppet() -> void:
+	_net_puppet = false
+	freeze = false
+
 func _enter_tree() -> void:
 	# Guard: wheels must enter the tree with identity basis — VehicleWheel3D
 	# bakes its suspension axis from the transform at enter-tree time, and a
@@ -136,6 +169,8 @@ func _exit(idx: int) -> void:
 	var bail_vel := linear_velocity * 0.4
 	player.exit_aircraft(exit_pos, -global_basis.z, bail_vel)
 	pilot_exited.emit()
+	if idx == 0:
+		_notify_release()
 	if _prompt_player == null and interact_area != null and interact_area.get_overlapping_bodies().has(player):
 		_on_body_entered(player)
 
@@ -160,10 +195,19 @@ func _process(delta: float) -> void:
 	chase_arm.rotation.x = lerp(chase_arm.rotation.x, target_pitch, w)
 
 func _physics_process(delta: float) -> void:
+	if _net_puppet:
+		var t := minf(1.0, delta * 15.0)
+		global_position = global_position.lerp(_net_target_pos, t)
+		var q := global_basis.get_rotation_quaternion().slerp(_net_target_quat, t)
+		global_basis = Basis(q)
+		return
 	var driver = occupants[0] if occupants.size() > 0 else null
 	var driving: bool = driver != null and driver.get("is_dead") != true
 	if driving:
 		_drive_input(delta)
+		var local_driver: bool = driver.get("hud") != null
+		if local_driver:
+			_net_send_state(delta)
 		if _engine_sfx == null:
 			_engine_sfx = Sfx.loop3d("humvee", self, 8.0, 90.0, -4.0)
 		if _engine_sfx:
@@ -244,6 +288,7 @@ func _explode() -> void:
 	if is_destroyed:
 		return
 	is_destroyed = true
+	_notify_release()
 	if chase_cam != null:
 		chase_cam.current = false
 	for i in occupants.size():

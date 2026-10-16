@@ -530,6 +530,60 @@ func net_player_state(pid: int, pos: Vector3, yaw: float, pitch: float, weapon_p
 	if p and p.has_method("net_set_weapon"):
 		p.net_set_weapon(weapon_path)
 
+# ---------------- Vehicle replication ----------------
+## Vehicles have no native netcode: the driver's machine streams transform of
+## occupied vehicles; every other machine drives its local copy as a puppet.
+## Relayed through the host like player state (coop trust model).
+
+func send_vehicle_state(vpath: String, pos: Vector3, rot: Vector3, vel: Vector3, eng: float) -> void:
+	if not GlobalData.is_networked():
+		return
+	if multiplayer.is_server():
+		for p in ready_peers:
+			net_vehicle_state.rpc_id(p, vpath, pos, rot, vel, eng)
+	else:
+		net_vehicle_state.rpc_id(1, vpath, pos, rot, vel, eng)
+
+@rpc("any_peer", "call_remote", "unreliable_ordered")
+func net_vehicle_state(vpath: String, pos: Vector3, rot: Vector3, vel: Vector3, eng: float) -> void:
+	var sender := multiplayer.get_remote_sender_id()
+	if multiplayer.is_server():
+		if sender == 1:
+			return
+		for p in ready_peers:
+			if p != sender:
+				net_vehicle_state.rpc_id(p, vpath, pos, rot, vel, eng)
+	elif sender != 1:
+		return
+	var v = get_tree().root.get_node_or_null(NodePath(vpath))
+	if v and v.has_method("net_set_target"):
+		v.net_set_target(pos, rot, vel, eng)
+
+## Called when the local driver exits — unfreezes the puppet copies elsewhere.
+func send_vehicle_release(vpath: String) -> void:
+	if not GlobalData.is_networked():
+		return
+	if multiplayer.is_server():
+		for p in ready_peers:
+			net_vehicle_release.rpc_id(p, vpath)
+	else:
+		net_vehicle_release.rpc_id(1, vpath)
+
+@rpc("any_peer", "call_remote", "reliable")
+func net_vehicle_release(vpath: String) -> void:
+	var sender := multiplayer.get_remote_sender_id()
+	if multiplayer.is_server():
+		if sender == 1:
+			return
+		for p in ready_peers:
+			if p != sender:
+				net_vehicle_release.rpc_id(p, vpath)
+	elif sender != 1:
+		return
+	var v = get_tree().root.get_node_or_null(NodePath(vpath))
+	if v and v.has_method("net_release_puppet"):
+		v.net_release_puppet()
+
 ## Player death animation broadcast
 func notify_player_death(pid: int) -> void:
 	if multiplayer.is_server():

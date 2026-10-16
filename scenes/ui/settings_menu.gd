@@ -21,6 +21,9 @@ extends Control
 @onready var spin_hip = $Content/TabGameplayPanel/HBoxHipSens/SpinBoxHip
 @onready var spin_scope = $Content/TabGameplayPanel/HBoxScopeSens/SpinBoxScope
 @onready var check_fullscreen = $Content/TabVisualPanel/HBoxFullscreen/CheckFullscreen
+@onready var slider_bgm = $Content/TabAudioPanel/HBoxBGM/SliderBGM
+@onready var slider_sfx = $Content/TabAudioPanel/HBoxSFX/SliderSFX
+@onready var slider_input = $Content/TabAudioPanel/HBoxInput/SliderInput
 
 func _ready():
 	btn_back.pressed.connect(_on_back_pressed)
@@ -44,7 +47,15 @@ func _ready():
 	spin_scope.value = GlobalSettings.scope_sensitivity_mult
 	slider_scope.value_changed.connect(_on_scope_changed)
 	spin_scope.value_changed.connect(_on_scope_changed_from_spin)
-	
+
+	# Audio sliders
+	slider_bgm.value = GlobalSettings.bgm_vol
+	slider_bgm.value_changed.connect(_on_bgm_changed)
+	slider_sfx.value = GlobalSettings.sfx_vol
+	slider_sfx.value_changed.connect(_on_sfx_changed)
+	slider_input.value = GlobalSettings.mic_vol
+	slider_input.value_changed.connect(_on_mic_changed)
+
 	set_tab("Visual")
 
 func set_tab(tab_name: String):
@@ -72,6 +83,21 @@ func _on_scope_changed(val: float):
 func _on_scope_changed_from_spin(val: float):
 	GlobalSettings.scope_sensitivity_mult = val
 	slider_scope.value = val
+
+func _on_bgm_changed(val: float) -> void:
+	GlobalSettings.bgm_vol = val
+	var sfx = get_node_or_null("/root/Sfx")
+	if sfx and sfx.has_method("apply_volumes"):
+		sfx.apply_volumes()
+
+func _on_sfx_changed(val: float) -> void:
+	GlobalSettings.sfx_vol = val
+	var sfx = get_node_or_null("/root/Sfx")
+	if sfx and sfx.has_method("apply_volumes"):
+		sfx.apply_volumes()
+
+func _on_mic_changed(val: float) -> void:
+	GlobalSettings.mic_vol = val
 
 
 func _on_fullscreen_toggled(on: bool) -> void:

@@ -82,6 +82,39 @@ var _engine_sfx: AudioStreamPlayer3D = null
 var _pilot_name: String = "Pilot"
 var _pilot_faction: String = "Player"
 
+# --- Network puppet ---
+var _net_puppet := false
+var _net_target_pos := Vector3.ZERO
+var _net_target_quat := Quaternion.IDENTITY
+var _net_target_vel := Vector3.ZERO
+var _net_send_timer := 0.0
+
+func _net_send_state(delta: float) -> void:
+	_net_send_timer += delta
+	if _net_send_timer < 0.05:
+		return
+	_net_send_timer = 0.0
+	var mgr = get_tree().current_scene
+	if mgr and mgr.has_method("send_vehicle_state"):
+		mgr.send_vehicle_state(String(get_path()), global_position, global_basis.get_euler(), linear_velocity, throttle)
+
+func _notify_release() -> void:
+	var mgr = get_tree().current_scene
+	if mgr and mgr.has_method("send_vehicle_release"):
+		mgr.send_vehicle_release(String(get_path()))
+
+func net_set_target(pos: Vector3, rot: Vector3, vel: Vector3, thr: float = 0.0) -> void:
+	_net_puppet = true
+	freeze = true
+	_net_target_pos = pos
+	_net_target_quat = Basis.from_euler(rot).get_rotation_quaternion()
+	_net_target_vel = vel
+	throttle = thr
+
+func net_release_puppet() -> void:
+	_net_puppet = false
+	freeze = false
+
 @onready var pilot_seat: Marker3D = $PilotSeat
 @onready var chase_arm: SpringArm3D = $ChasePivot/ChaseArm
 @onready var chase_cam: Camera3D = $ChasePivot/ChaseArm/ChaseCamera
@@ -141,6 +174,22 @@ func _select_slot(slot: int) -> void:
 	selected_slot = slot
 
 func _physics_process(delta: float) -> void:
+	if _net_puppet:
+		var t := minf(1.0, delta * 15.0)
+		global_position = global_position.lerp(_net_target_pos, t)
+		var q := global_basis.get_rotation_quaternion().slerp(_net_target_quat, t)
+		global_basis = Basis(q)
+		linear_velocity = _net_target_vel
+		# Engine audio for observers
+		if throttle > 0.02 and _engine_sfx == null:
+			_engine_sfx = Sfx.loop3d("jet", self, 15.0, 150.0, 2.0)
+		elif throttle <= 0.02 and _engine_sfx != null:
+			Sfx.stop_loop(_engine_sfx)
+			_engine_sfx = null
+		if _engine_sfx:
+			_engine_sfx.volume_db = lerpf(-24.0, 2.0, throttle)
+		return
+
 	_flash_timer = maxf(0.0, _flash_timer - delta)
 	if active_pilot == null and _prompt_player != null \
 			and Input.is_action_just_pressed("vehicle_interact"):
@@ -160,6 +209,9 @@ func _physics_process(delta: float) -> void:
 		_pilotless_time = 0.0
 		_update_throttle(delta)
 		_process_weapons(delta)
+		var local_pilot: bool = bool(active_pilot.get("hud"))
+		if local_pilot:
+			_net_send_state(delta)
 	elif _is_ejected:
 		# Unmanned after eject: fast power drain, nose dive, explodes on impact
 		_pilotless_time += delta
@@ -214,6 +266,7 @@ func _try_exit() -> void:
 	var pilot := active_pilot
 	active_pilot = null
 	chase_cam.current = false # player.exit_aircraft restores the player camera
+	_notify_release()
 	if can_walk_out():
 		_is_ejected = false
 		var dir := -global_basis.z
@@ -478,6 +531,7 @@ func _explode() -> void:
 	if is_destroyed:
 		return
 	is_destroyed = true
+	_notify_release()
 	var pilot := active_pilot
 	active_pilot = null
 	chase_cam.current = false

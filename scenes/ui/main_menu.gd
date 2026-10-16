@@ -4,7 +4,8 @@ extends Control
 @onready var btn_giant_play = $RightPanel/VBoxContainer/GiantPlayBtn
 @onready var btn_loadout = $LeftNav/VBoxContainer/BtnLoadout
 @onready var btn_operator = $LeftNav/VBoxContainer/BtnOperator
-@onready var btn_quit = $LeftNav/VBoxContainer/BtnSetting # Repurposed briefly to test exit if needed, or just let it do nothing
+@onready var btn_setting = $LeftNav/VBoxContainer/BtnSetting
+@onready var btn_exit = $LeftNav/VBoxContainer/BtnExit
 @onready var character_pivot = $"3DEnvironment"
 
 
@@ -57,7 +58,8 @@ func _ready():
 	btn_giant_play.pressed.connect(_on_play_pressed)
 	btn_loadout.pressed.connect(_on_loadout_pressed)
 	btn_operator.pressed.connect(_on_operator_pressed)
-	btn_quit.pressed.connect(_on_setting_pressed)
+	btn_setting.pressed.connect(_on_setting_pressed)
+	btn_exit.pressed.connect(_on_exit_pressed)
 
 	play_overlay.hide()
 	btn_close_play.pressed.connect(func():
@@ -346,6 +348,13 @@ func _on_loadout_pressed():
 func _on_setting_pressed():
 	GlobalSettings.previous_scene = "res://scenes/ui/main_menu.tscn"
 	get_tree().change_scene_to_file("res://scenes/ui/settings_menu.tscn")
+
+func _on_exit_pressed():
+	# Clean shutdown: leave any Steam lobby before closing.
+	var _ss = get_node_or_null("/root/SteamSync")
+	if _ss and _ss.has_method("leave_steam_game"):
+		_ss.leave_steam_game()
+	get_tree().quit()
 
 func _on_operator_pressed():
 	get_tree().change_scene_to_file("res://scenes/ui/operator_menu.tscn")

@@ -1302,16 +1302,21 @@ func enter_aircraft(seat: Node3D) -> void:
 		return
 	is_piloting = true
 	velocity = Vector3.ZERO
+	set_physics_process(false)
 	_pre_pilot_parent = get_parent()
 	_pre_pilot_layer = collision_layer
 	_pre_pilot_mask = collision_mask
-	reparent(seat)
+	reparent(seat, false)
 	transform = Transform3D.IDENTITY
 	collision_layer = 0
 	collision_mask = 0
 	weapon_holder.visible = false
 	flashlight.visible = false
 	camera.current = false
+	if is_instance_valid(_puppet_body):
+		_puppet_body.visible = false # seated inside cockpit — hide floating mannequin
+	if is_instance_valid(_puppet_gun_holder):
+		_puppet_gun_holder.visible = false
 	if hud:
 		hud.hide_hover_name()
 		hud.toggle_aircraft_hud(true)
@@ -1323,8 +1328,9 @@ func exit_aircraft(exit_pos: Vector3, face_dir: Vector3, eject_vel: Vector3 = Ve
 	if not is_piloting:
 		return
 	is_piloting = false
+	set_physics_process(true)
 	if _pre_pilot_parent and is_instance_valid(_pre_pilot_parent):
-		reparent(_pre_pilot_parent)
+		reparent(_pre_pilot_parent, false)
 	global_position = exit_pos
 	rotation = Vector3(0.0, atan2(-face_dir.x, -face_dir.z), 0.0)
 	velocity = eject_vel
@@ -1332,6 +1338,12 @@ func exit_aircraft(exit_pos: Vector3, face_dir: Vector3, eject_vel: Vector3 = Ve
 	collision_mask = _pre_pilot_mask
 	weapon_holder.visible = true
 	camera.current = true
+	if is_instance_valid(_puppet_body):
+		_puppet_body.visible = true
+		_puppet_body.rotation = Vector3.ZERO
+		_puppet_body.position = Vector3.ZERO
+	if is_instance_valid(_puppet_gun_holder):
+		_puppet_gun_holder.visible = true
 	if hud:
 		hud.hide_hover_name()
 		hud.toggle_aircraft_hud(false)

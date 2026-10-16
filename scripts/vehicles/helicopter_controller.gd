@@ -71,6 +71,28 @@ var _pilotless_time := 0.0
 var _last_bailed_pilot: Node3D = null
 var _rotor_sfx: AudioStreamPlayer3D = null
 
+# --- Network puppet: MultiplayerManager shuttles transforms of locally-driven vehicles ---
+var _net_puppet := false
+var _net_target_pos := Vector3.ZERO
+var _net_target_quat := Quaternion.IDENTITY
+var _net_target_vel := Vector3.ZERO
+var _net_send_timer := 0.0
+
+## Streams this vehicle's transform to other machines while locally driven.
+func _net_send_state(delta: float) -> void:
+	_net_send_timer += delta
+	if _net_send_timer < 0.05: # 20 Hz
+		return
+	_net_send_timer = 0.0
+	var mgr = get_tree().current_scene
+	if mgr and mgr.has_method("send_vehicle_state"):
+		mgr.send_vehicle_state(String(get_path()), global_position, global_basis.get_euler(), linear_velocity, engine_power)
+
+func _notify_release() -> void:
+	var mgr = get_tree().current_scene
+	if mgr and mgr.has_method("send_vehicle_release"):
+		mgr.send_vehicle_release(String(get_path()))
+
 @onready var interact_area: Area3D = get_node_or_null("InteractArea")
 @onready var chase_pivot: Node3D = get_node_or_null("ChasePivot")
 @onready var chase_arm: SpringArm3D = get_node_or_null("ChasePivot/ChaseArm")
@@ -214,6 +236,8 @@ func _exit(idx: int) -> void:
 		# Walk out on the ground
 		player.exit_aircraft(exit_pos, -global_basis.z, linear_velocity * 0.3)
 		pilot_exited.emit()
+		if idx == 0:
+			_notify_release()
 		# Pilot often steps out still inside the trigger: re-arm the prompt.
 		if _prompt_player == null and interact_area != null and interact_area.get_overlapping_bodies().has(player):
 			_on_body_entered(player)
@@ -223,6 +247,8 @@ func _exit(idx: int) -> void:
 		exit_pos += global_basis * Vector3(0.0, 1.2, 0.0)
 		player.exit_aircraft(exit_pos, -global_basis.z, linear_velocity * 0.5 + Vector3.UP * 9.0)
 		pilot_exited.emit()
+		if idx == 0:
+			_notify_release()
 		if idx == 0:
 			_is_abandoned = true
 			_pilotless_time = 0.0
@@ -266,7 +292,33 @@ func _update_camera(delta: float) -> void:
 	chase_pivot.rotation.y = lerp_angle(chase_pivot.rotation.y, target_yaw, w)
 	chase_arm.rotation.x = lerp(chase_arm.rotation.x, target_pitch, w)
 
+func net_set_target(pos: Vector3, rot: Vector3, vel: Vector3, eng: float) -> void:
+	_net_puppet = true
+	freeze = true # stop local physics fighting network position
+	_net_target_pos = pos
+	_net_target_quat = Basis.from_euler(rot).get_rotation_quaternion()
+	_net_target_vel = vel
+	engine_power = eng
+
+func net_release_puppet() -> void:
+	_net_puppet = false
+	freeze = false
+
 func _physics_process(delta: float) -> void:
+	if _net_puppet:
+		var t := minf(1.0, delta * 15.0)
+		global_position = global_position.lerp(_net_target_pos, t)
+		var q := global_basis.get_rotation_quaternion().slerp(_net_target_quat, t)
+		global_basis = Basis(q)
+		linear_velocity = _net_target_vel
+		# Rotor audio for observers
+		if engine_power > 0.05 and _rotor_sfx == null:
+			_rotor_sfx = Sfx.loop3d("heli", self, 10.0, 120.0, 0.0)
+		elif engine_power <= 0.05 and _rotor_sfx != null:
+			Sfx.stop_loop(_rotor_sfx)
+			_rotor_sfx = null
+		return
+
 	var driver := get_driver()
 	var has_driver := driver != null and bool(driver.get("is_dead")) != true
 	var grounded := is_grounded()
@@ -283,6 +335,9 @@ func _physics_process(delta: float) -> void:
 
 	if has_driver:
 		_process_pilot_input(delta)
+		var is_local_pilot: bool = driver.get("hud") != null
+		if is_local_pilot:
+			_net_send_state(delta)
 	else:
 		if _is_abandoned:
 			_pilotless_time += delta
@@ -465,6 +520,7 @@ func _explode(attacker_name: String = "", attacker_faction: String = "") -> void
 	if is_destroyed:
 		return
 	is_destroyed = true
+	_notify_release()
 	if chase_cam != null:
 		chase_cam.current = false
 	for i in occupants.size():
