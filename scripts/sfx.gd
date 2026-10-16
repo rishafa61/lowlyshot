@@ -4,17 +4,17 @@ extends Node
 ## far-away sources quieter automatically (unit_size + max_distance tuned per call).
 
 const SOUNDS := {
-	"rifle_single": "res://assets/sounds/Rifle - Single Shot.wav",
-	"rifle_reload": "res://assets/sounds/Rifle - Reload.wav",
-	"sniper_shot": "res://assets/sounds/Sniper - Shot.wav",
-	"walk": "res://assets/sounds/Player - Walk.wav",
-	"run": "res://assets/sounds/Player - Run.wav",
-	"slide": "res://assets/sounds/Player - Slide.wav",
-	"jet": "res://assets/sounds/Aircraft Jet Engine.wav",
-	"missile": "res://assets/sounds/Aircraft - Launch Missile.wav",
-	"bomb": "res://assets/sounds/Aircraft Dropping Bomb.wav",
-	"heli": "res://assets/sounds/Helicopter Sound.wav",
-	"humvee": "res://assets/sounds/Humvee.wav",
+	"rifle_single": "res://assets/sounds/Rifle - Single Shot.tres",
+	"rifle_reload": "res://assets/sounds/Rifle - Reload.tres",
+	"sniper_shot": "res://assets/sounds/Sniper - Shot.tres",
+	"walk": "res://assets/sounds/Player - Walk.tres",
+	"run": "res://assets/sounds/Player - Run.tres",
+	"slide": "res://assets/sounds/Player - Slide.tres",
+	"jet": "res://assets/sounds/Aircraft Jet Engine.tres",
+	"missile": "res://assets/sounds/Aircraft - Launch Missile.tres",
+	"bomb": "res://assets/sounds/Aircraft Dropping Bomb.tres",
+	"heli": "res://assets/sounds/Helicopter Sound.tres",
+	"humvee": "res://assets/sounds/Humvee.tres",
 }
 
 var _streams := {}
