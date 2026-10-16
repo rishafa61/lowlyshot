@@ -31,7 +31,7 @@ const WEAPON_GROUPS := {
 	"Primary": {"Assault Rifles": ["ak47", "m4a4"], "Sniper Rifles": ["m700"]},
 	"Secondary": {"Pistols": ["glock", "desert_hawk"]},
 	"Melee": {"Melee": ["knife"]},
-	"Utility": {"Throwables": ["grenade", "flashbang"]},
+	"Utility": {"Equipment 01": ["grenade"], "Equipment 02": ["flashbang"]},
 }
 
 const COL_BG := Color("141a22")
@@ -154,19 +154,34 @@ func _refresh_slots() -> void:
 
 func _set_slot(key: String) -> void:
 	current_slot = key
+	# Update slot card selection highlights
+	for def in SLOT_DEFS:
+		var card: PanelContainer = slot_cards[def["key"]]
+		if def["key"] == key:
+			card.modulate = Color(1, 0.92, 0.5) # active slot gold
+		else:
+			card.modulate = Color(0.85, 0.85, 0.9)
 	var cat := ""
 	for def in SLOT_DEFS:
 		if def["key"] == key:
 			cat = def["cat"]
-	# Reset group buttons
+	# Reset group buttons (now on top of weapons list)
 	for c in group_list.get_children():
 		c.queue_free()
 	var first_group := ""
-	for group in WEAPON_GROUPS.get(cat, {}):
+	var groups = WEAPON_GROUPS.get(cat, {})
+	# For Equip1 and Equip2, only show matching group
+	if key == "Equip1":
+		groups = {"Equipment 01 (Lethal)": WEAPON_GROUPS["Utility"].get("Equipment 01", [])}
+	elif key == "Equip2":
+		groups = {"Equipment 02 (Tactical)": WEAPON_GROUPS["Utility"].get("Equipment 02", [])}
+
+	for group in groups:
 		var gb := Button.new()
 		gb.text = group
-		gb.custom_minimum_size = Vector2(0, 44)
+		gb.custom_minimum_size = Vector2(0, 40)
 		gb.alignment = HORIZONTAL_ALIGNMENT_LEFT
+		gb.add_theme_font_size_override("font_size", 18)
 		gb.pressed.connect(func(): _set_group(group))
 		group_list.add_child(gb)
 		if first_group == "":
@@ -176,11 +191,25 @@ func _set_slot(key: String) -> void:
 func _set_group(group: String) -> void:
 	current_group = group
 	cat_header.text = group
-	var cat := ""
-	for def in SLOT_DEFS:
-		if def["key"] == current_slot:
-			cat = def["cat"]
-	var ids: Array = WEAPON_GROUPS.get(cat, {}).get(group, [])
+	# Highlight active group button on top
+	for gb in group_list.get_children():
+		if gb is Button:
+			if gb.text == group:
+				gb.modulate = Color(1, 0.85, 0.4)
+			else:
+				gb.modulate = Color(0.65, 0.65, 0.7)
+
+	var ids: Array = []
+	if current_slot == "Equip1":
+		ids = WEAPON_GROUPS["Utility"].get("Equipment 01", [])
+	elif current_slot == "Equip2":
+		ids = WEAPON_GROUPS["Utility"].get("Equipment 02", [])
+	else:
+		var cat := ""
+		for def in SLOT_DEFS:
+			if def["key"] == current_slot:
+				cat = def["cat"]
+		ids = WEAPON_GROUPS.get(cat, {}).get(group, [])
 	# Rebuild weapon rows
 	for c in weapon_list.get_children():
 		c.queue_free()
