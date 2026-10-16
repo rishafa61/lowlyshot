@@ -94,6 +94,8 @@ func _ready() -> void:
 	max_contacts_reported = 4
 	body_entered.connect(_on_impact)
 	hp = max_hp
+	if chase_cam != null:
+		chase_cam.current = false
 	chase_arm.add_excluded_object(get_rid())
 	interact_area.body_entered.connect(_on_body_entered)
 	interact_area.body_exited.connect(_on_body_exited)

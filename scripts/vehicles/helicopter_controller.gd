@@ -85,6 +85,8 @@ func _ready() -> void:
 	can_sleep = false ## forces drive flight; a sleeping body would ignore them mid-hover
 	body_entered.connect(_on_impact)
 	hp = max_hp
+	if chase_cam != null:
+		chase_cam.current = false
 	_yaw = global_transform.basis.get_euler(EULER_ORDER_YXZ).y # sync heading with scene-authored basis
 	_setup_seats()
 	if chase_arm != null:

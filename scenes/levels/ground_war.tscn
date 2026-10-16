@@ -167,6 +167,11 @@ score_limit = 300
 mode_title = "GROUND WAR — KING OF THE HILL"
 team_size = 10
 
+[node name="IntroCamera" type="Camera3D" parent="." unique_id=591322645]
+transform = Transform3D(1, 0, 0, 0, 0.707107, 0.707107, 0, -0.707107, 0.707107, 0, 60, 60)
+current = true
+fov = 65.0
+
 [node name="PlayerSpawner" type="Node3D" parent="." unique_id=1049475238]
 script = ExtResource("3_spawner")
 

@@ -43,6 +43,8 @@ func _enter_tree() -> void:
 			(c as VehicleWheel3D).basis = Basis.IDENTITY
 
 func _ready() -> void:
+	if chase_cam != null:
+		chase_cam.current = false
 	hp = max_hp
 	_setup_seats()
 	if interact_area != null and (interact_area.collision_mask & 1) == 0:
