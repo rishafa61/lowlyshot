@@ -1,7 +1,6 @@
 extends Control
-## BF4-style operator screen — same visual language as the loadout menu:
-## operator list (left), details with segmented stat bars (middle),
-## live 3D character preview (right).
+## BF4-style operator screen: category sidebar (left), category header +
+## operator list + details (middle), live 3D preview (right).
 
 const COL_BG := Color("141a22")
 const COL_PANEL := Color("1c232e")
@@ -16,8 +15,8 @@ const CAT_TINT := {
 }
 
 @onready var group_list: VBoxContainer = $Margin/VBox/Main/Left/GroupList
-@onready var op_list: VBoxContainer = $Margin/VBox/Main/Left/OpList
 @onready var cat_header: Label = $Margin/VBox/Main/Mid/CatHeader/Label
+@onready var weapon_list: VBoxContainer = $Margin/VBox/Main/Mid/WeaponList
 @onready var item_name: Label = $Margin/VBox/Main/Mid/Detail/Panel/ItemName
 @onready var item_desc: Label = $Margin/VBox/Main/Mid/Detail/Panel/ItemDesc
 @onready var btn_equip: Button = $Margin/VBox/Main/Mid/Detail/Panel/BtnEquip
@@ -46,16 +45,18 @@ var operators = [
 ]
 
 var categories = ["Assault", "Recon", "Support"]
+var current_category := "Assault"
 var selected_id: String = ""
 var op_rows: Dictionary = {} # id -> Button
-var cat_headers: Dictionary = {} # category -> Button (header row)
+var cat_buttons: Dictionary = {} # category -> Button
 
 func _ready() -> void:
 	_style_panels()
 	btn_equip.pressed.connect(_on_equip_pressed)
 	$Margin/VBox/BottomBar/BtnBack.pressed.connect(_on_back_pressed)
-	_build_list()
-	_select(GlobalData.equipped_operator)
+	_build_sidebar()
+	var initial_cat := _category_of(GlobalData.equipped_operator)
+	_set_category(initial_cat if initial_cat != "" else "Assault", GlobalData.equipped_operator)
 
 func _style_panels() -> void:
 	var sb := StyleBoxFlat.new()
@@ -76,7 +77,6 @@ func _style_panels() -> void:
 	item_desc.add_theme_color_override("font_color", COL_TEXT_DIM)
 	item_desc.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	btn_equip.add_theme_font_size_override("font_size", 20)
-	# Stat rows built once (segmented bars, same as loadout)
 	for stat in [["Health", "hp"], ["Armor", "armor"], ["Mobility", "mob"]]:
 		var row := HBoxContainer.new()
 		var lbl := Label.new()
@@ -94,27 +94,61 @@ func _style_panels() -> void:
 		stats_box.set_meta(stat[1], segs)
 	$Background.color = COL_BG
 
-func _build_list() -> void:
+func _build_sidebar() -> void:
+	for c in group_list.get_children():
+		c.queue_free()
+	cat_buttons.clear()
 	for cat in categories:
-		var hdr := Button.new()
-		hdr.text = cat.to_upper()
-		hdr.flat = true
-		hdr.disabled = true
-		hdr.custom_minimum_size = Vector2(0, 34)
-		hdr.alignment = HORIZONTAL_ALIGNMENT_LEFT
-		hdr.add_theme_font_size_override("font_size", 18)
-		hdr.add_theme_color_override("font_color", COL_ACCENT)
-		group_list.add_child(hdr)
-		cat_headers[cat] = hdr
-	for op in operators:
 		var btn := Button.new()
-		btn.text = op["name"]
-		btn.custom_minimum_size = Vector2(0, 46)
+		btn.text = cat.to_upper()
+		btn.custom_minimum_size = Vector2(0, 44)
 		btn.alignment = HORIZONTAL_ALIGNMENT_LEFT
-		btn.add_theme_font_size_override("font_size", 20)
-		btn.pressed.connect(_select.bind(op["id"]))
-		op_list.add_child(btn)
-		op_rows[op["id"]] = btn
+		btn.add_theme_font_size_override("font_size", 18)
+		btn.pressed.connect(_set_category.bind(cat, ""))
+		group_list.add_child(btn)
+		cat_buttons[cat] = btn
+
+func _category_of(id: String) -> String:
+	for op in operators:
+		if op["id"] == id:
+			return op["category"]
+	return ""
+
+func _set_category(cat: String, prefer_id: String = "") -> void:
+	current_category = cat
+	cat_header.text = cat
+	# Sidebar highlight (loadout style: active category gold, rest muted)
+	for c in cat_buttons:
+		var btn: Button = cat_buttons[c]
+		btn.modulate = Color(1, 0.85, 0.4) if c == cat else Color(0.65, 0.65, 0.7)
+	# Rebuild operators in Mid column
+	for c in weapon_list.get_children():
+		c.queue_free()
+	op_rows.clear()
+	var cat_ops: Array = []
+	for op in operators:
+		if op["category"] == cat:
+			cat_ops.append(op)
+			var btn := Button.new()
+			btn.text = op["name"]
+			if GlobalData.equipped_operator == op["id"]:
+				btn.text += "   ✓"
+			btn.custom_minimum_size = Vector2(0, 46)
+			btn.alignment = HORIZONTAL_ALIGNMENT_LEFT
+			btn.add_theme_font_size_override("font_size", 20)
+			btn.pressed.connect(_select.bind(op["id"]))
+			weapon_list.add_child(btn)
+			op_rows[op["id"]] = btn
+	# Pick operator: prefer_id if in this category, else keep selected if in cat, else first
+	var target_id := ""
+	if prefer_id != "" and _category_of(prefer_id) == cat:
+		target_id = prefer_id
+	elif selected_id != "" and _category_of(selected_id) == cat:
+		target_id = selected_id
+	elif not cat_ops.is_empty():
+		target_id = cat_ops[0]["id"]
+	if target_id != "":
+		_select(target_id)
 
 func _select(id: String) -> void:
 	selected_id = id
@@ -135,12 +169,10 @@ func _mobility_fill(speed: String) -> float:
 		return 0.8
 	elif "Slow" in speed:
 		return 0.45
-	return 0.65 # Normal
+	return 0.65
 
 func _refresh_details() -> void:
 	var op := _get_op(selected_id)
-	var cat := str(op.get("category", ""))
-	cat_header.text = cat
 	item_name.text = str(op.get("name", ""))
 	item_desc.text = "Skill: %s  ·  Speed: %s" % [op.get("skill", ""), op.get("speed", "")]
 	var fills := {
@@ -153,7 +185,7 @@ func _refresh_details() -> void:
 		var lit := int(round(fills[key] * 10.0))
 		for i in segs.size():
 			segs[i].color = COL_ACCENT if i < lit else Color("2a2a2a")
-	# Row + header highlight
+	# Row highlight
 	for cid in op_rows:
 		var row: Button = op_rows[cid]
 		var sel: bool = str(cid) == selected_id
@@ -164,18 +196,14 @@ func _refresh_details() -> void:
 	else:
 		btn_equip.text = "EQUIP"
 		btn_equip.disabled = false
-	for ccat in cat_headers:
-		var hdr: Button = cat_headers[ccat]
-		hdr.modulate = Color(1, 0.85, 0.4) if ccat == cat else Color(0.65, 0.65, 0.7)
-	# Tint preview to class color
 	if preview_char and preview_char.has_method("set_tint"):
-		preview_char.set_tint(CAT_TINT.get(cat, COL_ACCENT))
+		preview_char.set_tint(CAT_TINT.get(current_category, COL_ACCENT))
 
 func _on_equip_pressed() -> void:
 	if GlobalData.equipped_operator == selected_id:
 		return
 	GlobalData.equipped_operator = selected_id
-	_refresh_details()
+	_set_category(current_category, selected_id)
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("ui_cancel"):

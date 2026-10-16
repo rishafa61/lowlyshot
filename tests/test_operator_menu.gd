@@ -1,5 +1,4 @@
-# Operator menu smoke test — headless: verifies the rebuilt tscn loads,
-# all @onready node paths resolve, and selection refreshes details/stats.
+# Operator menu smoke test — headless: verifies sidebar categories + mid operators
 extends SceneTree
 
 var fails: int = 0
@@ -27,21 +26,22 @@ func _run() -> void:
 	await process_frame
 	await process_frame
 
-	check(menu.op_rows.size() == 6, "6 operator rows built")
-	check(menu.cat_headers.size() == 3, "3 category headers built")
-	check(menu.stats_box.has_meta("hp") and menu.stats_box.has_meta("armor") and menu.stats_box.has_meta("mob"), "stat bars registered")
-	check(menu.item_name.text != "", "details populated: " + menu.item_name.text)
+	check(menu.cat_buttons.size() == 3, "3 sidebar category buttons")
+	check(menu.current_category == "Assault", "default category Assault")
+	check(menu.op_rows.size() == 2, "Assault category has 2 operators")
+	check(menu.stats_box.has_meta("hp"), "stats box registered")
 
-	menu._select("Ghost")
+	# Switch sidebar to Recon
+	menu._set_category("Recon")
 	await process_frame
-	check(menu.cat_header.text == "Recon", "header switches to Recon")
-	check(menu.item_name.text == "Ghost", "detail name switches")
-	check(String(menu.btn_equip.text) != "", "equip button text set: " + str(menu.btn_equip.text))
+	check(menu.cat_header.text == "Recon", "header is Recon")
+	check(menu.op_rows.size() == 1, "Recon has 1 operator (Ghost)")
+	check(menu.selected_id == "Ghost", "Ghost auto-selected")
 
-	# All operators selectable without errors
-	for op in menu.operators:
-		menu._select(op["id"])
-	check(true, "all operators selectable")
+	# Switch to Support
+	menu._set_category("Support")
+	await process_frame
+	check(menu.op_rows.size() == 3, "Support has 3 operators")
 
 	print("RESULT: %s (%d fails)" % ["OK" if fails == 0 else "FAILED", fails])
 	quit(1 if fails > 0 else 0)

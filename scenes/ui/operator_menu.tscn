@@ -69,11 +69,6 @@ theme_override_constants/separation = 6
 layout_mode = 2
 theme_override_constants/separation = 6
 
-[node name="OpList" type="VBoxContainer" parent="Margin/VBox/Main/Left"]
-layout_mode = 2
-size_flags_vertical = 3
-theme_override_constants/separation = 6
-
 [node name="Mid" type="VBoxContainer" parent="Margin/VBox/Main"]
 custom_minimum_size = Vector2(520, 0)
 layout_mode = 2
@@ -86,9 +81,13 @@ layout_mode = 2
 layout_mode = 2
 text = "Assault"
 
-[node name="Detail" type="PanelContainer" parent="Margin/VBox/Main/Mid"]
+[node name="WeaponList" type="VBoxContainer" parent="Margin/VBox/Main/Mid"]
 layout_mode = 2
 size_flags_vertical = 3
+theme_override_constants/separation = 6
+
+[node name="Detail" type="PanelContainer" parent="Margin/VBox/Main/Mid"]
+layout_mode = 2
 
 [node name="Panel" type="VBoxContainer" parent="Margin/VBox/Main/Mid/Detail"]
 layout_mode = 2
