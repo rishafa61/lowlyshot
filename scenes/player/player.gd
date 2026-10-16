@@ -342,7 +342,7 @@ var _net_target_pos: Vector3 = Vector3.ZERO
 var _net_target_yaw: float = 0.0
 var _net_target_pitch: float = 0.0
 var _net_tick: int = 0
-var _puppet_body: MeshInstance3D = null
+var _puppet_body: Node3D = null
 var _puppet_gun_holder: Node3D = null
 var _net_weapon_path: String = ""
 var _puppet_death_played: bool = false
@@ -358,15 +358,10 @@ func _setup_puppet() -> void:
 	hud = null
 	sniper_scope_ui = null
 	# Visible body so the other player can actually be seen
-	_puppet_body = MeshInstance3D.new()
-	var cap := CapsuleMesh.new()
-	cap.radius = 0.5
-	cap.height = 2.0
-	_puppet_body.mesh = cap
-	_puppet_body.position = Vector3(0, 1, 0)
-	var mat := StandardMaterial3D.new()
-	mat.albedo_color = Color(0.3, 0.6, 1.0) if team == "attackers" else Color(1.0, 0.35, 0.3)
-	_puppet_body.material_override = mat
+	var body_scene := load("res://scenes/characters/human_body.tscn") as PackedScene
+	_puppet_body = body_scene.instantiate() as Node3D
+	var team_color := Color(0.3, 0.6, 1.0) if team == "attackers" else Color(1.0, 0.35, 0.3)
+	(_puppet_body as HumanBody).set_tint(team_color)
 	add_child(_puppet_body)
 	# Third-person gun holder so others can see the weapon this player holds
 	_puppet_gun_holder = Node3D.new()

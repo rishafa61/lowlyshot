@@ -1,33 +1,15 @@
 [gd_scene format=3]
 
 [ext_resource type="Script" uid="uid://esx6dahmoy0k" path="res://scenes/ui/standby_character.gd" id="1_script"]
+[ext_resource type="PackedScene" uid="uid://bm8xy2q3e4p1a" path="res://scenes/characters/human_body.tscn" id="2_body"]
 [ext_resource type="PackedScene" uid="uid://emypq1p0jh6l" path="res://scenes/weapons/main/ak47.tscn" id="2_rifle"]
 [ext_resource type="PackedScene" uid="uid://drhnk1p3dksl8" path="res://scenes/weapons/main/m4a4.tscn" id="3_m4a4"]
 [ext_resource type="PackedScene" uid="uid://bsng5sis2atev" path="res://scenes/weapons/main/m700.tscn" id="4_sniper"]
 
-[sub_resource type="CapsuleMesh" id="CapsuleMesh_body"]
-radius = 0.5
-height = 2.0
-
-[sub_resource type="BoxMesh" id="BoxMesh_visor"]
-size = Vector3(0.6, 0.2, 0.3)
-
-[sub_resource type="StandardMaterial3D" id="Mat_Visor"]
-albedo_color = Color(0.1, 0.1, 0.15, 1)
-metallic = 0.85
-roughness = 0.2
-
 [node name="StandbyCharacter" type="Node3D"]
 script = ExtResource("1_script")
 
-[node name="Body" type="MeshInstance3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
-mesh = SubResource("CapsuleMesh_body")
-
-[node name="Visor" type="MeshInstance3D" parent="Body"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.55, -0.42)
-mesh = SubResource("BoxMesh_visor")
-surface_material_override/0 = SubResource("Mat_Visor")
+[node name="Body" parent="." instance=ExtResource("2_body")]
 
 [node name="WeaponMount" type="Node3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.35, 1.1, -0.35)

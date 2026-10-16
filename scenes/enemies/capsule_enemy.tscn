@@ -3,6 +3,7 @@
 [ext_resource type="Script" uid="uid://dpjan68ol478d" path="res://scenes/enemies/capsule_enemy.gd" id="1_script"]
 [ext_resource type="Script" path="res://scripts/components/health_component.gd" id="health_comp"]
 [ext_resource type="Script" uid="uid://cbywyqgo60jmr" path="res://scenes/enemies/hitbox.gd" id="2_hitbox"]
+[ext_resource type="PackedScene" uid="uid://bm8xy2q3e4p1a" path="res://scenes/characters/human_body.tscn" id="3_body"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_nav"]
 
@@ -42,14 +43,7 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.6, -0.5)
 
 [node name="Visuals" type="Node3D" parent="."]
 
-[node name="MeshInstance3D" type="MeshInstance3D" parent="Visuals"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
-mesh = SubResource("CapsuleMesh_body")
-
-[node name="Visor" type="MeshInstance3D" parent="Visuals/MeshInstance3D"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.6, -0.455249)
-mesh = SubResource("BoxMesh_visor")
-surface_material_override/0 = SubResource("StandardMaterial3D_visor")
+[node name="Body" parent="Visuals" instance=ExtResource("3_body")]
 
 [node name="WeaponHolder" type="Node3D" parent="Visuals"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.4, 1.2, -0.4)

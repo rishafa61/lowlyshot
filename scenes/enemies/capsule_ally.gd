@@ -1,7 +1,7 @@
 extends CharacterBody3D
 
 @onready var visuals = $Visuals
-@onready var mesh = $Visuals/MeshInstance3D
+@onready var body: HumanBody = $Visuals/Body
 @onready var weapon_holder = $Visuals/WeaponHolder
 @onready var nav_agent = $NavigationAgent3D
 @onready var eyes = $Eyes
@@ -111,7 +111,7 @@ func stun(duration: float):
 	var white_overlay = StandardMaterial3D.new()
 	white_overlay.albedo_color = Color(1, 1, 1, 1)
 	white_overlay.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	mesh.material_overlay = white_overlay
+	body.set_overlay(white_overlay)
 
 func reveal_silhouette():
 	var outline = StandardMaterial3D.new()
@@ -121,10 +121,10 @@ func reveal_silhouette():
 	outline.emission = Color(1, 0, 0, 1)
 	outline.emission_energy_multiplier = 2.0
 	outline.no_depth_test = true
-	mesh.material_overlay = outline
+	body.set_overlay(outline)
 	var tween = create_tween()
 	tween.tween_interval(5.0)
-	tween.tween_callback(func(): mesh.material_overlay = null)
+	tween.tween_callback(func(): body.clear_overlay())
 
 func _ready():
 	if bot_name == "":
@@ -150,9 +150,7 @@ func _ready():
 	_setup_nametag()
 	
 	# Tint ally mesh friendly cyan-blue
-	var mat = StandardMaterial3D.new()
-	mat.albedo_color = Color(0.2, 0.7, 0.9)
-	mesh.set_surface_override_material(0, mat)
+	body.set_tint(Color(0.2, 0.7, 0.9))
 	
 	# Target Enemies instead of Players
 	_equip_random_primary()
@@ -166,9 +164,7 @@ func _setup_puppet_bot() -> void:
 	_net_target_pos = global_position
 	_net_target_yaw = rotation.y
 	_setup_nametag()
-	var mat = StandardMaterial3D.new()
-	mat.albedo_color = Color(0.2, 0.7, 0.9)
-	mesh.set_surface_override_material(0, mat)
+	body.set_tint(Color(0.2, 0.7, 0.9))
 	_equip_random_primary()
 
 func _find_nearest_enemy() -> void:
@@ -286,7 +282,7 @@ func _physics_process(delta):
 		stun_timer -= delta
 		if stun_timer <= 0:
 			is_stunned = false
-			mesh.material_overlay = null
+			body.clear_overlay()
 		
 		# Keep applying gravity and simple friction while stunned, but no AI logic
 		velocity.x = move_toward(velocity.x, 0, delta * 15.0)
@@ -680,10 +676,8 @@ func receive_damage(base_dmg: float, part: String = "upper", attacker_name: Stri
 	if flash_tween:
 		flash_tween.kill()
 	flash_tween = create_tween()
-	var mat = mesh.get_surface_override_material(0)
-	mat.albedo_color = Color(1, 0, 0)
 	var normal_color = _get_operator_color(active_operator.op_name) if active_operator else Color(0.8, 0.8, 0.8)
-	flash_tween.tween_property(mat, "albedo_color", normal_color, 0.2)
+	body.flash_hit(normal_color)
 
 	return final_dmg
 
