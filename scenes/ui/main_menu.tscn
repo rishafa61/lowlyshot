@@ -1,4 +1,4 @@
-[gd_scene load_steps=9 format=3 uid="uid://wg4odepkhdky"]
+[gd_scene format=3 uid="uid://wg4odepkhdky"]
 
 [ext_resource type="Script" uid="uid://cqv3m8h00mw5" path="res://scenes/ui/main_menu.gd" id="1_script"]
 [ext_resource type="PackedScene" path="res://scenes/ui/standby_character.tscn" id="2_standby"]
@@ -26,8 +26,8 @@ shadow_color = Color(0, 0, 0, 0.3)
 shadow_size = 4
 shadow_offset = Vector2(0, 4)
 
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_StartHover"]
-bg_color = Color(1, 0.9, 0.3, 1)
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_StartNormal"]
+bg_color = Color(1, 0.8, 0.1, 1)
 corner_radius_top_left = 5
 corner_radius_top_right = 5
 corner_radius_bottom_right = 5
@@ -40,14 +40,14 @@ corner_radius_top_right = 5
 corner_radius_bottom_right = 5
 corner_radius_bottom_left = 5
 
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_StartNormal"]
-bg_color = Color(1, 0.8, 0.1, 1)
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_StartHover"]
+bg_color = Color(1, 0.9, 0.3, 1)
 corner_radius_top_left = 5
 corner_radius_top_right = 5
 corner_radius_bottom_right = 5
 corner_radius_bottom_left = 5
 
-[node name="MainMenu" type="Control"]
+[node name="MainMenu" type="Control" unique_id=783582933]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -56,7 +56,7 @@ grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_script")
 
-[node name="Background" type="ColorRect" parent="."]
+[node name="Background" type="ColorRect" parent="." unique_id=1905168654]
 visible = false
 layout_mode = 1
 anchors_preset = 15
@@ -66,29 +66,29 @@ grow_horizontal = 2
 grow_vertical = 2
 color = Color(0.1, 0.1, 0.12, 1)
 
-[node name="3DEnvironment" type="Node3D" parent="."]
+[node name="3DEnvironment" type="Node3D" parent="." unique_id=1241947563]
 
-[node name="WorldEnvironment" type="WorldEnvironment" parent="3DEnvironment"]
+[node name="WorldEnvironment" type="WorldEnvironment" parent="3DEnvironment" unique_id=832640693]
 environment = SubResource("Environment_bg")
 
-[node name="Camera3D" type="Camera3D" parent="3DEnvironment"]
+[node name="Camera3D" type="Camera3D" parent="3DEnvironment" unique_id=481569193]
 transform = Transform3D(-0.99999, 0, 0.00438046, 0, 1, 0, -0.00438046, 0, -0.99999, 0.0178219, 1.13225, -3.84221)
 current = true
 
-[node name="DirectionalLight3D" type="DirectionalLight3D" parent="3DEnvironment"]
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="3DEnvironment" unique_id=1924258349]
 transform = Transform3D(0.866025, -0.433013, 0.25, 0, 0.5, 0.866025, -0.5, -0.75, 0.433013, 0, 5, 0)
 shadow_enabled = true
 
-[node name="StandbyCharacter" parent="3DEnvironment" instance=ExtResource("2_standby")]
+[node name="StandbyCharacter" parent="3DEnvironment" unique_id=886765532 instance=ExtResource("2_standby")]
 
-[node name="Pedestal" type="CSGBox3D" parent="3DEnvironment"]
+[node name="Pedestal" type="CSGBox3D" parent="3DEnvironment" unique_id=2124338709]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.00268555, -0.1, 2.3689)
 size = Vector3(15.9746, 0.2, 11.1118)
 
-[node name="SpotLight3D" type="SpotLight3D" parent="3DEnvironment"]
-transform = Transform3D(1, 0, 0, 0, -0.400525, 0.916286, 0, -0.916286, -0.400525, 0, 2.27068, -2.02262)
+[node name="SpotLight3D" type="SpotLight3D" parent="3DEnvironment" unique_id=2042203920]
+transform = Transform3D(1, 0, 0, 0, -0.40052494, 0.9162859, 0, -0.9162859, -0.40052494, 0, 4.3421774, -0.69969034)
 
-[node name="LeftNav" type="MarginContainer" parent="."]
+[node name="LeftNav" type="MarginContainer" parent="." unique_id=1801235295]
 layout_mode = 1
 anchors_preset = 9
 anchor_bottom = 1.0
@@ -98,20 +98,20 @@ theme_override_constants/margin_left = 60
 theme_override_constants/margin_top = 140
 theme_override_constants/margin_bottom = 140
 
-[node name="VBoxContainer" type="VBoxContainer" parent="LeftNav"]
+[node name="VBoxContainer" type="VBoxContainer" parent="LeftNav" unique_id=403161129]
 layout_mode = 2
 theme_override_constants/separation = 15
 
-[node name="Label" type="Label" parent="LeftNav/VBoxContainer"]
+[node name="Label" type="Label" parent="LeftNav/VBoxContainer" unique_id=547546981]
 layout_mode = 2
 theme_override_font_sizes/font_size = 28
 text = "MENU"
 
-[node name="HSeparator" type="HSeparator" parent="LeftNav/VBoxContainer"]
+[node name="HSeparator" type="HSeparator" parent="LeftNav/VBoxContainer" unique_id=236849768]
 layout_mode = 2
 theme_override_constants/separation = 20
 
-[node name="BtnPlay" type="Button" parent="LeftNav/VBoxContainer"]
+[node name="BtnPlay" type="Button" parent="LeftNav/VBoxContainer" unique_id=2054805871]
 custom_minimum_size = Vector2(0, 50)
 layout_mode = 2
 theme_override_font_sizes/font_size = 20
@@ -119,7 +119,7 @@ theme_override_styles/normal = SubResource("StyleBoxFlat_btn_normal")
 text = "PLAY"
 alignment = 0
 
-[node name="BtnLoadout" type="Button" parent="LeftNav/VBoxContainer"]
+[node name="BtnLoadout" type="Button" parent="LeftNav/VBoxContainer" unique_id=845445786]
 custom_minimum_size = Vector2(0, 50)
 layout_mode = 2
 theme_override_font_sizes/font_size = 20
@@ -127,7 +127,7 @@ theme_override_styles/normal = SubResource("StyleBoxFlat_btn_normal")
 text = "LOADOUT"
 alignment = 0
 
-[node name="BtnOperator" type="Button" parent="LeftNav/VBoxContainer"]
+[node name="BtnOperator" type="Button" parent="LeftNav/VBoxContainer" unique_id=1892604005]
 custom_minimum_size = Vector2(0, 50)
 layout_mode = 2
 theme_override_font_sizes/font_size = 20
@@ -135,7 +135,7 @@ theme_override_styles/normal = SubResource("StyleBoxFlat_btn_normal")
 text = "OPERATOR"
 alignment = 0
 
-[node name="BtnShop" type="Button" parent="LeftNav/VBoxContainer"]
+[node name="BtnShop" type="Button" parent="LeftNav/VBoxContainer" unique_id=1591835515]
 custom_minimum_size = Vector2(0, 50)
 layout_mode = 2
 theme_override_font_sizes/font_size = 20
@@ -143,7 +143,7 @@ theme_override_styles/normal = SubResource("StyleBoxFlat_btn_normal")
 text = "SHOP"
 alignment = 0
 
-[node name="BtnDaily" type="Button" parent="LeftNav/VBoxContainer"]
+[node name="BtnDaily" type="Button" parent="LeftNav/VBoxContainer" unique_id=460539529]
 custom_minimum_size = Vector2(0, 50)
 layout_mode = 2
 theme_override_font_sizes/font_size = 20
@@ -151,7 +151,7 @@ theme_override_styles/normal = SubResource("StyleBoxFlat_btn_normal")
 text = "DAILY"
 alignment = 0
 
-[node name="BtnSetting" type="Button" parent="LeftNav/VBoxContainer"]
+[node name="BtnSetting" type="Button" parent="LeftNav/VBoxContainer" unique_id=2067349435]
 custom_minimum_size = Vector2(0, 50)
 layout_mode = 2
 theme_override_font_sizes/font_size = 20
@@ -159,7 +159,7 @@ theme_override_styles/normal = SubResource("StyleBoxFlat_btn_normal")
 text = "SETTING"
 alignment = 0
 
-[node name="RightPanel" type="MarginContainer" parent="."]
+[node name="RightPanel" type="MarginContainer" parent="." unique_id=257387440]
 layout_mode = 1
 anchors_preset = 11
 anchor_left = 1.0
@@ -172,76 +172,76 @@ theme_override_constants/margin_top = 60
 theme_override_constants/margin_right = 60
 theme_override_constants/margin_bottom = 130
 
-[node name="VBoxContainer" type="VBoxContainer" parent="RightPanel"]
+[node name="VBoxContainer" type="VBoxContainer" parent="RightPanel" unique_id=2065917162]
 layout_mode = 2
 
-[node name="CurrencyHBox" type="HBoxContainer" parent="RightPanel/VBoxContainer"]
+[node name="CurrencyHBox" type="HBoxContainer" parent="RightPanel/VBoxContainer" unique_id=1070189562]
 layout_mode = 2
 alignment = 2
 
-[node name="CoinPanel" type="PanelContainer" parent="RightPanel/VBoxContainer/CurrencyHBox"]
+[node name="CoinPanel" type="PanelContainer" parent="RightPanel/VBoxContainer/CurrencyHBox" unique_id=1904020447]
 custom_minimum_size = Vector2(100, 40)
 layout_mode = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_btn_normal")
 
-[node name="Label" type="Label" parent="RightPanel/VBoxContainer/CurrencyHBox/CoinPanel"]
+[node name="Label" type="Label" parent="RightPanel/VBoxContainer/CurrencyHBox/CoinPanel" unique_id=1216795295]
 layout_mode = 2
 text = "C: 0"
 horizontal_alignment = 1
 
-[node name="GemPanel" type="PanelContainer" parent="RightPanel/VBoxContainer/CurrencyHBox"]
+[node name="GemPanel" type="PanelContainer" parent="RightPanel/VBoxContainer/CurrencyHBox" unique_id=1205428445]
 custom_minimum_size = Vector2(100, 40)
 layout_mode = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_btn_normal")
 
-[node name="Label" type="Label" parent="RightPanel/VBoxContainer/CurrencyHBox/GemPanel"]
+[node name="Label" type="Label" parent="RightPanel/VBoxContainer/CurrencyHBox/GemPanel" unique_id=1516769270]
 layout_mode = 2
 text = "G: 0"
 horizontal_alignment = 1
 
-[node name="Spacer" type="Control" parent="RightPanel/VBoxContainer"]
+[node name="Spacer" type="Control" parent="RightPanel/VBoxContainer" unique_id=1529570001]
 layout_mode = 2
 size_flags_vertical = 3
 
-[node name="DailyRewardPanel" type="PanelContainer" parent="RightPanel/VBoxContainer"]
+[node name="DailyRewardPanel" type="PanelContainer" parent="RightPanel/VBoxContainer" unique_id=1088017463]
 custom_minimum_size = Vector2(0, 120)
 layout_mode = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_btn_normal")
 
-[node name="VBox" type="VBoxContainer" parent="RightPanel/VBoxContainer/DailyRewardPanel"]
+[node name="VBox" type="VBoxContainer" parent="RightPanel/VBoxContainer/DailyRewardPanel" unique_id=1288425821]
 layout_mode = 2
 alignment = 1
 
-[node name="Label" type="Label" parent="RightPanel/VBoxContainer/DailyRewardPanel/VBox"]
+[node name="Label" type="Label" parent="RightPanel/VBoxContainer/DailyRewardPanel/VBox" unique_id=613048781]
 layout_mode = 2
 theme_override_colors/font_color = Color(1, 0.8, 0, 1)
 text = "Next Reward"
 horizontal_alignment = 1
 
-[node name="TimeLabel" type="Label" parent="RightPanel/VBoxContainer/DailyRewardPanel/VBox"]
+[node name="TimeLabel" type="Label" parent="RightPanel/VBoxContainer/DailyRewardPanel/VBox" unique_id=1517577519]
 layout_mode = 2
 theme_override_font_sizes/font_size = 24
 text = "09:57"
 horizontal_alignment = 1
 
-[node name="ClaimBtn" type="Button" parent="RightPanel/VBoxContainer/DailyRewardPanel/VBox"]
+[node name="ClaimBtn" type="Button" parent="RightPanel/VBoxContainer/DailyRewardPanel/VBox" unique_id=380545772]
 layout_mode = 2
 text = "Daily Reward"
 
-[node name="Spacer2" type="Control" parent="RightPanel/VBoxContainer"]
+[node name="Spacer2" type="Control" parent="RightPanel/VBoxContainer" unique_id=392221618]
 custom_minimum_size = Vector2(0, 20)
 layout_mode = 2
 
-[node name="GiantPlayBtn" type="Button" parent="RightPanel/VBoxContainer"]
+[node name="GiantPlayBtn" type="Button" parent="RightPanel/VBoxContainer" unique_id=438704978]
 custom_minimum_size = Vector2(250, 80)
 layout_mode = 2
 theme_override_font_sizes/font_size = 32
-theme_override_styles/hover = SubResource("StyleBoxFlat_play_btn")
-theme_override_styles/pressed = SubResource("StyleBoxFlat_play_btn")
 theme_override_styles/normal = SubResource("StyleBoxFlat_play_btn")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_play_btn")
+theme_override_styles/hover = SubResource("StyleBoxFlat_play_btn")
 text = "PLAY"
 
-[node name="PlayOverlay" type="ColorRect" parent="."]
+[node name="PlayOverlay" type="ColorRect" parent="." unique_id=513297409]
 visible = false
 layout_mode = 1
 anchors_preset = 15
@@ -251,7 +251,7 @@ grow_horizontal = 2
 grow_vertical = 2
 color = Color(0, 0, 0, 0.8)
 
-[node name="CenterContainer" type="CenterContainer" parent="PlayOverlay"]
+[node name="CenterContainer" type="CenterContainer" parent="PlayOverlay" unique_id=1193003418]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -259,93 +259,93 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="PanelContainer" type="PanelContainer" parent="PlayOverlay/CenterContainer"]
+[node name="PanelContainer" type="PanelContainer" parent="PlayOverlay/CenterContainer" unique_id=1488012264]
 custom_minimum_size = Vector2(800, 500)
 layout_mode = 2
 
-[node name="HBoxContainer" type="HBoxContainer" parent="PlayOverlay/CenterContainer/PanelContainer"]
+[node name="HBoxContainer" type="HBoxContainer" parent="PlayOverlay/CenterContainer/PanelContainer" unique_id=1490887046]
 layout_mode = 2
 theme_override_constants/separation = 10
 
-[node name="Sidebar" type="VBoxContainer" parent="PlayOverlay/CenterContainer/PanelContainer/HBoxContainer"]
+[node name="Sidebar" type="VBoxContainer" parent="PlayOverlay/CenterContainer/PanelContainer/HBoxContainer" unique_id=1962314705]
 custom_minimum_size = Vector2(250, 0)
 layout_mode = 2
 theme_override_constants/separation = 15
 
-[node name="MarginContainer" type="MarginContainer" parent="PlayOverlay/CenterContainer/PanelContainer/HBoxContainer/Sidebar"]
+[node name="MarginContainer" type="MarginContainer" parent="PlayOverlay/CenterContainer/PanelContainer/HBoxContainer/Sidebar" unique_id=527611761]
 layout_mode = 2
 theme_override_constants/margin_left = 10
 theme_override_constants/margin_top = 10
 theme_override_constants/margin_right = 10
 theme_override_constants/margin_bottom = 10
 
-[node name="Label" type="Label" parent="PlayOverlay/CenterContainer/PanelContainer/HBoxContainer/Sidebar/MarginContainer"]
+[node name="Label" type="Label" parent="PlayOverlay/CenterContainer/PanelContainer/HBoxContainer/Sidebar/MarginContainer" unique_id=965177524]
 layout_mode = 2
 theme_override_font_sizes/font_size = 24
 text = "GAME MODE"
 horizontal_alignment = 1
 
-[node name="HSeparator" type="HSeparator" parent="PlayOverlay/CenterContainer/PanelContainer/HBoxContainer/Sidebar"]
+[node name="HSeparator" type="HSeparator" parent="PlayOverlay/CenterContainer/PanelContainer/HBoxContainer/Sidebar" unique_id=1933939983]
 layout_mode = 2
 
-[node name="BtnCampaign" type="Button" parent="PlayOverlay/CenterContainer/PanelContainer/HBoxContainer/Sidebar"]
+[node name="BtnCampaign" type="Button" parent="PlayOverlay/CenterContainer/PanelContainer/HBoxContainer/Sidebar" unique_id=314846754]
 custom_minimum_size = Vector2(0, 50)
 layout_mode = 2
 theme_override_font_sizes/font_size = 20
 text = "Campaign"
 
-[node name="BtnPractice" type="Button" parent="PlayOverlay/CenterContainer/PanelContainer/HBoxContainer/Sidebar"]
+[node name="BtnPractice" type="Button" parent="PlayOverlay/CenterContainer/PanelContainer/HBoxContainer/Sidebar" unique_id=477727747]
 custom_minimum_size = Vector2(0, 50)
 layout_mode = 2
 theme_override_font_sizes/font_size = 20
 text = "Practice"
 
-[node name="BtnMultiplayer" type="Button" parent="PlayOverlay/CenterContainer/PanelContainer/HBoxContainer/Sidebar"]
+[node name="BtnMultiplayer" type="Button" parent="PlayOverlay/CenterContainer/PanelContainer/HBoxContainer/Sidebar" unique_id=1070359692]
 custom_minimum_size = Vector2(0, 50)
 layout_mode = 2
 theme_override_font_sizes/font_size = 20
 text = "Multiplayer"
 
-[node name="Spacer" type="Control" parent="PlayOverlay/CenterContainer/PanelContainer/HBoxContainer/Sidebar"]
+[node name="Spacer" type="Control" parent="PlayOverlay/CenterContainer/PanelContainer/HBoxContainer/Sidebar" unique_id=804573898]
 layout_mode = 2
 size_flags_vertical = 3
 
-[node name="BtnClosePlay" type="Button" parent="PlayOverlay/CenterContainer/PanelContainer/HBoxContainer/Sidebar"]
+[node name="BtnClosePlay" type="Button" parent="PlayOverlay/CenterContainer/PanelContainer/HBoxContainer/Sidebar" unique_id=1476028364]
 custom_minimum_size = Vector2(0, 40)
 layout_mode = 2
 theme_override_colors/font_color = Color(1, 0.3, 0.3, 1)
 text = "< BACK"
 
-[node name="VSeparator" type="VSeparator" parent="PlayOverlay/CenterContainer/PanelContainer/HBoxContainer"]
+[node name="VSeparator" type="VSeparator" parent="PlayOverlay/CenterContainer/PanelContainer/HBoxContainer" unique_id=369511433]
 layout_mode = 2
 
-[node name="MapArea" type="VBoxContainer" parent="PlayOverlay/CenterContainer/PanelContainer/HBoxContainer"]
+[node name="MapArea" type="VBoxContainer" parent="PlayOverlay/CenterContainer/PanelContainer/HBoxContainer" unique_id=864021029]
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_constants/separation = 15
 
-[node name="MarginContainer" type="MarginContainer" parent="PlayOverlay/CenterContainer/PanelContainer/HBoxContainer/MapArea"]
+[node name="MarginContainer" type="MarginContainer" parent="PlayOverlay/CenterContainer/PanelContainer/HBoxContainer/MapArea" unique_id=219601425]
 layout_mode = 2
 theme_override_constants/margin_left = 10
 theme_override_constants/margin_top = 10
 theme_override_constants/margin_right = 10
 theme_override_constants/margin_bottom = 10
 
-[node name="LabelMapTitle" type="Label" parent="PlayOverlay/CenterContainer/PanelContainer/HBoxContainer/MapArea/MarginContainer"]
+[node name="LabelMapTitle" type="Label" parent="PlayOverlay/CenterContainer/PanelContainer/HBoxContainer/MapArea/MarginContainer" unique_id=1308487998]
 layout_mode = 2
 theme_override_font_sizes/font_size = 24
 text = "MAP SELECTION"
 horizontal_alignment = 1
 
-[node name="HSeparator2" type="HSeparator" parent="PlayOverlay/CenterContainer/PanelContainer/HBoxContainer/MapArea"]
+[node name="HSeparator2" type="HSeparator" parent="PlayOverlay/CenterContainer/PanelContainer/HBoxContainer/MapArea" unique_id=767512585]
 layout_mode = 2
 
-[node name="MapList" type="ItemList" parent="PlayOverlay/CenterContainer/PanelContainer/HBoxContainer/MapArea"]
+[node name="MapList" type="ItemList" parent="PlayOverlay/CenterContainer/PanelContainer/HBoxContainer/MapArea" unique_id=2066299693]
 layout_mode = 2
 size_flags_vertical = 3
 theme_override_font_sizes/font_size = 20
 
-[node name="MapDesc" type="Label" parent="PlayOverlay/CenterContainer/PanelContainer/HBoxContainer/MapArea"]
+[node name="MapDesc" type="Label" parent="PlayOverlay/CenterContainer/PanelContainer/HBoxContainer/MapArea" unique_id=1431776754]
 custom_minimum_size = Vector2(0, 60)
 layout_mode = 2
 text = "Select a map to view details."
@@ -353,23 +353,23 @@ horizontal_alignment = 1
 vertical_alignment = 1
 autowrap_mode = 2
 
-[node name="MarginStart" type="MarginContainer" parent="PlayOverlay/CenterContainer/PanelContainer/HBoxContainer/MapArea"]
+[node name="MarginStart" type="MarginContainer" parent="PlayOverlay/CenterContainer/PanelContainer/HBoxContainer/MapArea" unique_id=687110477]
 layout_mode = 2
 theme_override_constants/margin_left = 20
 theme_override_constants/margin_right = 20
 theme_override_constants/margin_bottom = 20
 
-[node name="BtnStartGame" type="Button" parent="PlayOverlay/CenterContainer/PanelContainer/HBoxContainer/MapArea/MarginStart"]
+[node name="BtnStartGame" type="Button" parent="PlayOverlay/CenterContainer/PanelContainer/HBoxContainer/MapArea/MarginStart" unique_id=285969563]
 custom_minimum_size = Vector2(0, 60)
 layout_mode = 2
 theme_override_colors/font_color = Color(0, 0, 0, 1)
 theme_override_font_sizes/font_size = 24
-theme_override_styles/hover = SubResource("StyleBoxFlat_StartHover")
-theme_override_styles/pressed = SubResource("StyleBoxFlat_StartPressed")
 theme_override_styles/normal = SubResource("StyleBoxFlat_StartNormal")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_StartPressed")
+theme_override_styles/hover = SubResource("StyleBoxFlat_StartHover")
 text = "START MATCH"
 
-[node name="PartyUI" type="Control" parent="."]
+[node name="PartyUI" type="Control" parent="." unique_id=1089413150]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -378,58 +378,46 @@ grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
 
-[node name="Slot1" parent="PartyUI" instance=ExtResource("3_party_slot")]
+[node name="Slot1" parent="PartyUI" unique_id=1877936432 instance=ExtResource("3_party_slot")]
 layout_mode = 1
-anchors_preset = 0
-anchor_left = 0.5
+anchors_preset = 7
 anchor_top = 1.0
-anchor_right = 0.5
 anchor_bottom = 1.0
 offset_left = -158.0
 offset_top = -268.0
 offset_right = -88.0
 offset_bottom = -178.0
-grow_horizontal = 2
 grow_vertical = 0
 
-[node name="Slot2" parent="PartyUI" instance=ExtResource("3_party_slot")]
+[node name="Slot2" parent="PartyUI" unique_id=1959289345 instance=ExtResource("3_party_slot")]
 layout_mode = 1
-anchors_preset = 0
-anchor_left = 0.5
+anchors_preset = 7
 anchor_top = 1.0
-anchor_right = 0.5
 anchor_bottom = 1.0
 offset_left = -76.0
 offset_top = -268.0
 offset_right = -6.0
 offset_bottom = -178.0
-grow_horizontal = 2
 grow_vertical = 0
 
-[node name="Slot3" parent="PartyUI" instance=ExtResource("3_party_slot")]
+[node name="Slot3" parent="PartyUI" unique_id=95028474 instance=ExtResource("3_party_slot")]
 layout_mode = 1
-anchors_preset = 0
-anchor_left = 0.5
+anchors_preset = 7
 anchor_top = 1.0
-anchor_right = 0.5
 anchor_bottom = 1.0
 offset_left = 6.0
 offset_top = -268.0
 offset_right = 76.0
 offset_bottom = -178.0
-grow_horizontal = 2
 grow_vertical = 0
 
-[node name="Slot4" parent="PartyUI" instance=ExtResource("3_party_slot")]
+[node name="Slot4" parent="PartyUI" unique_id=215731790 instance=ExtResource("3_party_slot")]
 layout_mode = 1
-anchors_preset = 0
-anchor_left = 0.5
+anchors_preset = 7
 anchor_top = 1.0
-anchor_right = 0.5
 anchor_bottom = 1.0
 offset_left = 88.0
 offset_top = -268.0
 offset_right = 158.0
 offset_bottom = -178.0
-grow_horizontal = 2
 grow_vertical = 0
