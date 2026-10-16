@@ -12,6 +12,11 @@ func _ready() -> void:
 func refresh() -> void:
 	_show_equipped_weapon()
 
+func set_tint(color: Color) -> void:
+	var b := get_node_or_null("Body")
+	if b and b.has_method("set_tint"):
+		b.set_tint(color)
+
 ## Shows the stand-in weapon that matches the equipped primary loadout.
 func _show_equipped_weapon() -> void:
 	var primary: Dictionary = GlobalData.get_equipped_primary()

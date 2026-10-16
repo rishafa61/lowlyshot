@@ -1,6 +1,14 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene load_steps=4 format=3]
 
 [ext_resource type="Script" path="res://scenes/ui/operator_menu.gd" id="1_script"]
+[ext_resource type="PackedScene" path="res://scenes/ui/standby_character.tscn" id="2_char"]
+
+[sub_resource type="Environment" id="Environment_preview"]
+background_mode = 1
+background_color = Color(0.08, 0.1, 0.13, 0)
+ambient_light_source = 2
+ambient_light_color = Color(0.4, 0.45, 0.55, 1)
+ambient_light_energy = 0.85
 
 [node name="OperatorMenu" type="Control"]
 layout_mode = 3
@@ -18,97 +26,139 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-color = Color(0.12, 0.12, 0.15, 1)
+color = Color(0.0784314, 0.101961, 0.133333, 1)
 
-[node name="TopBar" type="HBoxContainer" parent="."]
+[node name="Margin" type="MarginContainer" parent="."]
 layout_mode = 1
-anchors_preset = 10
+anchors_preset = 15
 anchor_right = 1.0
-offset_left = 60.0
-offset_top = 24.0
-offset_right = -60.0
-offset_bottom = 74.0
-grow_horizontal = 2
-
-[node name="BtnBack" type="Button" parent="TopBar"]
-custom_minimum_size = Vector2(100, 0)
-layout_mode = 2
-theme_override_font_sizes/font_size = 20
-text = "< BACK"
-
-[node name="Title" type="Label" parent="TopBar"]
-layout_mode = 2
-size_flags_horizontal = 3
-theme_override_font_sizes/font_size = 24
-text = "OPERATOR SELECTION"
-horizontal_alignment = 1
-
-[node name="PanelContainer" type="PanelContainer" parent="."]
-layout_mode = 1
-anchors_preset = 8
-anchor_left = 0.5
-anchor_top = 0.5
-anchor_right = 0.5
-anchor_bottom = 0.5
-offset_left = -460.0
-offset_top = -280.0
-offset_right = 460.0
-offset_bottom = 280.0
+anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+theme_override_constants/margin_left = 60
+theme_override_constants/margin_top = 30
+theme_override_constants/margin_right = 60
+theme_override_constants/margin_bottom = 30
 
-[node name="HBoxContainer" type="HBoxContainer" parent="PanelContainer"]
+[node name="VBox" type="VBoxContainer" parent="Margin"]
 layout_mode = 2
-theme_override_constants/separation = 20
+theme_override_constants/separation = 16
 
-[node name="Categories" type="VBoxContainer" parent="PanelContainer/HBoxContainer"]
-custom_minimum_size = Vector2(320, 0)
+[node name="TopBar" type="HBoxContainer" parent="Margin/VBox"]
 layout_mode = 2
+theme_override_constants/separation = 12
 
-[node name="VSeparator" type="VSeparator" parent="PanelContainer/HBoxContainer"]
-layout_mode = 2
-
-[node name="Details" type="VBoxContainer" parent="PanelContainer/HBoxContainer"]
+[node name="Title" type="Label" parent="Margin/VBox/TopBar"]
 layout_mode = 2
 size_flags_horizontal = 3
-theme_override_constants/separation = 20
+theme_override_colors/font_color = Color(0.909804, 0.639216, 0.239216, 1)
+theme_override_font_sizes/font_size = 28
+text = "OPERATOR SELECTION"
 
-[node name="OpName" type="Label" parent="PanelContainer/HBoxContainer/Details"]
+[node name="Main" type="HBoxContainer" parent="Margin/VBox"]
 layout_mode = 2
-theme_override_colors/font_color = Color(1, 0.8, 0.2, 1)
-theme_override_font_sizes/font_size = 32
-text = "Vanguard"
+size_flags_vertical = 3
+theme_override_constants/separation = 24
 
-[node name="HSeparator" type="HSeparator" parent="PanelContainer/HBoxContainer/Details"]
+[node name="Left" type="VBoxContainer" parent="Margin/VBox/Main"]
+custom_minimum_size = Vector2(260, 0)
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="GroupList" type="VBoxContainer" parent="Margin/VBox/Main/Left"]
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="OpList" type="VBoxContainer" parent="Margin/VBox/Main/Left"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 6
+
+[node name="Mid" type="VBoxContainer" parent="Margin/VBox/Main"]
+custom_minimum_size = Vector2(520, 0)
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="CatHeader" type="PanelContainer" parent="Margin/VBox/Main/Mid"]
 layout_mode = 2
 
-[node name="OpHealth" type="Label" parent="PanelContainer/HBoxContainer/Details"]
+[node name="Label" type="Label" parent="Margin/VBox/Main/Mid/CatHeader"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 24
-text = "Max Health: 120"
+text = "Assault"
 
-[node name="OpArmor" type="Label" parent="PanelContainer/HBoxContainer/Details"]
-layout_mode = 2
-theme_override_font_sizes/font_size = 24
-text = "Max Armor: 50"
-
-[node name="OpSpeed" type="Label" parent="PanelContainer/HBoxContainer/Details"]
-layout_mode = 2
-theme_override_font_sizes/font_size = 24
-text = "Movement Speed: Normal"
-
-[node name="OpSkill" type="Label" parent="PanelContainer/HBoxContainer/Details"]
-layout_mode = 2
-theme_override_colors/font_color = Color(0.4, 0.8, 1, 1)
-theme_override_font_sizes/font_size = 24
-text = "Unique Skill: Adrenaline Surge"
-
-[node name="Spacer" type="Control" parent="PanelContainer/HBoxContainer/Details"]
+[node name="Detail" type="PanelContainer" parent="Margin/VBox/Main/Mid"]
 layout_mode = 2
 size_flags_vertical = 3
 
-[node name="BtnEquip" type="Button" parent="PanelContainer/HBoxContainer/Details"]
-custom_minimum_size = Vector2(0, 60)
+[node name="Panel" type="VBoxContainer" parent="Margin/VBox/Main/Mid/Detail"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 24
-text = "EQUIP OPERATOR"
+theme_override_constants/separation = 10
+
+[node name="ItemName" type="Label" parent="Margin/VBox/Main/Mid/Detail/Panel"]
+layout_mode = 2
+text = "Vanguard"
+
+[node name="ItemDesc" type="Label" parent="Margin/VBox/Main/Mid/Detail/Panel"]
+layout_mode = 2
+text = "Adrenaline (Heal 25, +25% speed 5s)"
+
+[node name="StatsBox" type="VBoxContainer" parent="Margin/VBox/Main/Mid/Detail/Panel"]
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="BtnEquip" type="Button" parent="Margin/VBox/Main/Mid/Detail/Panel"]
+custom_minimum_size = Vector2(0, 48)
+layout_mode = 2
+text = "EQUIP"
+
+[node name="Right" type="VBoxContainer" parent="Margin/VBox/Main"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Preview" type="SubViewportContainer" parent="Margin/VBox/Main/Right"]
+layout_mode = 2
+size_flags_vertical = 3
+stretch = true
+
+[node name="SubViewport" type="SubViewport" parent="Margin/VBox/Main/Right/Preview"]
+transparent_bg = true
+handle_input_locally = false
+size = Vector2i(500, 700)
+render_target_update_mode = 4
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="Margin/VBox/Main/Right/Preview/SubViewport"]
+environment = SubResource("Environment_preview")
+
+[node name="Camera3D" type="Camera3D" parent="Margin/VBox/Main/Right/Preview/SubViewport"]
+transform = Transform3D(-0.99999, 0, 0.00438, 0, 1, 0, -0.00438, 0, -0.99999, 0, 1.25, -2.8)
+current = true
+
+[node name="KeyLight" type="DirectionalLight3D" parent="Margin/VBox/Main/Right/Preview/SubViewport"]
+transform = Transform3D(-0.965926, -0.174052, 0.190479, 0, 0.73755, 0.67529, -0.258819, 0.652338, -0.712373, 0, 2.5, -2.5)
+light_energy = 1.4
+shadow_enabled = true
+
+[node name="FillLight" type="DirectionalLight3D" parent="Margin/VBox/Main/Right/Preview/SubViewport"]
+transform = Transform3D(0.939693, -0.116978, -0.321394, 0, 0.939693, -0.34202, 0.34202, 0.321394, 0.882595, -2, 1.5, -2)
+light_energy = 0.5
+light_color = Color(0.7, 0.8, 1, 1)
+
+[node name="RimLight" type="DirectionalLight3D" parent="Margin/VBox/Main/Right/Preview/SubViewport"]
+transform = Transform3D(0.939693, -0.116978, -0.321394, 0, 0.939693, -0.34202, 0.34202, 0.321394, 0.882595, 1.5, 2, -2)
+light_energy = 0.6
+light_color = Color(1, 0.95, 0.85, 1)
+
+[node name="Standby" parent="Margin/VBox/Main/Right/Preview/SubViewport" instance=ExtResource("2_char")]
+
+[node name="BottomBar" type="HBoxContainer" parent="Margin/VBox"]
+layout_mode = 2
+theme_override_constants/separation = 20
+
+[node name="BtnBack" type="Button" parent="Margin/VBox/BottomBar"]
+custom_minimum_size = Vector2(120, 44)
+layout_mode = 2
+text = "< BACK"
+
+[node name="HintEquip" type="Label" parent="Margin/VBox/BottomBar"]
+layout_mode = 2
+text = "[E] Equip Selected"
