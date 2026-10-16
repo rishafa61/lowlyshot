@@ -209,7 +209,7 @@ func _physics_process(delta: float) -> void:
 		_pilotless_time = 0.0
 		_update_throttle(delta)
 		_process_weapons(delta)
-		var local_pilot: bool = bool(active_pilot.get("hud"))
+		var local_pilot: bool = active_pilot.get("hud") != null
 		if local_pilot:
 			_net_send_state(delta)
 	elif _is_ejected:
