@@ -99,7 +99,6 @@ var skill_trigger_timer: float = 0.0 # Small delay before first skill use
 
 var target: Node3D = null
 var gravity: float = ProjectSettings.get_setting("physics/3d/default_gravity") * 2.0
-var flash_tween: Tween
 
 var stun_timer = 0.0
 var is_stunned = false
@@ -674,8 +673,6 @@ func receive_damage(base_dmg: float, part: String = "upper", attacker_name: Stri
 
 	var final_dmg = health_component.apply_damage(base_dmg, multi)
 
-	if flash_tween:
-		flash_tween.kill()
 	var normal_color = _get_operator_color(active_operator.op_name) if active_operator else Color(0.8, 0.8, 0.8)
 	body.flash_hit(normal_color)
 
