@@ -3,6 +3,8 @@ extends RigidBody3D
 var fuse: float = 2.0
 ## Visual replica on non-owner peers: play the flash visuals, skip stun/damage
 var is_net_replica: bool = false
+var owner_name: String = "Player"
+var attacker_faction: String = "Player"
 
 func _physics_process(delta):
 	fuse -= delta
@@ -53,6 +55,6 @@ func explode():
 		if collider.has_method("stun"):
 			collider.stun(4.0)
 		elif collider.has_method("take_damage"):
-			collider.take_damage(5.0)
+			collider.take_damage(5.0, owner_name, "Flashbang", attacker_faction)
 			
 	queue_free()

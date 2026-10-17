@@ -29,11 +29,16 @@ func _process(delta):
 				player_ref.get_parent().add_child(mgr_scene)
 				var strike_pos = target_indicator.global_position
 				mgr_scene.global_position = strike_pos
+				mgr_scene.attacker_name = player_ref.player_name
+				mgr_scene.attacker_faction = "Ally" if player_ref.team == "attackers" else "Enemy"
 				
 				# Replicate airstrike barrage to other peers
 				var mp_mgr = player_ref.get_tree().current_scene
 				if mp_mgr is MultiplayerManager:
-					mp_mgr.spawn_utility_net("res://scenes/weapons/skills/airstrike_manager.tscn", strike_pos)
+					mp_mgr.spawn_utility_net("res://scenes/weapons/skills/airstrike_manager.tscn", strike_pos, Vector3.FORWARD, {
+						"attacker_name": mgr_scene.attacker_name,
+						"attacker_faction": mgr_scene.attacker_faction,
+					})
 				
 				start_cooldown()
 				cancel_skill()

@@ -508,10 +508,16 @@ func _update_hud() -> void:
 
 # --- Damage & destruction ---
 
+var _last_hit_by: String = ""
+var _last_hit_faction: String = ""
+
 func take_damage(amount: float, attacker_name: String = "", _weapon_name: String = "", attacker_faction: String = "", _pos: Vector3 = Vector3.INF) -> float:
 	if is_destroyed:
 		return 0.0
 	hp = maxf(hp - amount, 0.0)
+	if attacker_name != "":
+		_last_hit_by = attacker_name
+		_last_hit_faction = attacker_faction
 	if hp <= 0.0:
 		_explode(attacker_name, attacker_faction)
 	return amount
@@ -523,6 +529,9 @@ func _explode(attacker_name: String = "", attacker_faction: String = "") -> void
 	_notify_release()
 	if chase_cam != null:
 		chase_cam.current = false
+	# Crash kills credit whoever shot the heli down (fall back to the vehicle name)
+	var crash_killer := _last_hit_by if _last_hit_by != "" else attacker_name
+	var crash_fac := _last_hit_faction if _last_hit_faction != "" else attacker_faction
 	for i in occupants.size():
 		var occ = occupants[i]
 		if occ == null:
@@ -531,7 +540,7 @@ func _explode(attacker_name: String = "", attacker_faction: String = "") -> void
 		var side := 3.0 if seats[i].position.x >= 0.0 else -3.0
 		var exit_pos := seats[i].global_position + global_basis * Vector3(side, 1.2, 0.0)
 		occ.exit_aircraft(exit_pos, -global_basis.z, Vector3.UP * 8.0 + linear_velocity * 0.5)
-		occ.take_damage(9999.0, heli_name, "Helicopter Crash", attacker_faction if attacker_faction != "" else "World", global_position)
+		occ.take_damage(9999.0, crash_killer, "Helicopter Crash", crash_fac if crash_fac != "" else "World", global_position)
 	_blast_area(global_position, 16.0, 320.0, 80.0, attacker_name, attacker_faction)
 	destroyed.emit()
 	queue_free()

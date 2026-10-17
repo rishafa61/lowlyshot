@@ -276,10 +276,16 @@ func _update_hud() -> void:
 
 # --- Damage / destruction ---
 
-func take_damage(amount: float, _attacker_name: String = "", _weapon_name: String = "", _attacker_faction: String = "", _attacker_pos: Vector3 = Vector3.INF) -> float:
+var _last_hit_by: String = ""
+var _last_hit_faction: String = ""
+
+func take_damage(amount: float, attacker_name: String = "", _weapon_name: String = "", attacker_faction: String = "", _attacker_pos: Vector3 = Vector3.INF) -> float:
 	if is_destroyed:
 		return 0.0
 	hp = maxf(hp - amount, 0.0)
+	if attacker_name != "":
+		_last_hit_by = attacker_name
+		_last_hit_faction = attacker_faction
 	if hp <= 0.0:
 		_explode()
 	return amount
@@ -291,6 +297,9 @@ func _explode() -> void:
 	_notify_release()
 	if chase_cam != null:
 		chase_cam.current = false
+	# Blast + crash kills credit whoever shot the vehicle (fallback: vehicle name)
+	var crash_killer := _last_hit_by if _last_hit_by != "" else vehicle_name
+	var crash_fac := _last_hit_faction if _last_hit_faction != "" else "World"
 	for i in occupants.size():
 		var occ = occupants[i]
 		if occ == null:
@@ -299,12 +308,12 @@ func _explode() -> void:
 		var side := 2.4 if seats[i].position.x >= 0.0 else -2.4
 		var exit_pos := seats[i].global_position + global_basis * Vector3(side, 1.0, 0.0)
 		occ.exit_aircraft(exit_pos, -global_basis.z, Vector3.UP * 6.0 + linear_velocity * 0.5)
-		occ.take_damage(9999.0, vehicle_name, "Vehicle Explosion", "World", global_position)
-	_blast_area(global_position, 12.0, 250.0, 60.0)
+		occ.take_damage(9999.0, crash_killer, "Vehicle Explosion", crash_fac, global_position)
+	_blast_area(global_position, 12.0, 250.0, 60.0, crash_killer, crash_fac)
 	destroyed.emit()
 	queue_free()
 
-func _blast_area(pos: Vector3, radius: float, center_dmg: float, outer_dmg: float) -> void:
+func _blast_area(pos: Vector3, radius: float, center_dmg: float, outer_dmg: float, att_name: String = "", att_fac: String = "World") -> void:
 	var space := get_world_3d().direct_space_state
 	var query := PhysicsShapeQueryParameters3D.new()
 	var sphere := SphereShape3D.new()
@@ -325,4 +334,4 @@ func _blast_area(pos: Vector3, radius: float, center_dmg: float, outer_dmg: floa
 		var dist: float = pos.distance_to(collider.global_position)
 		var dmg: float = AircraftOrdnance.compute_blast_damage(dist, radius, center_dmg, outer_dmg)
 		if dmg > 0.0:
-			collider.take_damage(dmg, vehicle_name, "Vehicle Explosion", "World", pos)
+			collider.take_damage(dmg, att_name, "Vehicle Explosion", att_fac, pos)

@@ -17,5 +17,7 @@ func _execute_skill(target: Node3D):
 	var target_pos = target.global_position
 	
 	var manager = airstrike_manager_scene.instantiate()
+	manager.attacker_name = str(enemy_ref.get("bot_name")) if enemy_ref.get("bot_name") else "Enemy"
+	manager.attacker_faction = "Ally" if enemy_ref.is_in_group("ally") else "Enemy"
 	enemy_ref.get_parent().add_child(manager)
 	manager.global_position = target_pos

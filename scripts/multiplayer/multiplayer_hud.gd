@@ -297,20 +297,23 @@ func refresh_scoreboard() -> void:
 	var ally_names: Array = []
 	var enemy_names: Array = []
 
-	# Pull all stats from match_stats (covers players AND bots)
+	# Pull all stats from match_stats (strictly human players and AI bots)
 	var stats: Dictionary = manager.match_stats if manager.match_stats else {}
 	for entry_name in stats.keys():
+		var sname := str(entry_name).strip_edges()
+		if not _is_combatant_name(sname):
+			continue
 		var s: Dictionary = stats[entry_name]
 		var kills: int = s.get("kills", 0)
 		var deaths: int = s.get("deaths", 0)
 		var team: String = s.get("team", "attackers")
-		var display = "%s (K:%d D:%d)" % [entry_name, kills, deaths]
+		var display = "%s (K:%d D:%d)" % [sname, kills, deaths]
 		if team == "attackers":
-			if entry_name == "Player":
+			if sname == "Player":
 				display = "You (K:%d D:%d)" % [kills, deaths]
 			ally_names.append(display)
 		else:
-			if entry_name == "Player":
+			if sname == "Player":
 				display = "You (K:%d D:%d)" % [kills, deaths]
 			enemy_names.append(display)
 
@@ -365,6 +368,16 @@ func bot_display_name(bot: Node) -> String:
 	if n != null and str(n) != "":
 		return str(n)
 	return str(bot.name)
+
+## Filters non-combatant entities ("World", sentries, vehicles) from the scoreboard.
+func _is_combatant_name(name_str: String) -> bool:
+	if name_str == "" or name_str == "World":
+		return false
+	var lower := name_str.to_lower()
+	for kw in ["turret", "vehicle", "helicopter", "aircraft", "chinook", "humvee"]:
+		if kw in lower:
+			return false
+	return true
 
 func pick_side(team: String) -> void:
 	if not manager:

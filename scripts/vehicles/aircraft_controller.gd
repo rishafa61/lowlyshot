@@ -517,10 +517,16 @@ func _launch_flare() -> void:
 
 # --- Damage / destruction ---
 
-func take_damage(amount: float, _attacker_name: String = "", _weapon_name: String = "", _attacker_faction: String = "", _attacker_pos: Vector3 = Vector3.INF) -> float:
+var _last_hit_by: String = ""
+var _last_hit_faction: String = ""
+
+func take_damage(amount: float, attacker_name: String = "", _weapon_name: String = "", attacker_faction: String = "", _attacker_pos: Vector3 = Vector3.INF) -> float:
 	if is_destroyed:
 		return 0.0
 	hp = maxf(hp - amount, 0.0)
+	if attacker_name != "":
+		_last_hit_by = attacker_name
+		_last_hit_faction = attacker_faction
 	if hp <= 0.0:
 		_explode()
 	return amount
@@ -540,7 +546,9 @@ func _explode() -> void:
 		# Ejected pilots are already clear and take none of this.
 		var fwd := -global_basis.z
 		pilot.exit_aircraft(global_position + Vector3.UP * 2.0, fwd)
-		pilot.take_damage(9999.0, "Aircraft", "Crash", "World", global_position)
+		var crash_killer := _last_hit_by if _last_hit_by != "" else "Aircraft"
+		var crash_fac := _last_hit_faction if _last_hit_faction != "" else "World"
+		pilot.take_damage(9999.0, crash_killer, "Aircraft Crash", crash_fac, global_position)
 	_blast_area(global_position, 18.0, 300.0, 60.0)
 	_spawn_blast_visual(global_position, 18.0)
 	destroyed.emit()

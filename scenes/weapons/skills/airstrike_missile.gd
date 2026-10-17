@@ -6,6 +6,9 @@ var exploded = false
 var damage = 35.0
 var radius = 5.0
 var is_net_replica: bool = false
+## Kill attribution: whoever called the strike
+var attacker_name: String = ""
+var attacker_faction: String = "Player"
 
 func _physics_process(delta):
 	if exploded: return
@@ -33,10 +36,11 @@ func explode():
 		var targets = get_tree().get_nodes_in_group("enemy") + get_tree().get_nodes_in_group("player")
 		for t in targets:
 			if t.global_position.distance_to(global_position) <= radius:
+				var att := attacker_name if attacker_name != "" else "Player"
 				if t.has_method("receive_damage"):
-					t.receive_damage(damage, "torso")
+					t.receive_damage(damage, "torso", att, "Airstrike", attacker_faction)
 				elif t.has_method("take_damage"):
-					t.take_damage(damage)
+					t.take_damage(damage, att, "Airstrike", attacker_faction)
 					
 	var tween = create_tween()
 	tween.tween_property($Explosion, "scale", Vector3(1.2, 1.2, 1.2), 0.2)

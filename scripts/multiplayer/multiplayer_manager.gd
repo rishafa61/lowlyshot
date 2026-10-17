@@ -283,10 +283,9 @@ func _on_kill_occurred(killer: String, killer_faction: String, weapon: String, v
 		else:
 			killer_team = "defenders" if killer_faction.to_lower() in ["enemy", "defenders"] else "attackers"
 
-		# Record stats for killer (player or bot)
-		if not match_stats.has(killer):
-			match_stats[killer] = {"kills": 0, "deaths": 0, "team": killer_team}
-		if killer != "" and killer != "World":
+		# Stats only for tracked combatants (players + bots). World / Sentry Turret /
+		# vehicle names never enter match_stats -> never show on the scoreboard.
+		if match_stats.has(killer):
 			match_stats[killer]["kills"] += 1
 
 		# Determine victim team
@@ -296,14 +295,11 @@ func _on_kill_occurred(killer: String, killer_faction: String, weapon: String, v
 		else:
 			victim_team = "defenders" if victim_faction.to_lower() in ["enemy", "defenders"] else "attackers"
 
-		# Record stats for victim (player or bot)
-		if not match_stats.has(victim):
-			match_stats[victim] = {"kills": 0, "deaths": 0, "team": victim_team}
-		if victim != "" and victim != "World":
+		if match_stats.has(victim):
 			match_stats[victim]["deaths"] += 1
 
-		# Team scores: EVERY entity (bot, player, turret) awards a score to their team
-		if killer != "" and killer != "World" and team_scores.has(killer_team):
+		# Team scores: every tracked combatant kill ticks their team score
+		if match_stats.has(killer) and killer_team != "" and team_scores.has(killer_team):
 			# In KOTH (score_limit > 0), kills track individual stats but don't tick the match score
 			if score_limit <= 0:
 				team_scores[killer_team] += 1
@@ -314,15 +310,17 @@ func _on_kill_occurred(killer: String, killer_faction: String, weapon: String, v
 		for peer_id in players_data.keys():
 			var p = players_data[peer_id]
 			if p["name"] == killer or str(peer_id) == killer or (killer == "Player" and peer_id == 1):
-				p["kills"] = match_stats[killer]["kills"]
+				if match_stats.has(killer):
+					p["kills"] = match_stats[killer]["kills"]
 			if p["name"] == victim or str(peer_id) == victim or (victim == "Player" and peer_id == 1):
-				p["deaths"] = match_stats[victim]["deaths"]
-				# Respawn on death after delay
-				get_tree().create_timer(3.0).timeout.connect(func():
-					if is_instance_valid(spawner) and current_state == MatchState.ACTIVE:
-						spawner.despawn_player(peer_id)
-						spawner.spawn_player(peer_id, p["team"])
-				)
+				if match_stats.has(victim):
+					p["deaths"] = match_stats[victim]["deaths"]
+					# Respawn on death after delay
+					get_tree().create_timer(3.0).timeout.connect(func():
+						if is_instance_valid(spawner) and current_state == MatchState.ACTIVE:
+							spawner.despawn_player(peer_id)
+							spawner.spawn_player(peer_id, p["team"])
+					)
 
 		_sync_match_data()
 

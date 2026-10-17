@@ -5,6 +5,8 @@ var missiles_to_spawn = 3
 var timer = 0.0
 var spawn_delay = 0.4
 var is_net_replica: bool = false
+var attacker_name: String = ""
+var attacker_faction: String = "Player"
 
 func _process(delta):
 	timer -= delta
@@ -29,3 +31,5 @@ func spawn_missile():
 	m.global_position.y += 40.0 # Drop from 40m up
 	# Missiles inherit replica state so only the owner's barrage deals damage
 	m.set("is_net_replica", is_net_replica)
+	m.attacker_name = attacker_name
+	m.attacker_faction = attacker_faction

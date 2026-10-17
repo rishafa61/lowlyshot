@@ -835,6 +835,8 @@ func throw_grenade():
 		proj_path = "res://scenes/weapons/utilities/flashbang_projectile.tscn"
 	
 	var proj = load(proj_path).instantiate()
+	proj.owner_name = player_name
+	proj.attacker_faction = "Ally" if team == "attackers" else "Enemy"
 	get_tree().root.add_child(proj)
 	proj.global_position = camera.global_position + (-camera.global_transform.basis.z * 0.6)
 	proj.fuse = MAX_COOK_TIME - cook_timer

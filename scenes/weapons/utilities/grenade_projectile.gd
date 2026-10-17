@@ -2,6 +2,8 @@ extends RigidBody3D
 
 var fuse: float = 3.0
 var is_net_replica: bool = false
+var owner_name: String = "Player"
+var attacker_faction: String = "Player"
 
 func _physics_process(delta):
 	fuse -= delta
@@ -51,6 +53,6 @@ func explode():
 		if collider.has_method("take_damage"):
 			var dist = global_position.distance_to(collider.global_position)
 			var dmg = lerp(120.0, 20.0, dist / 4.0)
-			collider.take_damage(dmg)
+			collider.take_damage(dmg, owner_name, "Grenade", attacker_faction)
 			
 	queue_free()
