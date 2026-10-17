@@ -9395,6 +9395,1828 @@ material_override = SubResource("mat_hill")
 use_collision = true
 radius = 24.000
 
+[node name="MegaFactoryWest" type="Node3D" parent="NavigationRegion3D/DenseWorld"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -300.000, 0, -300.000)
+
+[node name="Hall1" type="CSGBox3D" parent="NavigationRegion3D/DenseWorld/MegaFactoryWest"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -15.000, 7.000, 0.000)
+material_override = SubResource("mat_concrete")
+use_collision = true
+size = Vector3(30.000, 14.000, 22.000)
+
+[node name="Hall1Roof" type="CSGBox3D" parent="NavigationRegion3D/DenseWorld/MegaFactoryWest"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -15.000, 14.400, 0.000)
+material_override = SubResource("mat_roof")
+use_collision = true
+size = Vector3(32.000, 0.800, 24.000)
+
+[node name="Hall2" type="CSGBox3D" parent="NavigationRegion3D/DenseWorld/MegaFactoryWest"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 14.000, 5.000, 12.000)
+material_override = SubResource("mat_metal")
+use_collision = true
+size = Vector3(20.000, 10.000, 16.000)
+
+[node name="Hall2Roof" type="CSGBox3D" parent="NavigationRegion3D/DenseWorld/MegaFactoryWest"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 14.000, 10.400, 12.000)
+material_override = SubResource("mat_roof")
+use_collision = true
+size = Vector3(22.000, 0.800, 18.000)
+
+[node name="Chimney1" type="CSGCylinder3D" parent="NavigationRegion3D/DenseWorld/MegaFactoryWest"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.000, 15.000, -14.000)
+material_override = SubResource("mat_brick")
+use_collision = true
+radius = 2.200
+height = 30.000
+sides = 12
+
+[node name="Chimney1Band" type="CSGCylinder3D" parent="NavigationRegion3D/DenseWorld/MegaFactoryWest"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.000, 28.000, -14.000)
+material_override = SubResource("mat_rust")
+use_collision = true
+radius = 2.600
+height = 3.000
+sides = 12
+
+[node name="Chimney1Smoke" type="CPUParticles3D" parent="NavigationRegion3D/DenseWorld/MegaFactoryWest"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.000, 31.000, -14.000)
+amount = 20
+lifetime = 6.0
+mesh = SubResource("smoke_mesh")
+direction = Vector3(0, 1, 0)
+spread = 8.0
+gravity = Vector3(0, 4.5, 0)
+initial_velocity_min = 1.5
+initial_velocity_max = 3.5
+scale_amount_min = 1.0
+scale_amount_max = 2.0
+color = Color(0.22, 0.22, 0.24, 0.5)
+
+[node name="Chimney2" type="CSGCylinder3D" parent="NavigationRegion3D/DenseWorld/MegaFactoryWest"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8.000, 11.000, -14.000)
+material_override = SubResource("mat_brick")
+use_collision = true
+radius = 1.600
+height = 22.000
+sides = 12
+
+[node name="Chimney2Smoke" type="CPUParticles3D" parent="NavigationRegion3D/DenseWorld/MegaFactoryWest"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8.000, 23.000, -14.000)
+amount = 14
+lifetime = 6.0
+mesh = SubResource("smoke_mesh")
+direction = Vector3(0, 1, 0)
+spread = 8.0
+gravity = Vector3(0, 4.5, 0)
+initial_velocity_min = 1.5
+initial_velocity_max = 3.5
+scale_amount_min = 1.0
+scale_amount_max = 2.0
+color = Color(0.22, 0.22, 0.24, 0.5)
+
+[node name="Tank1" type="CSGCylinder3D" parent="NavigationRegion3D/DenseWorld/MegaFactoryWest"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -34.000, 6.000, 14.000)
+material_override = SubResource("mat_white")
+use_collision = true
+radius = 7.000
+height = 12.000
+sides = 12
+
+[node name="Tank1Cap" type="CSGCylinder3D" parent="NavigationRegion3D/DenseWorld/MegaFactoryWest"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -34.000, 12.400, 14.000)
+material_override = SubResource("mat_metal")
+use_collision = true
+radius = 7.300
+height = 0.800
+sides = 12
+
+[node name="Tank2" type="CSGCylinder3D" parent="NavigationRegion3D/DenseWorld/MegaFactoryWest"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -34.000, 4.500, -2.000)
+material_override = SubResource("mat_rust")
+use_collision = true
+radius = 5.000
+height = 9.000
+sides = 12
+
+[node name="Tank2Cap" type="CSGCylinder3D" parent="NavigationRegion3D/DenseWorld/MegaFactoryWest"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -34.000, 9.400, -2.000)
+material_override = SubResource("mat_metal")
+use_collision = true
+radius = 5.300
+height = 0.600
+sides = 12
+
+[node name="PipeA" type="CSGBox3D" parent="NavigationRegion3D/DenseWorld/MegaFactoryWest"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -20.000, 8.000, 8.000)
+material_override = SubResource("mat_metal")
+size = Vector3(16.000, 0.800, 0.800)
+
+[node name="PipeB" type="CSGBox3D" parent="NavigationRegion3D/DenseWorld/MegaFactoryWest"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -34.000, 5.000, 6.000)
+material_override = SubResource("mat_metal")
+size = Vector3(0.800, 0.800, 14.000)
+
+[node name="WallW" type="CSGBox3D" parent="NavigationRegion3D/DenseWorld/MegaFactoryWest"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -52.000, 2.000, 0.000)
+material_override = SubResource("mat_concrete")
+use_collision = true
+size = Vector3(1.000, 4.000, 50.000)
+
+[node name="WallS" type="CSGBox3D" parent="NavigationRegion3D/DenseWorld/MegaFactoryWest"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -25.000, 2.000, 26.000)
+material_override = SubResource("mat_concrete")
+use_collision = true
+size = Vector3(55.000, 4.000, 1.000)
+
+[node name="Crate1" type="CSGBox3D" parent="NavigationRegion3D/DenseWorld/MegaFactoryWest"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6.000, 0.900, 22.000)
+material_override = SubResource("mat_wood")
+use_collision = true
+size = Vector3(1.600, 1.800, 1.600)
+
+[node name="Crate2" type="CSGBox3D" parent="NavigationRegion3D/DenseWorld/MegaFactoryWest"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.000, 0.900, 22.000)
+material_override = SubResource("mat_wood")
+use_collision = true
+size = Vector3(1.600, 1.800, 1.600)
+
+[node name="Crate3" type="CSGBox3D" parent="NavigationRegion3D/DenseWorld/MegaFactoryWest"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.000, 0.900, 22.000)
+material_override = SubResource("mat_wood")
+use_collision = true
+size = Vector3(1.600, 1.800, 1.600)
+
+[node name="Crate4" type="CSGBox3D" parent="NavigationRegion3D/DenseWorld/MegaFactoryWest"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6.000, 0.900, 22.000)
+material_override = SubResource("mat_wood")
+use_collision = true
+size = Vector3(1.600, 1.800, 1.600)
+
+[node name="OfficeBlock" type="CSGBox3D" parent="NavigationRegion3D/DenseWorld/MegaFactoryWest"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 22.000, 4.000, -12.000)
+material_override = SubResource("mat_brick")
+use_collision = true
+size = Vector3(12.000, 8.000, 10.000)
+
+[node name="OfficeRoof" type="CSGBox3D" parent="NavigationRegion3D/DenseWorld/MegaFactoryWest"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 22.000, 8.400, -12.000)
+material_override = SubResource("mat_roof")
+use_collision = true
+size = Vector3(13.200, 0.800, 11.200)
+
+[node name="Warn1" type="OmniLight3D" parent="NavigationRegion3D/DenseWorld/MegaFactoryWest"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.000, 30.000, -14.000)
+light_color = Color(1, 0.35, 0.2, 1)
+light_energy = 2.0
+omni_range = 14.0
+
+[node name="RefinerySouth" type="Node3D" parent="NavigationRegion3D/DenseWorld"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 200.000, 0, 300.000)
+
+[node name="Column1" type="CSGCylinder3D" parent="NavigationRegion3D/DenseWorld/RefinerySouth"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -14.000, 12.000, -10.000)
+material_override = SubResource("mat_white")
+use_collision = true
+radius = 3.000
+height = 24.000
+sides = 12
+
+[node name="Column1Top" type="CSGCylinder3D" parent="NavigationRegion3D/DenseWorld/RefinerySouth"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -14.000, 24.400, -10.000)
+material_override = SubResource("mat_metal")
+use_collision = true
+radius = 2.200
+height = 1.200
+sides = 12
+
+[node name="Column2" type="CSGCylinder3D" parent="NavigationRegion3D/DenseWorld/RefinerySouth"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4.000, 9.000, -14.000)
+material_override = SubResource("mat_white")
+use_collision = true
+radius = 2.400
+height = 18.000
+sides = 12
+
+[node name="PlatformCol" type="CSGCylinder3D" parent="NavigationRegion3D/DenseWorld/RefinerySouth"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -9.000, 10.000, -12.000)
+material_override = SubResource("mat_metal")
+use_collision = true
+radius = 6.500
+height = 0.500
+sides = 12
+
+[node name="FlareStack" type="CSGCylinder3D" parent="NavigationRegion3D/DenseWorld/RefinerySouth"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 16.000, 14.000, 12.000)
+material_override = SubResource("mat_rust")
+use_collision = true
+radius = 1.200
+height = 28.000
+sides = 12
+
+[node name="FlareSmoke" type="CPUParticles3D" parent="NavigationRegion3D/DenseWorld/RefinerySouth"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 16.000, 29.000, 12.000)
+amount = 10
+lifetime = 4.0
+mesh = SubResource("smoke_mesh")
+direction = Vector3(0, 1, 0)
+spread = 8.0
+gravity = Vector3(0, 4.5, 0)
+initial_velocity_min = 1.5
+initial_velocity_max = 3.5
+scale_amount_min = 1.0
+scale_amount_max = 2.0
+color = Color(0.22, 0.22, 0.24, 0.5)
+
+[node name="FlareGlow" type="OmniLight3D" parent="NavigationRegion3D/DenseWorld/RefinerySouth"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 16.000, 28.500, 12.000)
+light_color = Color(1, 0.35, 0.2, 1)
+light_energy = 2.0
+omni_range = 14.0
+
+[node name="TankBig1" type="CSGCylinder3D" parent="NavigationRegion3D/DenseWorld/RefinerySouth"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -22.000, 5.000, 12.000)
+material_override = SubResource("mat_white")
+use_collision = true
+radius = 8.000
+height = 10.000
+sides = 12
+
+[node name="TankBig1Cap" type="CSGCylinder3D" parent="NavigationRegion3D/DenseWorld/RefinerySouth"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -22.000, 10.400, 12.000)
+material_override = SubResource("mat_metal")
+use_collision = true
+radius = 8.300
+height = 0.700
+sides = 12
+
+[node name="TankBig2" type="CSGCylinder3D" parent="NavigationRegion3D/DenseWorld/RefinerySouth"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -22.000, 5.000, -6.000)
+material_override = SubResource("mat_c_red")
+use_collision = true
+radius = 8.000
+height = 10.000
+sides = 12
+
+[node name="TankBig2Cap" type="CSGCylinder3D" parent="NavigationRegion3D/DenseWorld/RefinerySouth"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -22.000, 10.400, -6.000)
+material_override = SubResource("mat_metal")
+use_collision = true
+radius = 8.300
+height = 0.700
+sides = 12
+
+[node name="Bund1" type="CSGBox3D" parent="NavigationRegion3D/DenseWorld/RefinerySouth"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -22.000, 0.700, 24.000)
+material_override = SubResource("mat_concrete")
+use_collision = true
+size = Vector3(40.000, 1.400, 1.000)
+
+[node name="Bund2" type="CSGBox3D" parent="NavigationRegion3D/DenseWorld/RefinerySouth"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -41.000, 0.700, 3.000)
+material_override = SubResource("mat_concrete")
+use_collision = true
+size = Vector3(1.000, 1.400, 44.000)
+
+[node name="PumpHouse" type="CSGBox3D" parent="NavigationRegion3D/DenseWorld/RefinerySouth"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.000, 2.500, 8.000)
+material_override = SubResource("mat_brick")
+use_collision = true
+size = Vector3(10.000, 5.000, 8.000)
+
+[node name="PumpHouseRoof" type="CSGBox3D" parent="NavigationRegion3D/DenseWorld/RefinerySouth"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.000, 5.300, 8.000)
+material_override = SubResource("mat_roof")
+use_collision = true
+size = Vector3(11.000, 0.600, 9.000)
+
+[node name="PipeRack" type="CSGBox3D" parent="NavigationRegion3D/DenseWorld/RefinerySouth"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6.000, 3.500, 0.000)
+material_override = SubResource("mat_metal")
+size = Vector3(20.000, 0.600, 0.600)
+
+[node name="PipeRackLeg1" type="CSGBox3D" parent="NavigationRegion3D/DenseWorld/RefinerySouth"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.000, 1.750, 0.000)
+material_override = SubResource("mat_metal")
+use_collision = true
+size = Vector3(0.400, 3.500, 0.400)
+
+[node name="PipeRackLeg2" type="CSGBox3D" parent="NavigationRegion3D/DenseWorld/RefinerySouth"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 14.000, 1.750, 0.000)
+material_override = SubResource("mat_metal")
+use_collision = true
+size = Vector3(0.400, 3.500, 0.400)
+
+[node name="BarrelR1" type="CSGCylinder3D" parent="NavigationRegion3D/DenseWorld/RefinerySouth"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8.000, 0.550, 16.000)
+material_override = SubResource("mat_rust")
+use_collision = true
+radius = 0.420
+height = 1.100
+sides = 12
+
+[node name="BarrelR2" type="CSGCylinder3D" parent="NavigationRegion3D/DenseWorld/RefinerySouth"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9.400, 0.550, 16.400)
+material_override = SubResource("mat_c_red")
+use_collision = true
+radius = 0.420
+height = 1.100
+sides = 12
+
+[node name="BarrelR3" type="CSGCylinder3D" parent="NavigationRegion3D/DenseWorld/RefinerySouth"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8.600, 0.550, 17.600)
+material_override = SubResource("mat_c_blue")
+use_collision = true
+radius = 0.420
+height = 1.100
+sides = 12
+
+[node name="WallR" type="CSGBox3D" parent="NavigationRegion3D/DenseWorld/RefinerySouth"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.000, 2.000, -22.000)
+material_override = SubResource("mat_concrete")
+use_collision = true
+size = Vector3(44.000, 4.000, 1.000)
+
+[node name="PowerPlantWest" type="Node3D" parent="NavigationRegion3D/DenseWorld"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -230.000, 0, -40.000)
+
+[node name="CoolingTower1" type="CSGCylinder3D" parent="NavigationRegion3D/DenseWorld/PowerPlantWest"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -16.000, 11.000, -8.000)
+material_override = SubResource("mat_concrete")
+use_collision = true
+radius = 9.000
+height = 22.000
+sides = 12
+
+[node name="CoolingTower1Lip" type="CSGCylinder3D" parent="NavigationRegion3D/DenseWorld/PowerPlantWest"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -16.000, 22.400, -8.000)
+material_override = SubResource("mat_concrete")
+use_collision = true
+radius = 7.000
+height = 1.400
+sides = 12
+
+[node name="CoolingSteam1" type="CPUParticles3D" parent="NavigationRegion3D/DenseWorld/PowerPlantWest"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -16.000, 24.000, -8.000)
+amount = 16
+lifetime = 7.0
+mesh = SubResource("smoke_mesh")
+direction = Vector3(0, 1, 0)
+spread = 8.0
+gravity = Vector3(0, 4.5, 0)
+initial_velocity_min = 1.5
+initial_velocity_max = 3.5
+scale_amount_min = 1.0
+scale_amount_max = 2.0
+color = Color(0.22, 0.22, 0.24, 0.5)
+
+[node name="CoolingTower2" type="CSGCylinder3D" parent="NavigationRegion3D/DenseWorld/PowerPlantWest"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -16.000, 10.000, 10.000)
+material_override = SubResource("mat_concrete")
+use_collision = true
+radius = 8.000
+height = 20.000
+sides = 12
+
+[node name="CoolingSteam2" type="CPUParticles3D" parent="NavigationRegion3D/DenseWorld/PowerPlantWest"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -16.000, 21.000, 10.000)
+amount = 14
+lifetime = 7.0
+mesh = SubResource("smoke_mesh")
+direction = Vector3(0, 1, 0)
+spread = 8.0
+gravity = Vector3(0, 4.5, 0)
+initial_velocity_min = 1.5
+initial_velocity_max = 3.5
+scale_amount_min = 1.0
+scale_amount_max = 2.0
+color = Color(0.22, 0.22, 0.24, 0.5)
+
+[node name="TurbineHall" type="CSGBox3D" parent="NavigationRegion3D/DenseWorld/PowerPlantWest"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10.000, 6.000, 0.000)
+material_override = SubResource("mat_metal")
+use_collision = true
+size = Vector3(24.000, 12.000, 14.000)
+
+[node name="TurbineHallRoof" type="CSGBox3D" parent="NavigationRegion3D/DenseWorld/PowerPlantWest"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10.000, 12.400, 0.000)
+material_override = SubResource("mat_roof")
+use_collision = true
+size = Vector3(26.000, 0.800, 16.000)
+
+[node name="Stack" type="CSGCylinder3D" parent="NavigationRegion3D/DenseWorld/PowerPlantWest"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 24.000, 13.000, -10.000)
+material_override = SubResource("mat_concrete")
+use_collision = true
+radius = 1.800
+height = 26.000
+sides = 12
+
+[node name="StackBand" type="CSGCylinder3D" parent="NavigationRegion3D/DenseWorld/PowerPlantWest"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 24.000, 24.000, -10.000)
+material_override = SubResource("mat_rust")
+use_collision = true
+radius = 2.200
+height = 3.000
+sides = 12
+
+[node name="StackSmoke" type="CPUParticles3D" parent="NavigationRegion3D/DenseWorld/PowerPlantWest"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 24.000, 27.000, -10.000)
+amount = 20
+lifetime = 6.0
+mesh = SubResource("smoke_mesh")
+direction = Vector3(0, 1, 0)
+spread = 8.0
+gravity = Vector3(0, 4.5, 0)
+initial_velocity_min = 1.5
+initial_velocity_max = 3.5
+scale_amount_min = 1.0
+scale_amount_max = 2.0
+color = Color(0.22, 0.22, 0.24, 0.5)
+
+[node name="StackWarn" type="OmniLight3D" parent="NavigationRegion3D/DenseWorld/PowerPlantWest"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 24.000, 26.500, -10.000)
+light_color = Color(1, 0.35, 0.2, 1)
+light_energy = 2.0
+omni_range = 14.0
+
+[node name="ControlBlock" type="CSGBox3D" parent="NavigationRegion3D/DenseWorld/PowerPlantWest"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 24.000, 3.000, 4.000)
+material_override = SubResource("mat_brick")
+use_collision = true
+size = Vector3(10.000, 6.000, 8.000)
+
+[node name="ControlRoof" type="CSGBox3D" parent="NavigationRegion3D/DenseWorld/PowerPlantWest"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 24.000, 6.300, 4.000)
+material_override = SubResource("mat_roof")
+use_collision = true
+size = Vector3(11.000, 0.600, 9.000)
+
+[node name="Transformer1" type="CSGBox3D" parent="NavigationRegion3D/DenseWorld/PowerPlantWest"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.000, 1.200, 14.000)
+material_override = SubResource("mat_metal")
+use_collision = true
+size = Vector3(2.400, 2.400, 2.000)
+
+[node name="Pylon1" type="CSGCylinder3D" parent="NavigationRegion3D/DenseWorld/PowerPlantWest"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.000, 4.000, 14.000)
+material_override = SubResource("mat_metal")
+use_collision = true
+radius = 0.150
+height = 8.000
+sides = 12
+
+[node name="Transformer2" type="CSGBox3D" parent="NavigationRegion3D/DenseWorld/PowerPlantWest"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8.000, 1.200, 14.000)
+material_override = SubResource("mat_metal")
+use_collision = true
+size = Vector3(2.400, 2.400, 2.000)
+
+[node name="Pylon2" type="CSGCylinder3D" parent="NavigationRegion3D/DenseWorld/PowerPlantWest"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8.000, 4.000, 14.000)
+material_override = SubResource("mat_metal")
+use_collision = true
+radius = 0.150
+height = 8.000
+sides = 12
+
+[node name="Transformer3" type="CSGBox3D" parent="NavigationRegion3D/DenseWorld/PowerPlantWest"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 14.000, 1.200, 14.000)
+material_override = SubResource("mat_metal")
+use_collision = true
+size = Vector3(2.400, 2.400, 2.000)
+
+[node name="Pylon3" type="CSGCylinder3D" parent="NavigationRegion3D/DenseWorld/PowerPlantWest"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 14.000, 4.000, 14.000)
+material_override = SubResource("mat_metal")
+use_collision = true
+radius = 0.150
+height = 8.000
+sides = 12
+
+[node name="RadarArray" type="Node3D" parent="NavigationRegion3D/DenseWorld"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 350.000, 0, -200.000)
+
+[node name="LegR1" type="CSGCylinder3D" parent="NavigationRegion3D/DenseWorld/RadarArray"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.000, 10.000, -3.000)
+material_override = SubResource("mat_metal")
+use_collision = true
+radius = 0.500
+height = 20.000
+sides = 12
+
+[node name="LegR2" type="CSGCylinder3D" parent="NavigationRegion3D/DenseWorld/RadarArray"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.000, 10.000, -3.000)
+material_override = SubResource("mat_metal")
+use_collision = true
+radius = 0.500
+height = 20.000
+sides = 12
+
+[node name="LegR3" type="CSGCylinder3D" parent="NavigationRegion3D/DenseWorld/RadarArray"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.000, 10.000, 3.000)
+material_override = SubResource("mat_metal")
+use_collision = true
+radius = 0.500
+height = 20.000
+sides = 12
+
+[node name="LegR4" type="CSGCylinder3D" parent="NavigationRegion3D/DenseWorld/RadarArray"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.000, 10.000, 3.000)
+material_override = SubResource("mat_metal")
+use_collision = true
+radius = 0.500
+height = 20.000
+sides = 12
+
+[node name="BraceR1" type="CSGBox3D" parent="NavigationRegion3D/DenseWorld/RadarArray"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.000, 7.000, 0.000)
+material_override = SubResource("mat_metal")
+size = Vector3(7.000, 0.400, 0.400)
+
+[node name="BraceR2" type="CSGBox3D" parent="NavigationRegion3D/DenseWorld/RadarArray"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.000, 13.000, 0.000)
+material_override = SubResource("mat_metal")
+size = Vector3(7.000, 0.400, 0.400)
+
+[node name="Cab" type="CSGBox3D" parent="NavigationRegion3D/DenseWorld/RadarArray"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.000, 20.800, 0.000)
+material_override = SubResource("mat_white")
+use_collision = true
+size = Vector3(6.000, 3.000, 6.000)
+
+[node name="Mast" type="CSGCylinder3D" parent="NavigationRegion3D/DenseWorld/RadarArray"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.000, 26.000, 0.000)
+material_override = SubResource("mat_metal")
+use_collision = true
+radius = 0.400
+height = 8.000
+sides = 12
+
+[node name="Dish" type="MeshInstance3D" parent="NavigationRegion3D/DenseWorld/RadarArray"]
+transform = Transform3D(0.7, 0, 0.7, 0, 1, 0, -0.7, 0, 0.7, 0, 26, 1.5)
+mesh = SubResource("dish_mesh")
+surface_material_override/0 = SubResource("mat_white")
+
+[node name="RadarBeacon" type="OmniLight3D" parent="NavigationRegion3D/DenseWorld/RadarArray"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.000, 30.400, 0.000)
+light_color = Color(1, 0.35, 0.2, 1)
+light_energy = 2.0
+omni_range = 14.0
+
+[node name="GuardHut" type="CSGBox3D" parent="NavigationRegion3D/DenseWorld/RadarArray"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10.000, 1.750, 10.000)
+material_override = SubResource("mat_concrete")
+use_collision = true
+size = Vector3(5.000, 3.500, 4.000)
+
+[node name="GuardHutRoof" type="CSGBox3D" parent="NavigationRegion3D/DenseWorld/RadarArray"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10.000, 3.700, 10.000)
+material_override = SubResource("mat_roof")
+use_collision = true
+size = Vector3(6.000, 0.500, 5.000)
+
+[node name="OfficeTower1" type="Node3D" parent="NavigationRegion3D/DenseWorld"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 130.000, 0, -35.000)
+
+[node name="Tower" type="CSGBox3D" parent="NavigationRegion3D/DenseWorld/OfficeTower1"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.000, 14.000, 0.000)
+material_override = SubResource("mat_concrete")
+use_collision = true
+size = Vector3(15.000, 28.000, 15.000)
+
+[node name="Cap" type="CSGBox3D" parent="NavigationRegion3D/DenseWorld/OfficeTower1"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.000, 28.400, 0.000)
+material_override = SubResource("mat_roof")
+use_collision = true
+size = Vector3(16.200, 0.800, 16.200)
+
+[node name="Glass1" type="CSGBox3D" parent="NavigationRegion3D/DenseWorld/OfficeTower1"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.000, 4.500, 7.550)
+material_override = SubResource("mat_glass")
+size = Vector3(12.000, 2.200, 0.200)
+
+[node name="Glass2" type="CSGBox3D" parent="NavigationRegion3D/DenseWorld/OfficeTower1"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.000, 10.500, 7.550)
+material_override = SubResource("mat_glass")
+size = Vector3(12.000, 2.200, 0.200)
+
+[node name="Glass3" type="CSGBox3D" parent="NavigationRegion3D/DenseWorld/OfficeTower1"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.000, 16.500, 7.550)
+material_override = SubResource("mat_glass")
+size = Vector3(12.000, 2.200, 0.200)
+
+[node name="Glass4" type="CSGBox3D" parent="NavigationRegion3D/DenseWorld/OfficeTower1"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.000, 22.500, 7.550)
+material_override = SubResource("mat_glass")
+size = Vector3(12.000, 2.200, 0.200)
+
+[node name="AntennaBase" type="CSGBox3D" parent="NavigationRegion3D/DenseWorld/OfficeTower1"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.000, 29.200, 0.000)
+material_override = SubResource("mat_metal")
+use_collision = true
+size = Vector3(1.500, 1.600, 1.500)
+
+[node name="Antenna" type="CSGCylinder3D" parent="NavigationRegion3D/DenseWorld/OfficeTower1"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.000, 32.000, 0.000)
+material_override = SubResource("mat_metal")
+use_collision = true
+radius = 0.150
+height = 6.000
+sides = 12
+
+[node name="TowerBeacon" type="OmniLight3D" parent="NavigationRegion3D/DenseWorld/OfficeTower1"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.000, 35.400, 0.000)
+light_color = Color(1, 0.35, 0.2, 1)
+light_energy = 2.0
+omni_range = 14.0
+
+[node name="OfficeTower2" type="Node3D" parent="NavigationRegion3D/DenseWorld"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 158.000, 0, -18.000)
+
+[node name="Tower" type="CSGBox3D" parent="NavigationRegion3D/DenseWorld/OfficeTower2"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.000, 11.000, 0.000)
+material_override = SubResource("mat_concrete")
+use_collision = true
+size = Vector3(15.000, 22.000, 15.000)
+
+[node name="Cap" type="CSGBox3D" parent="NavigationRegion3D/DenseWorld/OfficeTower2"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.000, 22.400, 0.000)
+material_override = SubResource("mat_roof")
+use_collision = true
+size = Vector3(16.200, 0.800, 16.200)
+
+[node name="Glass1" type="CSGBox3D" parent="NavigationRegion3D/DenseWorld/OfficeTower2"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.000, 4.500, 7.550)
+material_override = SubResource("mat_glass")
+size = Vector3(12.000, 2.200, 0.200)
+
+[node name="Glass2" type="CSGBox3D" parent="NavigationRegion3D/DenseWorld/OfficeTower2"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.000, 10.500, 7.550)
+material_override = SubResource("mat_glass")
+size = Vector3(12.000, 2.200, 0.200)
+
+[node name="Glass3" type="CSGBox3D" parent="NavigationRegion3D/DenseWorld/OfficeTower2"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.000, 16.500, 7.550)
+material_override = SubResource("mat_glass")
+size = Vector3(12.000, 2.200, 0.200)
+
+[node name="AntennaBase" type="CSGBox3D" parent="NavigationRegion3D/DenseWorld/OfficeTower2"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.000, 23.200, 0.000)
+material_override = SubResource("mat_metal")
+use_collision = true
+size = Vector3(1.500, 1.600, 1.500)
+
+[node name="Antenna" type="CSGCylinder3D" parent="NavigationRegion3D/DenseWorld/OfficeTower2"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.000, 26.000, 0.000)
+material_override = SubResource("mat_metal")
+use_collision = true
+radius = 0.150
+height = 6.000
+sides = 12
+
+[node name="TowerBeacon" type="OmniLight3D" parent="NavigationRegion3D/DenseWorld/OfficeTower2"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.000, 29.400, 0.000)
+light_color = Color(1, 0.35, 0.2, 1)
+light_energy = 2.0
+omni_range = 14.0
+
+[node name="WaterTower" type="Node3D" parent="NavigationRegion3D/DenseWorld"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 350.000, 0, 230.000)
+
+[node name="WLeg1" type="CSGCylinder3D" parent="NavigationRegion3D/DenseWorld/WaterTower"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.200, 7.000, -3.200)
+material_override = SubResource("mat_metal")
+use_collision = true
+radius = 0.450
+height = 14.000
+sides = 12
+
+[node name="WLeg2" type="CSGCylinder3D" parent="NavigationRegion3D/DenseWorld/WaterTower"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.200, 7.000, -3.200)
+material_override = SubResource("mat_metal")
+use_collision = true
+radius = 0.450
+height = 14.000
+sides = 12
+
+[node name="WLeg3" type="CSGCylinder3D" parent="NavigationRegion3D/DenseWorld/WaterTower"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.200, 7.000, 3.200)
+material_override = SubResource("mat_metal")
+use_collision = true
+radius = 0.450
+height = 14.000
+sides = 12
+
+[node name="WLeg4" type="CSGCylinder3D" parent="NavigationRegion3D/DenseWorld/WaterTower"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.200, 7.000, 3.200)
+material_override = SubResource("mat_metal")
+use_collision = true
+radius = 0.450
+height = 14.000
+sides = 12
+
+[node name="WTank" type="CSGCylinder3D" parent="NavigationRegion3D/DenseWorld/WaterTower"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.000, 16.000, 0.000)
+material_override = SubResource("mat_c_blue")
+use_collision = true
+radius = 5.000
+height = 5.000
+sides = 12
+
+[node name="WTankCap" type="CSGCylinder3D" parent="NavigationRegion3D/DenseWorld/WaterTower"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.000, 18.900, 0.000)
+material_override = SubResource("mat_metal")
+use_collision = true
+radius = 5.200
+height = 0.600
+sides = 12
+
+[node name="WCross1" type="CSGBox3D" parent="NavigationRegion3D/DenseWorld/WaterTower"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.000, 6.000, 0.000)
+material_override = SubResource("mat_metal")
+size = Vector3(7.400, 0.350, 0.350)
+
+[node name="WCross2" type="CSGBox3D" parent="NavigationRegion3D/DenseWorld/WaterTower"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.000, 10.000, 0.000)
+material_override = SubResource("mat_metal")
+size = Vector3(7.400, 0.350, 0.350)
+
+[node name="WindTurbine1" type="Node3D" parent="NavigationRegion3D/DenseWorld"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -350.000, 0, 150.000)
+
+[node name="Foundation" type="CSGCylinder3D" parent="NavigationRegion3D/DenseWorld/WindTurbine1"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.000, 0.600, 0.000)
+material_override = SubResource("mat_concrete")
+use_collision = true
+radius = 3.200
+height = 1.200
+sides = 12
+
+[node name="Pole" type="CSGCylinder3D" parent="NavigationRegion3D/DenseWorld/WindTurbine1"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.000, 9.600, 0.000)
+material_override = SubResource("mat_white")
+use_collision = true
+radius = 0.600
+height = 18.000
+sides = 12
+
+[node name="Nacelle" type="CSGBox3D" parent="NavigationRegion3D/DenseWorld/WindTurbine1"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.900, 18.800, 0.000)
+material_override = SubResource("mat_white")
+use_collision = true
+size = Vector3(2.600, 1.100, 1.100)
+
+[node name="Blade1" type="CSGBox3D" parent="NavigationRegion3D/DenseWorld/WindTurbine1"]
+transform = Transform3D(1, 0, 0, 0, 0.866025, 0.500000, 0, -0.500000, 0.866025, 2.100, 21.831, 1.750)
+material_override = SubResource("mat_white")
+use_collision = true
+size = Vector3(0.35, 7.0, 0.22)
+
+[node name="Blade2" type="CSGBox3D" parent="NavigationRegion3D/DenseWorld/WindTurbine1"]
+transform = Transform3D(1, 0, 0, 0, -0.866025, 0.500000, 0, -0.500000, -0.866025, 2.100, 15.769, 1.750)
+material_override = SubResource("mat_white")
+use_collision = true
+size = Vector3(0.35, 7.0, 0.22)
+
+[node name="Blade3" type="CSGBox3D" parent="NavigationRegion3D/DenseWorld/WindTurbine1"]
+transform = Transform3D(1, 0, 0, 0, -0.000000, -1.000000, 0, 1.000000, -0.000000, 2.100, 18.800, -3.500)
+material_override = SubResource("mat_white")
+use_collision = true
+size = Vector3(0.35, 7.0, 0.22)
+
+[node name="WindTurbine2" type="Node3D" parent="NavigationRegion3D/DenseWorld"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -338.000, 0, 192.000)
+
+[node name="Foundation" type="CSGCylinder3D" parent="NavigationRegion3D/DenseWorld/WindTurbine2"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.000, 0.600, 0.000)
+material_override = SubResource("mat_concrete")
+use_collision = true
+radius = 3.200
+height = 1.200
+sides = 12
+
+[node name="Pole" type="CSGCylinder3D" parent="NavigationRegion3D/DenseWorld/WindTurbine2"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.000, 9.600, 0.000)
+material_override = SubResource("mat_white")
+use_collision = true
+radius = 0.600
+height = 18.000
+sides = 12
+
+[node name="Nacelle" type="CSGBox3D" parent="NavigationRegion3D/DenseWorld/WindTurbine2"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.900, 18.800, 0.000)
+material_override = SubResource("mat_white")
+use_collision = true
+size = Vector3(2.600, 1.100, 1.100)
+
+[node name="Blade1" type="CSGBox3D" parent="NavigationRegion3D/DenseWorld/WindTurbine2"]
+transform = Transform3D(1, 0, 0, 0, 0.866025, 0.500000, 0, -0.500000, 0.866025, 2.100, 21.831, 1.750)
+material_override = SubResource("mat_white")
+use_collision = true
+size = Vector3(0.35, 7.0, 0.22)
+
+[node name="Blade2" type="CSGBox3D" parent="NavigationRegion3D/DenseWorld/WindTurbine2"]
+transform = Transform3D(1, 0, 0, 0, -0.866025, 0.500000, 0, -0.500000, -0.866025, 2.100, 15.769, 1.750)
+material_override = SubResource("mat_white")
+use_collision = true
+size = Vector3(0.35, 7.0, 0.22)
+
+[node name="Blade3" type="CSGBox3D" parent="NavigationRegion3D/DenseWorld/WindTurbine2"]
+transform = Transform3D(1, 0, 0, 0, -0.000000, -1.000000, 0, 1.000000, -0.000000, 2.100, 18.800, -3.500)
+material_override = SubResource("mat_white")
+use_collision = true
+size = Vector3(0.35, 7.0, 0.22)
+
+[node name="WindTurbine3" type="Node3D" parent="NavigationRegion3D/DenseWorld"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -352.000, 0, 108.000)
+
+[node name="Foundation" type="CSGCylinder3D" parent="NavigationRegion3D/DenseWorld/WindTurbine3"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.000, 0.600, 0.000)
+material_override = SubResource("mat_concrete")
+use_collision = true
+radius = 3.200
+height = 1.200
+sides = 12
+
+[node name="Pole" type="CSGCylinder3D" parent="NavigationRegion3D/DenseWorld/WindTurbine3"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.000, 9.600, 0.000)
+material_override = SubResource("mat_white")
+use_collision = true
+radius = 0.600
+height = 18.000
+sides = 12
+
+[node name="Nacelle" type="CSGBox3D" parent="NavigationRegion3D/DenseWorld/WindTurbine3"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.900, 18.800, 0.000)
+material_override = SubResource("mat_white")
+use_collision = true
+size = Vector3(2.600, 1.100, 1.100)
+
+[node name="Blade1" type="CSGBox3D" parent="NavigationRegion3D/DenseWorld/WindTurbine3"]
+transform = Transform3D(1, 0, 0, 0, 0.866025, 0.500000, 0, -0.500000, 0.866025, 2.100, 21.831, 1.750)
+material_override = SubResource("mat_white")
+use_collision = true
+size = Vector3(0.35, 7.0, 0.22)
+
+[node name="Blade2" type="CSGBox3D" parent="NavigationRegion3D/DenseWorld/WindTurbine3"]
+transform = Transform3D(1, 0, 0, 0, -0.866025, 0.500000, 0, -0.500000, -0.866025, 2.100, 15.769, 1.750)
+material_override = SubResource("mat_white")
+use_collision = true
+size = Vector3(0.35, 7.0, 0.22)
+
+[node name="Blade3" type="CSGBox3D" parent="NavigationRegion3D/DenseWorld/WindTurbine3"]
+transform = Transform3D(1, 0, 0, 0, -0.000000, -1.000000, 0, 1.000000, -0.000000, 2.100, 18.800, -3.500)
+material_override = SubResource("mat_white")
+use_collision = true
+size = Vector3(0.35, 7.0, 0.22)
+
+[node name="CampNW" type="Node3D" parent="NavigationRegion3D/DenseWorld"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -350.000, 0, -200.000)
+
+[node name="CommandTent" type="CSGBox3D" parent="NavigationRegion3D/DenseWorld/CampNW"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8.000, 1.100, 0.000)
+material_override = SubResource("mat_tent")
+use_collision = true
+size = Vector3(6.000, 2.200, 9.000)
+
+[node name="Tent2" type="CSGBox3D" parent="NavigationRegion3D/DenseWorld/CampNW"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.000, 1.100, -7.000)
+material_override = SubResource("mat_tent")
+use_collision = true
+size = Vector3(5.000, 2.200, 7.000)
+
+[node name="Tent3" type="CSGBox3D" parent="NavigationRegion3D/DenseWorld/CampNW"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.000, 1.100, 7.000)
+material_override = SubResource("mat_tent")
+use_collision = true
+size = Vector3(5.000, 2.200, 7.000)
+
+[node name="Barracks" type="CSGBox3D" parent="NavigationRegion3D/DenseWorld/CampNW"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10.000, 2.000, 0.000)
+material_override = SubResource("mat_wood")
+use_collision = true
+size = Vector3(12.000, 4.000, 6.000)
+
+[node name="BarracksRoof" type="CSGBox3D" parent="NavigationRegion3D/DenseWorld/CampNW"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10.000, 4.300, 0.000)
+material_override = SubResource("mat_roof")
+use_collision = true
+size = Vector3(13.000, 0.600, 7.000)
+
+[node name="FlagPole" type="CSGCylinder3D" parent="NavigationRegion3D/DenseWorld/CampNW"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.000, 4.000, 0.000)
+material_override = SubResource("mat_metal")
+use_collision = true
+radius = 0.100
+height = 8.000
+sides = 12
+
+[node name="FlagCloth" type="MeshInstance3D" parent="NavigationRegion3D/DenseWorld/CampNW"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.8, 7.2, 0)
+mesh = SubResource("clothA_mesh")
+surface_material_override/0 = SubResource("mat_flagA")
+
+[node name="SandN" type="CSGBox3D" parent="NavigationRegion3D/DenseWorld/CampNW"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.000, 0.600, -14.000)
+material_override = SubResource("mat_sandbag")
+use_collision = true
+size = Vector3(14.000, 1.200, 1.200)
+
+[node name="SandS" type="CSGBox3D" parent="NavigationRegion3D/DenseWorld/CampNW"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.000, 0.600, 14.000)
+material_override = SubResource("mat_sandbag")
+use_collision = true
+size = Vector3(14.000, 1.200, 1.200)
+
+[node name="SandW" type="CSGBox3D" parent="NavigationRegion3D/DenseWorld/CampNW"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -14.000, 0.600, 0.000)
+material_override = SubResource("mat_sandbag")
+use_collision = true
+size = Vector3(1.200, 1.200, 14.000)
+
+[node name="AmmoCrate1" type="CSGBox3D" parent="NavigationRegion3D/DenseWorld/CampNW"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -10.000, 0.800, 11.000)
+material_override = SubResource("mat_wood")
+use_collision = true
+size = Vector3(1.600, 1.600, 1.600)
+
+[node name="AmmoCrate2" type="CSGBox3D" parent="NavigationRegion3D/DenseWorld/CampNW"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -7.800, 0.800, 11.000)
+material_override = SubResource("mat_wood")
+use_collision = true
+size = Vector3(1.600, 1.600, 1.600)
+
+[node name="AmmoCrate3" type="CSGBox3D" parent="NavigationRegion3D/DenseWorld/CampNW"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5.600, 0.800, 11.000)
+material_override = SubResource("mat_wood")
+use_collision = true
+size = Vector3(1.600, 1.600, 1.600)
+
+[node name="CampBarrel" type="CSGCylinder3D" parent="NavigationRegion3D/DenseWorld/CampNW"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7.000, 0.550, 10.000)
+material_override = SubResource("mat_c_green")
+use_collision = true
+radius = 0.420
+height = 1.100
+sides = 12
+
+[node name="FencePost0_0" type="CSGCylinder3D" parent="NavigationRegion3D/DenseWorld/CampNW"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -20.000, 1.000, -20.000)
+material_override = SubResource("mat_wood")
+use_collision = true
+radius = 0.120
+height = 2.000
+sides = 12
+
+[node name="FencePost0_1" type="CSGCylinder3D" parent="NavigationRegion3D/DenseWorld/CampNW"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -10.000, 1.000, -20.000)
+material_override = SubResource("mat_wood")
+use_collision = true
+radius = 0.120
+height = 2.000
+sides = 12
+
+[node name="FencePost0_2" type="CSGCylinder3D" parent="NavigationRegion3D/DenseWorld/CampNW"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.000, 1.000, -20.000)
+material_override = SubResource("mat_wood")
+use_collision = true
+radius = 0.120
+height = 2.000
+sides = 12
+
+[node name="FencePost0_3" type="CSGCylinder3D" parent="NavigationRegion3D/DenseWorld/CampNW"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10.000, 1.000, -20.000)
+material_override = SubResource("mat_wood")
+use_collision = true
+radius = 0.120
+height = 2.000
+sides = 12
+
+[node name="FencePost0_4" type="CSGCylinder3D" parent="NavigationRegion3D/DenseWorld/CampNW"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 20.000, 1.000, -20.000)
+material_override = SubResource("mat_wood")
+use_collision = true
+radius = 0.120
+height = 2.000
+sides = 12
+
+[node name="FencePost1_0" type="CSGCylinder3D" parent="NavigationRegion3D/DenseWorld/CampNW"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -20.000, 1.000, 20.000)
+material_override = SubResource("mat_wood")
+use_collision = true
+radius = 0.120
+height = 2.000
+sides = 12
+
+[node name="FencePost1_1" type="CSGCylinder3D" parent="NavigationRegion3D/DenseWorld/CampNW"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -10.000, 1.000, 20.000)
+material_override = SubResource("mat_wood")
+use_collision = true
+radius = 0.120
+height = 2.000
+sides = 12
+
+[node name="FencePost1_2" type="CSGCylinder3D" parent="NavigationRegion3D/DenseWorld/CampNW"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.000, 1.000, 20.000)
+material_override = SubResource("mat_wood")
+use_collision = true
+radius = 0.120
+height = 2.000
+sides = 12
+
+[node name="FencePost1_3" type="CSGCylinder3D" parent="NavigationRegion3D/DenseWorld/CampNW"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10.000, 1.000, 20.000)
+material_override = SubResource("mat_wood")
+use_collision = true
+radius = 0.120
+height = 2.000
+sides = 12
+
+[node name="FencePost1_4" type="CSGCylinder3D" parent="NavigationRegion3D/DenseWorld/CampNW"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 20.000, 1.000, 20.000)
+material_override = SubResource("mat_wood")
+use_collision = true
+radius = 0.120
+height = 2.000
+sides = 12
+
+[node name="FencePost2_0" type="CSGCylinder3D" parent="NavigationRegion3D/DenseWorld/CampNW"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -20.000, 1.000, -20.000)
+material_override = SubResource("mat_wood")
+use_collision = true
+radius = 0.120
+height = 2.000
+sides = 12
+
+[node name="FencePost2_1" type="CSGCylinder3D" parent="NavigationRegion3D/DenseWorld/CampNW"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -20.000, 1.000, -10.000)
+material_override = SubResource("mat_wood")
+use_collision = true
+radius = 0.120
+height = 2.000
+sides = 12
+
+[node name="FencePost2_2" type="CSGCylinder3D" parent="NavigationRegion3D/DenseWorld/CampNW"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -20.000, 1.000, 0.000)
+material_override = SubResource("mat_wood")
+use_collision = true
+radius = 0.120
+height = 2.000
+sides = 12
+
+[node name="FencePost2_3" type="CSGCylinder3D" parent="NavigationRegion3D/DenseWorld/CampNW"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -20.000, 1.000, 10.000)
+material_override = SubResource("mat_wood")
+use_collision = true
+radius = 0.120
+height = 2.000
+sides = 12
+
+[node name="FencePost2_4" type="CSGCylinder3D" parent="NavigationRegion3D/DenseWorld/CampNW"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -20.000, 1.000, 20.000)
+material_override = SubResource("mat_wood")
+use_collision = true
+radius = 0.120
+height = 2.000
+sides = 12
+
+[node name="FencePost3_0" type="CSGCylinder3D" parent="NavigationRegion3D/DenseWorld/CampNW"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 20.000, 1.000, -20.000)
+material_override = SubResource("mat_wood")
+use_collision = true
+radius = 0.120
+height = 2.000
+sides = 12
+
+[node name="FencePost3_1" type="CSGCylinder3D" parent="NavigationRegion3D/DenseWorld/CampNW"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 20.000, 1.000, -10.000)
+material_override = SubResource("mat_wood")
+use_collision = true
+radius = 0.120
+height = 2.000
+sides = 12
+
+[node name="FencePost3_2" type="CSGCylinder3D" parent="NavigationRegion3D/DenseWorld/CampNW"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 20.000, 1.000, 0.000)
+material_override = SubResource("mat_wood")
+use_collision = true
+radius = 0.120
+height = 2.000
+sides = 12
+
+[node name="FencePost3_3" type="CSGCylinder3D" parent="NavigationRegion3D/DenseWorld/CampNW"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 20.000, 1.000, 10.000)
+material_override = SubResource("mat_wood")
+use_collision = true
+radius = 0.120
+height = 2.000
+sides = 12
+
+[node name="FencePost3_4" type="CSGCylinder3D" parent="NavigationRegion3D/DenseWorld/CampNW"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 20.000, 1.000, 20.000)
+material_override = SubResource("mat_wood")
+use_collision = true
+radius = 0.120
+height = 2.000
+sides = 12
+
+[node name="FenceRail0" type="CSGBox3D" parent="NavigationRegion3D/DenseWorld/CampNW"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.000, 1.500, -20.000)
+material_override = SubResource("mat_wood")
+use_collision = true
+size = Vector3(40.000, 0.150, 0.120)
+
+[node name="FenceRail1" type="CSGBox3D" parent="NavigationRegion3D/DenseWorld/CampNW"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.000, 1.500, 20.000)
+material_override = SubResource("mat_wood")
+use_collision = true
+size = Vector3(40.000, 0.150, 0.120)
+
+[node name="FenceRail2" type="CSGBox3D" parent="NavigationRegion3D/DenseWorld/CampNW"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -20.000, 1.500, 0.000)
+material_override = SubResource("mat_wood")
+use_collision = true
+size = Vector3(0.120, 0.150, 40.000)
+
+[node name="FenceRail3" type="CSGBox3D" parent="NavigationRegion3D/DenseWorld/CampNW"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 20.000, 1.500, 0.000)
+material_override = SubResource("mat_wood")
+use_collision = true
+size = Vector3(0.120, 0.150, 40.000)
+
+[node name="CampNE" type="Node3D" parent="NavigationRegion3D/DenseWorld"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 190.000, 0, -330.000)
+
+[node name="CommandTent" type="CSGBox3D" parent="NavigationRegion3D/DenseWorld/CampNE"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8.000, 1.100, 0.000)
+material_override = SubResource("mat_tent")
+use_collision = true
+size = Vector3(6.000, 2.200, 9.000)
+
+[node name="Tent2" type="CSGBox3D" parent="NavigationRegion3D/DenseWorld/CampNE"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.000, 1.100, -7.000)
+material_override = SubResource("mat_tent")
+use_collision = true
+size = Vector3(5.000, 2.200, 7.000)
+
+[node name="Tent3" type="CSGBox3D" parent="NavigationRegion3D/DenseWorld/CampNE"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.000, 1.100, 7.000)
+material_override = SubResource("mat_tent")
+use_collision = true
+size = Vector3(5.000, 2.200, 7.000)
+
+[node name="Barracks" type="CSGBox3D" parent="NavigationRegion3D/DenseWorld/CampNE"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10.000, 2.000, 0.000)
+material_override = SubResource("mat_wood")
+use_collision = true
+size = Vector3(12.000, 4.000, 6.000)
+
+[node name="BarracksRoof" type="CSGBox3D" parent="NavigationRegion3D/DenseWorld/CampNE"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10.000, 4.300, 0.000)
+material_override = SubResource("mat_roof")
+use_collision = true
+size = Vector3(13.000, 0.600, 7.000)
+
+[node name="FlagPole" type="CSGCylinder3D" parent="NavigationRegion3D/DenseWorld/CampNE"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.000, 4.000, 0.000)
+material_override = SubResource("mat_metal")
+use_collision = true
+radius = 0.100
+height = 8.000
+sides = 12
+
+[node name="FlagCloth" type="MeshInstance3D" parent="NavigationRegion3D/DenseWorld/CampNE"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.8, 7.2, 0)
+mesh = SubResource("clothA_mesh")
+surface_material_override/0 = SubResource("mat_flagA")
+
+[node name="SandN" type="CSGBox3D" parent="NavigationRegion3D/DenseWorld/CampNE"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.000, 0.600, -14.000)
+material_override = SubResource("mat_sandbag")
+use_collision = true
+size = Vector3(14.000, 1.200, 1.200)
+
+[node name="SandS" type="CSGBox3D" parent="NavigationRegion3D/DenseWorld/CampNE"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.000, 0.600, 14.000)
+material_override = SubResource("mat_sandbag")
+use_collision = true
+size = Vector3(14.000, 1.200, 1.200)
+
+[node name="SandW" type="CSGBox3D" parent="NavigationRegion3D/DenseWorld/CampNE"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -14.000, 0.600, 0.000)
+material_override = SubResource("mat_sandbag")
+use_collision = true
+size = Vector3(1.200, 1.200, 14.000)
+
+[node name="AmmoCrate1" type="CSGBox3D" parent="NavigationRegion3D/DenseWorld/CampNE"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -10.000, 0.800, 11.000)
+material_override = SubResource("mat_wood")
+use_collision = true
+size = Vector3(1.600, 1.600, 1.600)
+
+[node name="AmmoCrate2" type="CSGBox3D" parent="NavigationRegion3D/DenseWorld/CampNE"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -7.800, 0.800, 11.000)
+material_override = SubResource("mat_wood")
+use_collision = true
+size = Vector3(1.600, 1.600, 1.600)
+
+[node name="AmmoCrate3" type="CSGBox3D" parent="NavigationRegion3D/DenseWorld/CampNE"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5.600, 0.800, 11.000)
+material_override = SubResource("mat_wood")
+use_collision = true
+size = Vector3(1.600, 1.600, 1.600)
+
+[node name="CampBarrel" type="CSGCylinder3D" parent="NavigationRegion3D/DenseWorld/CampNE"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7.000, 0.550, 10.000)
+material_override = SubResource("mat_c_green")
+use_collision = true
+radius = 0.420
+height = 1.100
+sides = 12
+
+[node name="FencePost0_0" type="CSGCylinder3D" parent="NavigationRegion3D/DenseWorld/CampNE"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -20.000, 1.000, -20.000)
+material_override = SubResource("mat_wood")
+use_collision = true
+radius = 0.120
+height = 2.000
+sides = 12
+
+[node name="FencePost0_1" type="CSGCylinder3D" parent="NavigationRegion3D/DenseWorld/CampNE"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -10.000, 1.000, -20.000)
+material_override = SubResource("mat_wood")
+use_collision = true
+radius = 0.120
+height = 2.000
+sides = 12
+
+[node name="FencePost0_2" type="CSGCylinder3D" parent="NavigationRegion3D/DenseWorld/CampNE"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.000, 1.000, -20.000)
+material_override = SubResource("mat_wood")
+use_collision = true
+radius = 0.120
+height = 2.000
+sides = 12
+
+[node name="FencePost0_3" type="CSGCylinder3D" parent="NavigationRegion3D/DenseWorld/CampNE"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10.000, 1.000, -20.000)
+material_override = SubResource("mat_wood")
+use_collision = true
+radius = 0.120
+height = 2.000
+sides = 12
+
+[node name="FencePost0_4" type="CSGCylinder3D" parent="NavigationRegion3D/DenseWorld/CampNE"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 20.000, 1.000, -20.000)
+material_override = SubResource("mat_wood")
+use_collision = true
+radius = 0.120
+height = 2.000
+sides = 12
+
+[node name="FencePost1_0" type="CSGCylinder3D" parent="NavigationRegion3D/DenseWorld/CampNE"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -20.000, 1.000, 20.000)
+material_override = SubResource("mat_wood")
+use_collision = true
+radius = 0.120
+height = 2.000
+sides = 12
+
+[node name="FencePost1_1" type="CSGCylinder3D" parent="NavigationRegion3D/DenseWorld/CampNE"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -10.000, 1.000, 20.000)
+material_override = SubResource("mat_wood")
+use_collision = true
+radius = 0.120
+height = 2.000
+sides = 12
+
+[node name="FencePost1_2" type="CSGCylinder3D" parent="NavigationRegion3D/DenseWorld/CampNE"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.000, 1.000, 20.000)
+material_override = SubResource("mat_wood")
+use_collision = true
+radius = 0.120
+height = 2.000
+sides = 12
+
+[node name="FencePost1_3" type="CSGCylinder3D" parent="NavigationRegion3D/DenseWorld/CampNE"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10.000, 1.000, 20.000)
+material_override = SubResource("mat_wood")
+use_collision = true
+radius = 0.120
+height = 2.000
+sides = 12
+
+[node name="FencePost1_4" type="CSGCylinder3D" parent="NavigationRegion3D/DenseWorld/CampNE"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 20.000, 1.000, 20.000)
+material_override = SubResource("mat_wood")
+use_collision = true
+radius = 0.120
+height = 2.000
+sides = 12
+
+[node name="FencePost2_0" type="CSGCylinder3D" parent="NavigationRegion3D/DenseWorld/CampNE"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -20.000, 1.000, -20.000)
+material_override = SubResource("mat_wood")
+use_collision = true
+radius = 0.120
+height = 2.000
+sides = 12
+
+[node name="FencePost2_1" type="CSGCylinder3D" parent="NavigationRegion3D/DenseWorld/CampNE"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -20.000, 1.000, -10.000)
+material_override = SubResource("mat_wood")
+use_collision = true
+radius = 0.120
+height = 2.000
+sides = 12
+
+[node name="FencePost2_2" type="CSGCylinder3D" parent="NavigationRegion3D/DenseWorld/CampNE"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -20.000, 1.000, 0.000)
+material_override = SubResource("mat_wood")
+use_collision = true
+radius = 0.120
+height = 2.000
+sides = 12
+
+[node name="FencePost2_3" type="CSGCylinder3D" parent="NavigationRegion3D/DenseWorld/CampNE"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -20.000, 1.000, 10.000)
+material_override = SubResource("mat_wood")
+use_collision = true
+radius = 0.120
+height = 2.000
+sides = 12
+
+[node name="FencePost2_4" type="CSGCylinder3D" parent="NavigationRegion3D/DenseWorld/CampNE"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -20.000, 1.000, 20.000)
+material_override = SubResource("mat_wood")
+use_collision = true
+radius = 0.120
+height = 2.000
+sides = 12
+
+[node name="FencePost3_0" type="CSGCylinder3D" parent="NavigationRegion3D/DenseWorld/CampNE"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 20.000, 1.000, -20.000)
+material_override = SubResource("mat_wood")
+use_collision = true
+radius = 0.120
+height = 2.000
+sides = 12
+
+[node name="FencePost3_1" type="CSGCylinder3D" parent="NavigationRegion3D/DenseWorld/CampNE"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 20.000, 1.000, -10.000)
+material_override = SubResource("mat_wood")
+use_collision = true
+radius = 0.120
+height = 2.000
+sides = 12
+
+[node name="FencePost3_2" type="CSGCylinder3D" parent="NavigationRegion3D/DenseWorld/CampNE"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 20.000, 1.000, 0.000)
+material_override = SubResource("mat_wood")
+use_collision = true
+radius = 0.120
+height = 2.000
+sides = 12
+
+[node name="FencePost3_3" type="CSGCylinder3D" parent="NavigationRegion3D/DenseWorld/CampNE"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 20.000, 1.000, 10.000)
+material_override = SubResource("mat_wood")
+use_collision = true
+radius = 0.120
+height = 2.000
+sides = 12
+
+[node name="FencePost3_4" type="CSGCylinder3D" parent="NavigationRegion3D/DenseWorld/CampNE"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 20.000, 1.000, 20.000)
+material_override = SubResource("mat_wood")
+use_collision = true
+radius = 0.120
+height = 2.000
+sides = 12
+
+[node name="FenceRail0" type="CSGBox3D" parent="NavigationRegion3D/DenseWorld/CampNE"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.000, 1.500, -20.000)
+material_override = SubResource("mat_wood")
+use_collision = true
+size = Vector3(40.000, 0.150, 0.120)
+
+[node name="FenceRail1" type="CSGBox3D" parent="NavigationRegion3D/DenseWorld/CampNE"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.000, 1.500, 20.000)
+material_override = SubResource("mat_wood")
+use_collision = true
+size = Vector3(40.000, 0.150, 0.120)
+
+[node name="FenceRail2" type="CSGBox3D" parent="NavigationRegion3D/DenseWorld/CampNE"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -20.000, 1.500, 0.000)
+material_override = SubResource("mat_wood")
+use_collision = true
+size = Vector3(0.120, 0.150, 40.000)
+
+[node name="FenceRail3" type="CSGBox3D" parent="NavigationRegion3D/DenseWorld/CampNE"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 20.000, 1.500, 0.000)
+material_override = SubResource("mat_wood")
+use_collision = true
+size = Vector3(0.120, 0.150, 40.000)
+
+[node name="CampSE" type="Node3D" parent="NavigationRegion3D/DenseWorld"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 165.000, 0, 265.000)
+
+[node name="CommandTent" type="CSGBox3D" parent="NavigationRegion3D/DenseWorld/CampSE"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8.000, 1.100, 0.000)
+material_override = SubResource("mat_tent")
+use_collision = true
+size = Vector3(6.000, 2.200, 9.000)
+
+[node name="Tent2" type="CSGBox3D" parent="NavigationRegion3D/DenseWorld/CampSE"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.000, 1.100, -7.000)
+material_override = SubResource("mat_tent")
+use_collision = true
+size = Vector3(5.000, 2.200, 7.000)
+
+[node name="Tent3" type="CSGBox3D" parent="NavigationRegion3D/DenseWorld/CampSE"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.000, 1.100, 7.000)
+material_override = SubResource("mat_tent")
+use_collision = true
+size = Vector3(5.000, 2.200, 7.000)
+
+[node name="Barracks" type="CSGBox3D" parent="NavigationRegion3D/DenseWorld/CampSE"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10.000, 2.000, 0.000)
+material_override = SubResource("mat_wood")
+use_collision = true
+size = Vector3(12.000, 4.000, 6.000)
+
+[node name="BarracksRoof" type="CSGBox3D" parent="NavigationRegion3D/DenseWorld/CampSE"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10.000, 4.300, 0.000)
+material_override = SubResource("mat_roof")
+use_collision = true
+size = Vector3(13.000, 0.600, 7.000)
+
+[node name="FlagPole" type="CSGCylinder3D" parent="NavigationRegion3D/DenseWorld/CampSE"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.000, 4.000, 0.000)
+material_override = SubResource("mat_metal")
+use_collision = true
+radius = 0.100
+height = 8.000
+sides = 12
+
+[node name="FlagCloth" type="MeshInstance3D" parent="NavigationRegion3D/DenseWorld/CampSE"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.8, 7.2, 0)
+mesh = SubResource("clothA_mesh")
+surface_material_override/0 = SubResource("mat_flagA")
+
+[node name="SandN" type="CSGBox3D" parent="NavigationRegion3D/DenseWorld/CampSE"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.000, 0.600, -14.000)
+material_override = SubResource("mat_sandbag")
+use_collision = true
+size = Vector3(14.000, 1.200, 1.200)
+
+[node name="SandS" type="CSGBox3D" parent="NavigationRegion3D/DenseWorld/CampSE"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.000, 0.600, 14.000)
+material_override = SubResource("mat_sandbag")
+use_collision = true
+size = Vector3(14.000, 1.200, 1.200)
+
+[node name="SandW" type="CSGBox3D" parent="NavigationRegion3D/DenseWorld/CampSE"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -14.000, 0.600, 0.000)
+material_override = SubResource("mat_sandbag")
+use_collision = true
+size = Vector3(1.200, 1.200, 14.000)
+
+[node name="AmmoCrate1" type="CSGBox3D" parent="NavigationRegion3D/DenseWorld/CampSE"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -10.000, 0.800, 11.000)
+material_override = SubResource("mat_wood")
+use_collision = true
+size = Vector3(1.600, 1.600, 1.600)
+
+[node name="AmmoCrate2" type="CSGBox3D" parent="NavigationRegion3D/DenseWorld/CampSE"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -7.800, 0.800, 11.000)
+material_override = SubResource("mat_wood")
+use_collision = true
+size = Vector3(1.600, 1.600, 1.600)
+
+[node name="AmmoCrate3" type="CSGBox3D" parent="NavigationRegion3D/DenseWorld/CampSE"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5.600, 0.800, 11.000)
+material_override = SubResource("mat_wood")
+use_collision = true
+size = Vector3(1.600, 1.600, 1.600)
+
+[node name="CampBarrel" type="CSGCylinder3D" parent="NavigationRegion3D/DenseWorld/CampSE"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7.000, 0.550, 10.000)
+material_override = SubResource("mat_c_green")
+use_collision = true
+radius = 0.420
+height = 1.100
+sides = 12
+
+[node name="FencePost0_0" type="CSGCylinder3D" parent="NavigationRegion3D/DenseWorld/CampSE"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -20.000, 1.000, -20.000)
+material_override = SubResource("mat_wood")
+use_collision = true
+radius = 0.120
+height = 2.000
+sides = 12
+
+[node name="FencePost0_1" type="CSGCylinder3D" parent="NavigationRegion3D/DenseWorld/CampSE"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -10.000, 1.000, -20.000)
+material_override = SubResource("mat_wood")
+use_collision = true
+radius = 0.120
+height = 2.000
+sides = 12
+
+[node name="FencePost0_2" type="CSGCylinder3D" parent="NavigationRegion3D/DenseWorld/CampSE"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.000, 1.000, -20.000)
+material_override = SubResource("mat_wood")
+use_collision = true
+radius = 0.120
+height = 2.000
+sides = 12
+
+[node name="FencePost0_3" type="CSGCylinder3D" parent="NavigationRegion3D/DenseWorld/CampSE"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10.000, 1.000, -20.000)
+material_override = SubResource("mat_wood")
+use_collision = true
+radius = 0.120
+height = 2.000
+sides = 12
+
+[node name="FencePost0_4" type="CSGCylinder3D" parent="NavigationRegion3D/DenseWorld/CampSE"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 20.000, 1.000, -20.000)
+material_override = SubResource("mat_wood")
+use_collision = true
+radius = 0.120
+height = 2.000
+sides = 12
+
+[node name="FencePost1_0" type="CSGCylinder3D" parent="NavigationRegion3D/DenseWorld/CampSE"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -20.000, 1.000, 20.000)
+material_override = SubResource("mat_wood")
+use_collision = true
+radius = 0.120
+height = 2.000
+sides = 12
+
+[node name="FencePost1_1" type="CSGCylinder3D" parent="NavigationRegion3D/DenseWorld/CampSE"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -10.000, 1.000, 20.000)
+material_override = SubResource("mat_wood")
+use_collision = true
+radius = 0.120
+height = 2.000
+sides = 12
+
+[node name="FencePost1_2" type="CSGCylinder3D" parent="NavigationRegion3D/DenseWorld/CampSE"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.000, 1.000, 20.000)
+material_override = SubResource("mat_wood")
+use_collision = true
+radius = 0.120
+height = 2.000
+sides = 12
+
+[node name="FencePost1_3" type="CSGCylinder3D" parent="NavigationRegion3D/DenseWorld/CampSE"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10.000, 1.000, 20.000)
+material_override = SubResource("mat_wood")
+use_collision = true
+radius = 0.120
+height = 2.000
+sides = 12
+
+[node name="FencePost1_4" type="CSGCylinder3D" parent="NavigationRegion3D/DenseWorld/CampSE"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 20.000, 1.000, 20.000)
+material_override = SubResource("mat_wood")
+use_collision = true
+radius = 0.120
+height = 2.000
+sides = 12
+
+[node name="FencePost2_0" type="CSGCylinder3D" parent="NavigationRegion3D/DenseWorld/CampSE"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -20.000, 1.000, -20.000)
+material_override = SubResource("mat_wood")
+use_collision = true
+radius = 0.120
+height = 2.000
+sides = 12
+
+[node name="FencePost2_1" type="CSGCylinder3D" parent="NavigationRegion3D/DenseWorld/CampSE"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -20.000, 1.000, -10.000)
+material_override = SubResource("mat_wood")
+use_collision = true
+radius = 0.120
+height = 2.000
+sides = 12
+
+[node name="FencePost2_2" type="CSGCylinder3D" parent="NavigationRegion3D/DenseWorld/CampSE"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -20.000, 1.000, 0.000)
+material_override = SubResource("mat_wood")
+use_collision = true
+radius = 0.120
+height = 2.000
+sides = 12
+
+[node name="FencePost2_3" type="CSGCylinder3D" parent="NavigationRegion3D/DenseWorld/CampSE"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -20.000, 1.000, 10.000)
+material_override = SubResource("mat_wood")
+use_collision = true
+radius = 0.120
+height = 2.000
+sides = 12
+
+[node name="FencePost2_4" type="CSGCylinder3D" parent="NavigationRegion3D/DenseWorld/CampSE"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -20.000, 1.000, 20.000)
+material_override = SubResource("mat_wood")
+use_collision = true
+radius = 0.120
+height = 2.000
+sides = 12
+
+[node name="FencePost3_0" type="CSGCylinder3D" parent="NavigationRegion3D/DenseWorld/CampSE"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 20.000, 1.000, -20.000)
+material_override = SubResource("mat_wood")
+use_collision = true
+radius = 0.120
+height = 2.000
+sides = 12
+
+[node name="FencePost3_1" type="CSGCylinder3D" parent="NavigationRegion3D/DenseWorld/CampSE"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 20.000, 1.000, -10.000)
+material_override = SubResource("mat_wood")
+use_collision = true
+radius = 0.120
+height = 2.000
+sides = 12
+
+[node name="FencePost3_2" type="CSGCylinder3D" parent="NavigationRegion3D/DenseWorld/CampSE"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 20.000, 1.000, 0.000)
+material_override = SubResource("mat_wood")
+use_collision = true
+radius = 0.120
+height = 2.000
+sides = 12
+
+[node name="FencePost3_3" type="CSGCylinder3D" parent="NavigationRegion3D/DenseWorld/CampSE"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 20.000, 1.000, 10.000)
+material_override = SubResource("mat_wood")
+use_collision = true
+radius = 0.120
+height = 2.000
+sides = 12
+
+[node name="FencePost3_4" type="CSGCylinder3D" parent="NavigationRegion3D/DenseWorld/CampSE"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 20.000, 1.000, 20.000)
+material_override = SubResource("mat_wood")
+use_collision = true
+radius = 0.120
+height = 2.000
+sides = 12
+
+[node name="FenceRail0" type="CSGBox3D" parent="NavigationRegion3D/DenseWorld/CampSE"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.000, 1.500, -20.000)
+material_override = SubResource("mat_wood")
+use_collision = true
+size = Vector3(40.000, 0.150, 0.120)
+
+[node name="FenceRail1" type="CSGBox3D" parent="NavigationRegion3D/DenseWorld/CampSE"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.000, 1.500, 20.000)
+material_override = SubResource("mat_wood")
+use_collision = true
+size = Vector3(40.000, 0.150, 0.120)
+
+[node name="FenceRail2" type="CSGBox3D" parent="NavigationRegion3D/DenseWorld/CampSE"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -20.000, 1.500, 0.000)
+material_override = SubResource("mat_wood")
+use_collision = true
+size = Vector3(0.120, 0.150, 40.000)
+
+[node name="FenceRail3" type="CSGBox3D" parent="NavigationRegion3D/DenseWorld/CampSE"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 20.000, 1.500, 0.000)
+material_override = SubResource("mat_wood")
+use_collision = true
+size = Vector3(0.120, 0.150, 40.000)
+
+[node name="FactoryNorth" type="Node3D" parent="NavigationRegion3D/DenseWorld"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -60.000, 0, -225.000)
+
+[node name="FNHall" type="CSGBox3D" parent="NavigationRegion3D/DenseWorld/FactoryNorth"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.000, 6.000, 0.000)
+material_override = SubResource("mat_brick")
+use_collision = true
+size = Vector3(22.000, 12.000, 16.000)
+
+[node name="FNHallRoof" type="CSGBox3D" parent="NavigationRegion3D/DenseWorld/FactoryNorth"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.000, 12.400, 0.000)
+material_override = SubResource("mat_roof")
+use_collision = true
+size = Vector3(24.000, 0.800, 18.000)
+
+[node name="FNChimney" type="CSGCylinder3D" parent="NavigationRegion3D/DenseWorld/FactoryNorth"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -14.000, 11.000, -10.000)
+material_override = SubResource("mat_brick")
+use_collision = true
+radius = 1.800
+height = 22.000
+sides = 12
+
+[node name="FNChimneySmoke" type="CPUParticles3D" parent="NavigationRegion3D/DenseWorld/FactoryNorth"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -14.000, 23.000, -10.000)
+amount = 20
+lifetime = 6.0
+mesh = SubResource("smoke_mesh")
+direction = Vector3(0, 1, 0)
+spread = 8.0
+gravity = Vector3(0, 4.5, 0)
+initial_velocity_min = 1.5
+initial_velocity_max = 3.5
+scale_amount_min = 1.0
+scale_amount_max = 2.0
+color = Color(0.22, 0.22, 0.24, 0.5)
+
+[node name="FNTank1" type="CSGCylinder3D" parent="NavigationRegion3D/DenseWorld/FactoryNorth"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 15.000, 5.000, 10.000)
+material_override = SubResource("mat_white")
+use_collision = true
+radius = 5.500
+height = 10.000
+sides = 12
+
+[node name="FNTank1Cap" type="CSGCylinder3D" parent="NavigationRegion3D/DenseWorld/FactoryNorth"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 15.000, 10.400, 10.000)
+material_override = SubResource("mat_metal")
+use_collision = true
+radius = 5.800
+height = 0.600
+sides = 12
+
+[node name="FNTank2" type="CSGCylinder3D" parent="NavigationRegion3D/DenseWorld/FactoryNorth"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 15.000, 4.000, -2.000)
+material_override = SubResource("mat_rust")
+use_collision = true
+radius = 4.500
+height = 8.000
+sides = 12
+
+[node name="FNFence" type="CSGBox3D" parent="NavigationRegion3D/DenseWorld/FactoryNorth"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.000, 1.500, -14.000)
+material_override = SubResource("mat_metal")
+use_collision = true
+size = Vector3(40.000, 3.000, 0.600)
+
+[node name="FNPalette1" type="CSGBox3D" parent="NavigationRegion3D/DenseWorld/FactoryNorth"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8.000, 0.800, 14.000)
+material_override = SubResource("mat_wood")
+use_collision = true
+size = Vector3(2.400, 1.600, 1.600)
+
+[node name="FNPalette2" type="CSGBox3D" parent="NavigationRegion3D/DenseWorld/FactoryNorth"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4.000, 0.800, 14.000)
+material_override = SubResource("mat_wood")
+use_collision = true
+size = Vector3(2.400, 1.600, 1.600)
+
+[node name="FNPalette3" type="CSGBox3D" parent="NavigationRegion3D/DenseWorld/FactoryNorth"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.000, 0.800, 14.000)
+material_override = SubResource("mat_wood")
+use_collision = true
+size = Vector3(2.400, 1.600, 1.600)
+
+[node name="SiloPairSW" type="Node3D" parent="NavigationRegion3D/DenseWorld"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -252.000, 0, 258.000)
+
+[node name="Silo1" type="CSGCylinder3D" parent="NavigationRegion3D/DenseWorld/SiloPairSW"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.000, 8.000, 0.000)
+material_override = SubResource("mat_white")
+use_collision = true
+radius = 5.500
+height = 16.000
+sides = 12
+
+[node name="Silo1Cap" type="CSGCylinder3D" parent="NavigationRegion3D/DenseWorld/SiloPairSW"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.000, 16.400, 0.000)
+material_override = SubResource("mat_metal")
+use_collision = true
+radius = 5.800
+height = 0.800
+sides = 12
+
+[node name="Silo2" type="CSGCylinder3D" parent="NavigationRegion3D/DenseWorld/SiloPairSW"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -13.000, 7.000, 5.000)
+material_override = SubResource("mat_white")
+use_collision = true
+radius = 5.000
+height = 14.000
+sides = 12
+
+[node name="Silo2Cap" type="CSGCylinder3D" parent="NavigationRegion3D/DenseWorld/SiloPairSW"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -13.000, 14.400, 5.000)
+material_override = SubResource("mat_metal")
+use_collision = true
+radius = 5.300
+height = 0.700
+sides = 12
+
+[node name="SiloConveyor" type="CSGBox3D" parent="NavigationRegion3D/DenseWorld/SiloPairSW"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6.000, 8.000, 0.000)
+material_override = SubResource("mat_metal")
+size = Vector3(0.800, 0.800, 14.000)
+
 [node name="MultiplayerHUD" type="CanvasLayer" parent="." unique_id=1676682577]
 script = ExtResource("2_hud")
 

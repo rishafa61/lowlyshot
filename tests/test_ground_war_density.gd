@@ -67,6 +67,19 @@ func _run() -> void:
 	check(wreck_count >= 8, "Vehicle wrecks with smoke (>=8, got %d)" % wreck_count)
 	check(container_count >= 20, "Container labyrinth (>=20, got %d)" % container_count)
 
+	# 3b. Pass-2 industry, towers & camps
+	for struct_name in ["MegaFactoryWest", "RefinerySouth", "PowerPlantWest", "RadarArray",
+		"OfficeTower1", "OfficeTower2", "WaterTower", "WindTurbine1", "WindTurbine2",
+		"WindTurbine3", "CampNW", "CampNE", "CampSE", "FactoryNorth", "SiloPairSW"]:
+		var s = dense.get_node_or_null(struct_name)
+		check(s != null, "Pass-2 structure %s exists" % struct_name)
+	var mega = dense.get_node_or_null("MegaFactoryWest/Hall1") as CSGBox3D
+	check(mega != null and mega.use_collision and mega.size.y >= 14.0, "MegaFactory hall is big & solid")
+	var office = dense.get_node_or_null("OfficeTower1/Tower") as CSGBox3D
+	check(office != null and office.size.y >= 28.0, "Office tower is tall (>=28m)")
+	var turbine = dense.get_node_or_null("WindTurbine1/Blade1") as CSGBox3D
+	check(turbine != null and turbine.use_collision, "Wind turbine blades have collision")
+
 	# 4. Player spawn points not obstructed by new props
 	var spawns := {
 		"AttackersSpawn1": "attackers",
