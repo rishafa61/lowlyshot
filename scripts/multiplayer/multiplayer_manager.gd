@@ -289,11 +289,11 @@ func _on_kill_occurred(killer: String, killer_faction: String, weapon: String, v
 			match_stats[killer]["kills"] += 1
 
 		# Determine victim team
-		var victim_team = ""
+		var _victim_team = ""
 		if match_stats.has(victim) and match_stats[victim].get("team", "") != "":
-			victim_team = match_stats[victim]["team"]
+			_victim_team = match_stats[victim]["team"]
 		else:
-			victim_team = "defenders" if victim_faction.to_lower() in ["enemy", "defenders"] else "attackers"
+			_victim_team = "defenders" if victim_faction.to_lower() in ["enemy", "defenders"] else "attackers"
 
 		if match_stats.has(victim):
 			match_stats[victim]["deaths"] += 1

@@ -856,7 +856,6 @@ func fire_launcher() -> void:
 		return
 	var rocket = rocket_scene.instantiate()
 	var spawn_pos := get_current_muzzle_position()
-	rocket.global_position = spawn_pos
 	rocket.shooter_name = player_name
 	rocket.shooter_faction = "Ally" if team == "attackers" else "Enemy"
 
@@ -876,6 +875,7 @@ func fire_launcher() -> void:
 			rocket.direction = aim_dir
 
 	get_tree().root.add_child(rocket)
+	rocket.global_position = spawn_pos
 	rocket.look_at(spawn_pos + rocket.direction, Vector3.UP)
 
 	# Sound & muzzle flash
