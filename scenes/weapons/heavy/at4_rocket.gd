@@ -14,6 +14,9 @@ var target_vehicle: Node3D = null
 var shooter_name: String = "Player"
 var shooter_faction: String = "Player"
 var direction: Vector3 = Vector3.ZERO # set by shooter before add_child; ZERO = derive from own forward
+## Network replica: full visual + local explosion feedback, but damage attribution
+## already runs on the shooter's machine — replica skips take_damage to avoid double-hit.
+var is_net_replica: bool = false
 var _life: float = 0.0
 var _exploded: bool = false
 
@@ -56,16 +59,18 @@ func explode(pos: Vector3, direct_hit: Object = null) -> void:
 	_exploded = true
 	set_physics_process(false)
 
-	# Direct hit damage
-	if direct_hit and is_instance_valid(direct_hit):
-		var target = direct_hit
-		if not target.has_method("take_damage") and target.get_parent() and target.get_parent().has_method("take_damage"):
-			target = target.get_parent()
-		if target.has_method("take_damage"):
-			target.take_damage(direct_damage, shooter_name, "AT4 Rocket", shooter_faction, pos)
+	# Damage runs authoritatively on the shooter's machine; network replicas only render feedback
+	if not is_net_replica:
+		# Direct hit damage
+		if direct_hit and is_instance_valid(direct_hit):
+			var target = direct_hit
+			if not target.has_method("take_damage") and target.get_parent() and target.get_parent().has_method("take_damage"):
+				target = target.get_parent()
+			if target.has_method("take_damage"):
+				target.take_damage(direct_damage, shooter_name, "AT4 Rocket", shooter_faction, pos)
 
-	# Blast area damage
-	_blast_area(pos)
+		# Blast area damage
+		_blast_area(pos)
 
 	# Visual quick explosive sphere
 	_spawn_explosion_visual(pos)

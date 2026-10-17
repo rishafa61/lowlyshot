@@ -52,7 +52,7 @@ func _ready() -> void:
 	# Host's menu toggle decides bot backfill — read unconditionally so a
 	# network flag race can never fall back to the on-by-default export value.
 	bots_in_online_matches = GlobalSettings.online_bots_enabled
-	if is_multiplayer_authority():
+	if is_multiplayer_authority() and timer_node != null:
 		timer_node.wait_time = 1.0
 		timer_node.timeout.connect(_on_tick)
 		timer_node.start()
@@ -658,6 +658,11 @@ func _instantiate_utility_replica(scene_path: String, pos: Vector3, dir: Vector3
 		node.faction = extra_data["faction"]
 	if extra_data.has("owner_name") and "owner_name" in node:
 		node.owner_name = extra_data["owner_name"]
+	# AT4 rocket naming
+	if extra_data.has("owner_name") and "shooter_name" in node:
+		node.shooter_name = extra_data["owner_name"]
+	if extra_data.has("faction") and "shooter_faction" in node:
+		node.shooter_faction = extra_data["faction"]
 	get_tree().root.add_child(node)
 	node.global_position = pos
 	if "direction" in node:

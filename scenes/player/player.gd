@@ -783,7 +783,7 @@ func get_current_muzzle_position() -> Vector3:
 	return camera.global_position + (-camera.global_transform.basis.z * 0.6) + (camera.global_transform.basis.y * -0.1)
 
 # ---------------- AT4 Launcher Lock & Firing ----------------
-const LOCK_MAX_PIXEL_DIST: float = 100.0 # within 100px from center crosshair
+const LOCK_MAX_PIXEL_DIST: float = 240.0 # wider vehicle scan cone (~240px from crosshair)
 const LOCK_HOLD_TIME: float = 2.0 # 2 seconds to acquire lock
 var _current_lock_target: Node3D = null
 var _lock_timer: float = 0.0
@@ -891,6 +891,14 @@ func fire_launcher() -> void:
 	rocket.global_position = spawn_pos
 	var up := Vector3.UP if absf(rocket.direction.dot(Vector3.UP)) < 0.99 else Vector3.RIGHT
 	rocket.look_at(spawn_pos + rocket.direction, up)
+
+	# Replicate to other peers (visual rocket; damage is shooter-authoritative)
+	var mgr = get_tree().current_scene
+	if mgr is MultiplayerManager:
+		mgr.spawn_utility_net("res://scenes/weapons/heavy/at4_rocket.tscn", spawn_pos, rocket.direction, {
+			"owner_name": player_name,
+			"faction": "Ally" if team == "attackers" else "Enemy",
+		})
 
 	# Sound & muzzle flash
 	Sfx.oneshot3d("missile", self, 20.0, 180.0, 3.0)
