@@ -1,0 +1,95 @@
+[gd_scene load_steps=13 format=3]
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_tube"]
+top_radius = 0.052
+bottom_radius = 0.052
+height = 1.02
+radial_segments = 24
+
+[sub_resource type="StandardMaterial3D" id="Mat_olive"]
+albedo_color = Color(0.24, 0.28, 0.2, 1)
+metallic = 0.25
+roughness = 0.65
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_yellow_band"]
+top_radius = 0.053
+bottom_radius = 0.053
+height = 0.04
+radial_segments = 24
+
+[sub_resource type="StandardMaterial3D" id="Mat_yellow"]
+albedo_color = Color(0.85, 0.72, 0.15, 1)
+roughness = 0.7
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_front_bumper"]
+top_radius = 0.065
+bottom_radius = 0.054
+height = 0.08
+radial_segments = 8
+
+[sub_resource type="StandardMaterial3D" id="Mat_black_bumper"]
+albedo_color = Color(0.12, 0.12, 0.13, 1)
+roughness = 0.85
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_rear_bumper"]
+top_radius = 0.054
+bottom_radius = 0.075
+height = 0.1
+radial_segments = 8
+
+[sub_resource type="BoxMesh" id="BoxMesh_grip"]
+size = Vector3(0.04, 0.15, 0.06)
+
+[sub_resource type="BoxMesh" id="BoxMesh_sight"]
+size = Vector3(0.04, 0.05, 0.14)
+
+[sub_resource type="StandardMaterial3D" id="Mat_sight"]
+albedo_color = Color(0.18, 0.22, 0.16, 1)
+roughness = 0.6
+
+[sub_resource type="BoxMesh" id="BoxMesh_sling"]
+size = Vector3(0.02, 0.015, 0.45)
+
+[sub_resource type="StandardMaterial3D" id="Mat_sling"]
+albedo_color = Color(0.22, 0.2, 0.14, 1)
+roughness = 0.9
+
+[node name="AT4" type="Node3D"]
+
+[node name="MainTube" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, -4.37114e-08, 1, 0, -1, -4.37114e-08, 0, 0, 0)
+mesh = SubResource("CylinderMesh_tube")
+surface_material_override/0 = SubResource("Mat_olive")
+
+[node name="YellowBand" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, -4.37114e-08, 1, 0, -1, -4.37114e-08, 0, 0, -0.15)
+mesh = SubResource("CylinderMesh_yellow_band")
+surface_material_override/0 = SubResource("Mat_yellow")
+
+[node name="FrontBumper" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, -4.37114e-08, 1, 0, -1, -4.37114e-08, 0, 0, -0.49)
+mesh = SubResource("CylinderMesh_front_bumper")
+surface_material_override/0 = SubResource("Mat_black_bumper")
+
+[node name="RearBumper" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, -4.37114e-08, 1, 0, -1, -4.37114e-08, 0, 0, 0.48)
+mesh = SubResource("CylinderMesh_rear_bumper")
+surface_material_override/0 = SubResource("Mat_black_bumper")
+
+[node name="Grip" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.12, -0.2)
+mesh = SubResource("BoxMesh_grip")
+surface_material_override/0 = SubResource("Mat_black_bumper")
+
+[node name="SightHousing" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.07, -0.05)
+mesh = SubResource("BoxMesh_sight")
+surface_material_override/0 = SubResource("Mat_sight")
+
+[node name="Sling" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.06, -0.08, 0.05)
+mesh = SubResource("BoxMesh_sling")
+surface_material_override/0 = SubResource("Mat_sling")
+
+[node name="Muzzle" type="Marker3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -0.56)

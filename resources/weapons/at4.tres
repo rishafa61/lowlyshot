@@ -1,0 +1,29 @@
+[gd_resource type="Resource" script_class="WeaponData" format=3]
+
+[ext_resource type="Script" path="res://scripts/weapon_data.gd" id="1_script"]
+
+[resource]
+script = ExtResource("1_script")
+id = "at4"
+display_name = "AT4 Launcher"
+type = "launcher"
+dmg = 450.0
+rng = 150.0
+stab = 30.0
+fire_rate = 1.8
+mag = 1
+max_mag = 1
+res = 4
+max_res = 4
+auto = false
+is_sniper = false
+owned = true
+equipped = false
+price = 0
+scene_path = "res://scenes/weapons/heavy/at4.tscn"
+viewmodel_position = Vector3(0.0, -0.05, -0.1)
+viewmodel_rotation = Vector3(0, 0, 0)
+viewmodel_scale = Vector3(1, 1, 1)
+hold_style = "rifle"
+right_hand_offset = Vector3(0, 0, 0)
+left_hand_offset = Vector3(0, 0, 0)

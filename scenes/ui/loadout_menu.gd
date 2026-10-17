@@ -31,7 +31,7 @@ const SLOT_DEFS := [
 const WEAPON_GROUPS := {
 	"Primary": {"Assault Rifles": ["ak47", "m4a4"], "Sniper Rifles": ["m700"]},
 	"Secondary": {"Pistols": ["glock", "desert_hawk"]},
-	"Melee": {"Melee": ["knife"]},
+	"Melee": {"Melee": ["knife"], "Launchers": ["at4"]},
 	"Utility": {"Equipment 01": ["grenade"], "Equipment 02": ["flashbang"]},
 }
 

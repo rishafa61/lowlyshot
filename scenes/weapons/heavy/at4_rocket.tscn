@@ -1,0 +1,37 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://scenes/weapons/heavy/at4_rocket.gd" id="1_script"]
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_body"]
+top_radius = 0.042
+bottom_radius = 0.042
+height = 0.45
+
+[sub_resource type="StandardMaterial3D" id="Mat_body"]
+albedo_color = Color(0.28, 0.32, 0.22, 1)
+metallic = 0.5
+roughness = 0.4
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_cone"]
+top_radius = 0.005
+bottom_radius = 0.042
+height = 0.12
+
+[node name="AT4Rocket" type="Node3D"]
+script = ExtResource("1_script")
+
+[node name="Body" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, -4.37114e-08, 1, 0, -1, -4.37114e-08, 0, 0, 0.06)
+mesh = SubResource("CylinderMesh_body")
+surface_material_override/0 = SubResource("Mat_body")
+
+[node name="Nose" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, -4.37114e-08, 1, 0, -1, -4.37114e-08, 0, 0, -0.22)
+mesh = SubResource("CylinderMesh_cone")
+surface_material_override/0 = SubResource("Mat_body")
+
+[node name="TrailLight" type="OmniLight3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0.3)
+light_color = Color(1, 0.65, 0.2, 1)
+light_energy = 2.0
+omni_range = 3.5

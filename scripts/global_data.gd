@@ -15,7 +15,8 @@ const WEAPON_CATALOG := {
 		"res://resources/weapons/desert_hawk.tres"
 	],
 	"Melee": [
-		"res://resources/weapons/knife.tres"
+		"res://resources/weapons/knife.tres",
+		"res://resources/weapons/at4.tres"
 	],
 	"Utility": [
 		"res://resources/weapons/grenade.tres",

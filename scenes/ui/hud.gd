@@ -96,6 +96,7 @@ func _ready():
 	reload_bar.hide()
 	cook_bar.hide()
 	hit_marker.modulate.a = 0.0
+	_build_launcher_lock_ui()
 	
 	GlobalData.combat_logged.connect(print_to_console)
 	GlobalData.kill_occurred.connect(_on_kill_occurred)
@@ -150,6 +151,79 @@ func show_hover_name(name_text: String, is_enemy: bool) -> void:
 
 func hide_hover_name() -> void:
 	crosshair_name.hide()
+
+# ---------------- Launcher lock indicator ----------------
+## Acquisition ring around crosshair while locking; solid diamond when locked.
+
+var lock_ui: Control = null
+var lock_ring: Control = null
+var lock_box: Control = null
+
+func _build_launcher_lock_ui() -> void:
+	lock_ui = Control.new()
+	lock_ui.set_anchors_preset(Control.PRESET_FULL_RECT)
+	lock_ui.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	lock_ui.visible = false
+	add_child(lock_ui)
+
+	lock_ring = Control.new()
+	lock_ring.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	lock_ui.add_child(lock_ring)
+	# 24 arc segments arranged in a circle — dashed ring look while acquiring
+	for i in 24:
+		var seg := ColorRect.new()
+		var angle := TAU * i / 24.0
+		seg.size = Vector2(8, 3)
+		seg.position = Vector2(cos(angle), sin(angle)) * 34.0 - seg.size * 0.5
+		seg.pivot_offset = seg.size * 0.5
+		seg.rotation = angle
+		seg.color = Color(1.0, 0.85, 0.3, 0.85)
+		seg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		lock_ring.add_child(seg)
+
+	lock_box = Control.new()
+	lock_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	lock_ui.add_child(lock_box)
+	# 4 corner brackets — diamond lock frame when locked
+	for corner in [Vector2(-1, -1), Vector2(1, -1), Vector2(-1, 1), Vector2(1, 1)]:
+		var h := ColorRect.new()
+		h.size = Vector2(16, 3)
+		h.position = Vector2(corner.x * 20.0 - (8.0 if corner.x > 0 else -8.0) - 8.0, corner.y * 20.0 - 1.5)
+		h.color = Color(1.0, 0.3, 0.25)
+		h.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		lock_box.add_child(h)
+		var v := ColorRect.new()
+		v.size = Vector2(3, 16)
+		v.position = Vector2(corner.x * 20.0 - 1.5, corner.y * 20.0 - (8.0 if corner.y > 0 else -8.0) - 8.0)
+		v.color = Color(1.0, 0.3, 0.25)
+		v.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		lock_box.add_child(v)
+
+## progress 0..1 while acquiring; is_locked swaps ring for the lock diamond.
+func show_lock_indicator(progress: float, is_locked: bool) -> void:
+	if lock_ui == null:
+		return
+	lock_ui.visible = true
+	var viewport_size := lock_ui.get_viewport().get_visible_rect().size
+	var center := viewport_size * 0.5
+	lock_ring.visible = not is_locked
+	lock_box.visible = is_locked
+	var target := lock_ring if not is_locked else lock_box
+	target.position = center - Vector2(0, 0)
+	if not is_locked:
+		lock_ring.rotation = 0.0
+		lock_ring.scale = Vector2.ONE
+		# Sweep highlight: brighten segments up to progress
+		var segs := lock_ring.get_children()
+		var lit := int(progress * segs.size())
+		for i in segs.size():
+			var seg := segs[i] as ColorRect
+			seg.color = Color(1.0, 0.85, 0.3, 0.95) if i < lit else Color(1.0, 0.85, 0.3, 0.25)
+	lock_box.rotation = 0.0
+
+func hide_lock_indicator() -> void:
+	if lock_ui:
+		lock_ui.visible = false
 
 func toggle_combat_hud(show_hud: bool) -> void:
 	for node in [$StatsMargin, $WeaponMargin, $AmmoMargin, $StaminaContainer, $CrosshairContainer, $SkillMargin, $ProgressContainer, $MinimapMargin, $BowUI, $SkillDurationLabel]:

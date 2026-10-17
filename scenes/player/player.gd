@@ -501,6 +501,9 @@ func respawn():
 	if weapons[Slot.PISTOL].has("max_mag"):
 		weapons[Slot.PISTOL]["mag"] = weapons[Slot.PISTOL]["max_mag"]
 		weapons[Slot.PISTOL]["res"] = weapons[Slot.PISTOL]["max_res"]
+	if weapons[Slot.MELEE].has("max_mag") and weapons[Slot.MELEE].get("type", "") == "launcher":
+		weapons[Slot.MELEE]["mag"] = weapons[Slot.MELEE]["max_mag"]
+		weapons[Slot.MELEE]["res"] = weapons[Slot.MELEE]["max_res"]
 	weapons[Slot.GRENADE]["amount"] = 1
 	
 	switch_weapon(Slot.RIFLE) # Reset to default sidearm
@@ -601,10 +604,13 @@ func _unhandled_input(event: InputEvent) -> void:
 
 	# Melee Heavy Attack
 	if active_slot == Slot.MELEE:
-		if event.is_action_pressed("aim") and fire_cooldown <= 0:
-			melee_attack(true) # true = heavy right click
-		if event.is_action_pressed("fire") and fire_cooldown <= 0:
-			melee_attack(false)
+		if weapons[Slot.MELEE].get("type", "") == "launcher":
+			pass # launcher fire handled in _physics_process (lock-aware)
+		else:
+			if event.is_action_pressed("aim") and fire_cooldown <= 0:
+				melee_attack(true) # true = heavy right click
+			if event.is_action_pressed("fire") and fire_cooldown <= 0:
+				melee_attack(false)
 
 	# Gun reload
 	var w = weapons[active_slot]
@@ -645,10 +651,13 @@ func switch_weapon(slot: Slot) -> void:
 	camera.fov = FOV_NORMAL
 
 	
+	if active_slot != Slot.MELEE or w.get("type", "") != "launcher":
+		_update_launcher_lock_reset()
+
 	if hud:
 		hud.update_weapon_slot(slot)
-		if w["type"] == "gun":
-			hud.update_ammo(w["mag"], w["res"])
+		if w["type"] == "gun" or w.get("type", "") == "launcher":
+			hud.update_ammo(w.get("mag", 1), w.get("res", 0))
 		elif w["type"] == "util":
 			hud.update_ammo(w["amount"], 0)
 		else:
@@ -763,6 +772,116 @@ func get_current_muzzle_position() -> Vector3:
 		if m is Node3D:
 			return (m as Node3D).global_position
 	return camera.global_position + (-camera.global_transform.basis.z * 0.6) + (camera.global_transform.basis.y * -0.1)
+
+# ---------------- AT4 Launcher Lock & Firing ----------------
+const LOCK_MAX_PIXEL_DIST: float = 100.0 # within 100px from center crosshair
+const LOCK_HOLD_TIME: float = 2.0 # 2 seconds to acquire lock
+var _current_lock_target: Node3D = null
+var _lock_timer: float = 0.0
+var _locked_target: Node3D = null
+
+func _update_launcher_lock(delta: float) -> void:
+	if not hud or is_puppet or is_dead:
+		_update_launcher_lock_reset()
+		return
+
+	var vp_size := get_viewport().get_visible_rect().size
+	var crosshair_center := vp_size * 0.5
+	var best_target: Node3D = null
+	var best_dist := LOCK_MAX_PIXEL_DIST
+
+	var vehicles := get_tree().get_nodes_in_group("vehicles")
+	for v in vehicles:
+		if not is_instance_valid(v) or not (v is Node3D):
+			continue
+		if v.get("is_destroyed") == true:
+			continue
+		# Must be in front of the camera
+		var v_pos: Vector3 = v.global_position + Vector3(0, 0.8, 0)
+		var to_v := v_pos - camera.global_position
+		if to_v.dot(-camera.global_transform.basis.z) <= 0.0:
+			continue
+		if camera.is_position_behind(v_pos):
+			continue
+		var screen_pos := camera.unproject_position(v_pos)
+		var dist := screen_pos.distance_to(crosshair_center)
+		if dist <= best_dist:
+			# Line of sight check
+			var space := get_world_3d().direct_space_state
+			var ray := PhysicsRayQueryParameters3D.create(camera.global_position, v_pos)
+			ray.exclude = [get_rid()]
+			var hit := space.intersect_ray(ray)
+			if hit and (hit.collider == v or (hit.collider is Node and (hit.collider as Node).get_parent() == v)):
+				best_dist = dist
+				best_target = v
+
+	if best_target != null:
+		if _current_lock_target == best_target:
+			_lock_timer = minf(_lock_timer + delta, LOCK_HOLD_TIME)
+		else:
+			_current_lock_target = best_target
+			_lock_timer = 0.0
+		var is_locked: bool = _lock_timer >= LOCK_HOLD_TIME
+		_locked_target = best_target if is_locked else null
+		hud.show_lock_indicator(_lock_timer / LOCK_HOLD_TIME, is_locked)
+	else:
+		_update_launcher_lock_reset()
+
+func _update_launcher_lock_reset() -> void:
+	_current_lock_target = null
+	_locked_target = null
+	_lock_timer = 0.0
+	if hud and hud.has_method("hide_lock_indicator"):
+		hud.hide_lock_indicator()
+
+func fire_launcher() -> void:
+	var w = weapons[active_slot]
+	w["mag"] -= 1
+	fire_cooldown = w.get("fire_rate", 1.8)
+	hud.update_ammo(w["mag"], w["res"])
+	current_recoil = Vector3(0, 0, 0.45)
+	camera_recoil += 0.22
+
+	var rocket_scene = load("res://scenes/weapons/heavy/at4_rocket.tscn") as PackedScene
+	if rocket_scene == null:
+		return
+	var rocket = rocket_scene.instantiate()
+	var spawn_pos := get_current_muzzle_position()
+	rocket.global_position = spawn_pos
+	rocket.shooter_name = player_name
+	rocket.shooter_faction = "Ally" if team == "attackers" else "Enemy"
+
+	var aim_dir := -camera.global_transform.basis.z.normalized()
+	# Straight to crosshair ray if not locked
+	if _locked_target and is_instance_valid(_locked_target):
+		rocket.target_vehicle = _locked_target
+		rocket.direction = (rocket.target_vehicle.global_position + Vector3(0, 0.8, 0) - spawn_pos).normalized()
+	else:
+		var space := get_world_3d().direct_space_state
+		var hit := space.intersect_ray(PhysicsRayQueryParameters3D.create(camera.global_position, camera.global_position + aim_dir * 300.0, [get_rid()]))
+		if hit:
+			rocket.direction = (hit.position - spawn_pos).normalized()
+		else:
+			rocket.direction = aim_dir
+
+	get_tree().root.add_child(rocket)
+	rocket.look_at(spawn_pos + rocket.direction, Vector3.UP)
+
+	# Sound & muzzle flash
+	Sfx.oneshot3d("missile", self, 20.0, 180.0, 3.0)
+	_spawn_launcher_muzzle_flash(spawn_pos)
+	_update_launcher_lock_reset()
+
+func _spawn_launcher_muzzle_flash(pos: Vector3) -> void:
+	var flash := OmniLight3D.new()
+	flash.light_color = Color(1.0, 0.7, 0.3)
+	flash.light_energy = 5.0
+	flash.omni_range = 6.0
+	get_tree().root.add_child(flash)
+	flash.global_position = pos
+	var t := create_tween()
+	t.tween_property(flash, "light_energy", 0.0, 0.1)
+	t.tween_callback(flash.queue_free)
 
 func melee_attack(is_heavy: bool):
 	var w = weapons[active_slot]
@@ -1033,7 +1152,18 @@ func _physics_process(delta: float) -> void:
 				if Input.is_action_just_pressed("fire") and fire_cooldown <= 0 and not is_reloading:
 					if w["mag"] > 0: shoot_gun()
 					elif w["res"] > 0: start_reload()
-	
+		elif w["type"] == "launcher":
+			_update_launcher_lock(delta)
+			# Tube reload: after cooldown, chamber next rocket from reserve
+			if w["mag"] <= 0 and w["res"] > 0 and fire_cooldown <= 0:
+				w["res"] -= 1
+				w["mag"] = 1
+				hud.update_ammo(w["mag"], w["res"])
+			if Input.is_action_just_pressed("fire") and fire_cooldown <= 0 and w["mag"] > 0:
+				fire_launcher()
+		else:
+			_update_launcher_lock_reset()
+
 	# Process cooking Grenade
 	if is_cooking:
 		cook_timer += delta
