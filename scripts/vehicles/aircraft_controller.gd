@@ -159,7 +159,12 @@ func _unhandled_input(event: InputEvent) -> void:
 		_yaw_vel = clampf(_yaw_vel - event.relative.x * mouse_sens, -yaw_rate, yaw_rate)
 		_pitch_vel = clampf(_pitch_vel + event.relative.y * mouse_sens, -pitch_rate, pitch_rate) # inverted: mouse up = nose down
 	elif event.is_action_pressed("vehicle_interact"):
-		_try_exit()
+		var mgr = get_tree().current_scene
+		if GlobalData.is_networked() and mgr is MultiplayerManager and active_pilot != null \
+				and active_pilot.get_multiplayer_authority() == multiplayer.get_unique_id():
+			mgr.request_vehicle_exit.rpc_id(1, String(get_path()), 0)
+		else:
+			_try_exit()
 	elif event.is_action_pressed("weapon_1"):
 		_select_slot(OrdnanceSlot.GATLING)
 	elif event.is_action_pressed("weapon_2"):
@@ -193,7 +198,11 @@ func _physics_process(delta: float) -> void:
 	_flash_timer = maxf(0.0, _flash_timer - delta)
 	if active_pilot == null and _prompt_player != null \
 			and Input.is_action_just_pressed("vehicle_interact"):
-		_enter(_prompt_player)
+		var mgr = get_tree().current_scene
+		if GlobalData.is_networked() and mgr is MultiplayerManager:
+			mgr.request_vehicle_enter.rpc_id(1, String(get_path()))
+		else:
+			_enter(_prompt_player)
 	var grounded := _is_grounded()
 	# Engine audio: audible while spooled (pilot aboard or throttle winding down);
 	# volume tracks throttle so distant/idle planes are quieter.
@@ -231,7 +240,7 @@ func _console_open() -> bool:
 # --- Enter / exit / eject ---
 
 func _on_body_entered(body: Node3D) -> void:
-	if active_pilot != null or not body.is_in_group("player") or bool(body.get("is_piloting")):
+	if active_pilot != null or not body.is_in_group("player") or body.get("is_piloting") == true:
 		return
 	var hud = body.get("hud")
 	if hud == null:
@@ -245,8 +254,11 @@ func _on_body_exited(body: Node3D) -> void:
 		if active_pilot == null:
 			body.get("hud").hide_hover_name()
 
-func _enter(pilot: Node3D) -> void:
-	if active_pilot != null:
+func has_free_seat() -> bool:
+	return active_pilot == null and not is_destroyed
+
+func net_sync_enter(pilot: Node3D, _seat_idx: int = 0) -> void:
+	if active_pilot != null or is_destroyed:
 		return
 	active_pilot = pilot
 	_is_ejected = false
@@ -259,8 +271,29 @@ func _enter(pilot: Node3D) -> void:
 	var team = str(pilot.get("team"))
 	_pilot_faction = "Ally" if team == "attackers" else "Enemy"
 	pilot.enter_aircraft(pilot_seat)
-	chase_cam.current = true
+	var is_local := pilot.get("hud") != null
+	if chase_cam != null and is_local:
+		chase_cam.current = true
 	pilot_entered.emit(pilot)
+
+func net_sync_exit(_seat_idx: int = 0) -> void:
+	if active_pilot == null:
+		return
+	_try_exit()
+
+func net_sync_explode(attacker_name: String, attacker_faction: String) -> void:
+	# Client copy: eject bodies + visuals only — host already registered the kills.
+	if is_destroyed:
+		return
+	if attacker_name != "":
+		_last_hit_by = attacker_name
+		_last_hit_faction = attacker_faction
+	_explode(false)
+
+func _enter(pilot: Node3D) -> void:
+	if active_pilot != null:
+		return
+	net_sync_enter(pilot, 0)
 
 func _try_exit() -> void:
 	var pilot := active_pilot
@@ -521,35 +554,52 @@ var _last_hit_by: String = ""
 var _last_hit_faction: String = ""
 
 func take_damage(amount: float, attacker_name: String = "", _weapon_name: String = "", attacker_faction: String = "", _attacker_pos: Vector3 = Vector3.INF) -> float:
+	# Server-authoritative damage: clients forward to the host, which owns
+	# the single canonical hp and broadcasts the destruction event.
+	var mgr = get_tree().current_scene
+	if GlobalData.is_networked() and not multiplayer.is_server():
+		if mgr is MultiplayerManager:
+			mgr.request_vehicle_damage.rpc_id(1, String(get_path()), amount, attacker_name, _weapon_name, attacker_faction, _attacker_pos)
+		return 0.0
 	if is_destroyed:
 		return 0.0
 	hp = maxf(hp - amount, 0.0)
 	if attacker_name != "":
 		_last_hit_by = attacker_name
 		_last_hit_faction = attacker_faction
+	if mgr is MultiplayerManager and GlobalData.is_networked():
+		mgr.net_vehicle_hp.rpc(String(get_path()), hp)
 	if hp <= 0.0:
 		_explode()
 	return amount
 
-func _explode() -> void:
+func _explode(kill_occupants: bool = true) -> void:
 	Sfx.stop_loop(_engine_sfx)
 	_engine_sfx = null
 	if is_destroyed:
 		return
 	is_destroyed = true
+	var mgr = get_tree().current_scene
+	if GlobalData.is_networked() and multiplayer.is_server() and mgr is MultiplayerManager:
+		var crash_killer := _last_hit_by if _last_hit_by != "" else "Aircraft"
+		var crash_fac := _last_hit_faction if _last_hit_faction != "" else "World"
+		mgr.net_vehicle_explode.rpc(String(get_path()), crash_killer, crash_fac)
 	_notify_release()
 	var pilot := active_pilot
 	active_pilot = null
-	chase_cam.current = false
+	if chase_cam != null:
+		chase_cam.current = false
 	if pilot != null:
 		# Pilot still seated: thrown from the wreck and killed by the blast.
 		# Ejected pilots are already clear and take none of this.
 		var fwd := -global_basis.z
 		pilot.exit_aircraft(global_position + Vector3.UP * 2.0, fwd)
-		var crash_killer := _last_hit_by if _last_hit_by != "" else "Aircraft"
-		var crash_fac := _last_hit_faction if _last_hit_faction != "" else "World"
-		pilot.take_damage(9999.0, crash_killer, "Aircraft Crash", crash_fac, global_position)
-	_blast_area(global_position, 18.0, 300.0, 60.0)
+		if kill_occupants:
+			var crash_killer := _last_hit_by if _last_hit_by != "" else "Aircraft"
+			var crash_fac := _last_hit_faction if _last_hit_faction != "" else "World"
+			pilot.take_damage(9999.0, crash_killer, "Aircraft Crash", crash_fac, global_position)
+	if kill_occupants:
+		_blast_area(global_position, 18.0, 300.0, 60.0)
 	_spawn_blast_visual(global_position, 18.0)
 	destroyed.emit()
 	queue_free()

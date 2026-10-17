@@ -153,7 +153,7 @@ func can_walk_out() -> bool:
 # --- Enter / Exit ---
 
 func _on_body_entered(body: Node3D) -> void:
-	if not body.is_in_group("player") or bool(body.get("is_piloting")):
+	if not body.is_in_group("player") or body.get("is_piloting") == true:
 		return
 	if not has_free_seat():
 		return
@@ -172,15 +172,23 @@ func _on_body_exited(body: Node3D) -> void:
 func _unhandled_input(event: InputEvent) -> void:
 	if not event.is_action_pressed("vehicle_interact"):
 		return
+	var mgr = get_tree().current_scene
+	var net := GlobalData.is_networked() and mgr is MultiplayerManager
 	# Try enter
-	if _prompt_player != null and bool(_prompt_player.get("is_piloting")) != true and has_free_seat():
-		_enter(_prompt_player)
+	if _prompt_player != null and _prompt_player.get("is_piloting") != true and has_free_seat():
+		if net:
+			mgr.request_vehicle_enter.rpc_id(1, String(get_path())) # host assigns the seat
+		else:
+			_enter(_prompt_player)
 		return
 	# Try exit: any seated local player with HUD can press F
 	for i in occupants.size():
 		var occ = occupants[i]
 		if occ != null and occ.get("hud") != null:
-			_exit(i)
+			if net:
+				mgr.request_vehicle_exit.rpc_id(1, String(get_path()), i)
+			else:
+				_exit(i)
 			return
 
 func _input(event: InputEvent) -> void:
@@ -205,23 +213,57 @@ func _input(event: InputEvent) -> void:
 			_cam_yaw -= event.relative.x * mouse_sens
 			_cam_pitch = clampf(_cam_pitch - event.relative.y * mouse_sens, -0.7, 0.4)
 
+func net_sync_enter(player_node: Node3D, seat_idx: int) -> void:
+	if seat_idx < 0 or seat_idx >= occupants.size() or is_destroyed:
+		return
+	occupants[seat_idx] = player_node
+	_prompt_player = null
+	if seat_idx == 0:
+		_is_abandoned = false
+		_pilotless_time = 0.0
+		_last_bailed_pilot = null
+	player_node.enter_aircraft(seats[seat_idx])
+	var is_local := player_node.get("hud") != null
+	if seat_idx == 0 and chase_cam != null and is_local:
+		chase_cam.current = true
+		_cam_yaw = 0.0
+		_cam_pitch = -0.2
+	pilot_entered.emit(player_node)
+	_update_hud()
+
+func net_sync_exit(seat_idx: int) -> void:
+	if seat_idx < 0 or seat_idx >= occupants.size() or occupants[seat_idx] == null:
+		return
+	var player: Node3D = occupants[seat_idx]
+	occupants[seat_idx] = null
+	var is_local := player.get("hud") != null
+	if seat_idx == 0 and chase_cam != null and is_local:
+		chase_cam.current = false
+	var side := 3.2 if seats[seat_idx].position.x >= 0.0 else -3.2
+	var exit_pos := seats[seat_idx].global_position + global_basis * Vector3(side, 0.4, 0.0)
+	var bail_vel := linear_velocity * 0.5
+	player.exit_aircraft(exit_pos, -global_basis.z, bail_vel)
+	pilot_exited.emit()
+	if seat_idx == 0:
+		_notify_release()
+		if not is_grounded():
+			_is_abandoned = true
+			_pilotless_time = 0.0
+			_last_bailed_pilot = player
+	_update_hud()
+
+func net_sync_explode(attacker_name: String, attacker_faction: String) -> void:
+	# Client copy: eject bodies + visuals only — the host's canonical copy
+	# already registered the crash kills; killing here would double-report.
+	if is_destroyed:
+		return
+	_explode(attacker_name, attacker_faction, false)
+
 func _enter(player: Node3D) -> void:
 	var idx := occupants.find(null)
 	if idx == -1 or is_destroyed:
 		return
-	occupants[idx] = player
-	_prompt_player = null
-	if idx == 0:
-		_is_abandoned = false
-		_pilotless_time = 0.0
-		_last_bailed_pilot = null
-	player.enter_aircraft(seats[idx])
-	if idx == 0 and chase_cam != null:
-		chase_cam.current = true
-		_cam_yaw = 0.0
-		_cam_pitch = -0.2
-	pilot_entered.emit(player)
-	_update_hud()
+	net_sync_enter(player, idx)
 
 func _exit(idx: int) -> void:
 	if idx < 0 or idx >= occupants.size() or occupants[idx] == null:
@@ -320,11 +362,11 @@ func _physics_process(delta: float) -> void:
 		return
 
 	var driver := get_driver()
-	var has_driver := driver != null and bool(driver.get("is_dead")) != true
+	var has_driver: bool = driver != null and driver.get("is_dead") != true
 	var grounded := is_grounded()
 
 	# Rotor audio: spins while a pilot is aboard; fades out on power loss/exit.
-	var rotor_wanted := has_driver or engine_power > 0.05
+	var rotor_wanted: bool = has_driver or engine_power > 0.05
 	if rotor_wanted and _rotor_sfx == null:
 		_rotor_sfx = Sfx.loop3d("heli", self, 10.0, 120.0, 0.0)
 	if _rotor_sfx:
@@ -512,20 +554,32 @@ var _last_hit_by: String = ""
 var _last_hit_faction: String = ""
 
 func take_damage(amount: float, attacker_name: String = "", _weapon_name: String = "", attacker_faction: String = "", _pos: Vector3 = Vector3.INF) -> float:
+	# Server-authoritative damage: clients forward to the host, which owns
+	# the single canonical hp and broadcasts the destruction event.
+	var mgr = get_tree().current_scene
+	if GlobalData.is_networked() and not multiplayer.is_server():
+		if mgr is MultiplayerManager:
+			mgr.request_vehicle_damage.rpc_id(1, String(get_path()), amount, attacker_name, _weapon_name, attacker_faction, _pos)
+		return 0.0
 	if is_destroyed:
 		return 0.0
 	hp = maxf(hp - amount, 0.0)
 	if attacker_name != "":
 		_last_hit_by = attacker_name
 		_last_hit_faction = attacker_faction
+	if mgr is MultiplayerManager and GlobalData.is_networked():
+		mgr.net_vehicle_hp.rpc(String(get_path()), hp) # keep pilot HUD honest on every peer
 	if hp <= 0.0:
-		_explode(attacker_name, attacker_faction)
+		_explode(_last_hit_by, _last_hit_faction)
 	return amount
 
-func _explode(attacker_name: String = "", attacker_faction: String = "") -> void:
+func _explode(attacker_name: String = "", attacker_faction: String = "", kill_occupants: bool = true) -> void:
 	if is_destroyed:
 		return
 	is_destroyed = true
+	var mgr = get_tree().current_scene
+	if GlobalData.is_networked() and multiplayer.is_server() and mgr is MultiplayerManager:
+		mgr.net_vehicle_explode.rpc(String(get_path()), attacker_name, attacker_faction)
 	_notify_release()
 	if chase_cam != null:
 		chase_cam.current = false
@@ -540,8 +594,10 @@ func _explode(attacker_name: String = "", attacker_faction: String = "") -> void
 		var side := 3.0 if seats[i].position.x >= 0.0 else -3.0
 		var exit_pos := seats[i].global_position + global_basis * Vector3(side, 1.2, 0.0)
 		occ.exit_aircraft(exit_pos, -global_basis.z, Vector3.UP * 8.0 + linear_velocity * 0.5)
-		occ.take_damage(9999.0, crash_killer, "Helicopter Crash", crash_fac if crash_fac != "" else "World", global_position)
-	_blast_area(global_position, 16.0, 320.0, 80.0, attacker_name, attacker_faction)
+		if kill_occupants:
+			occ.take_damage(9999.0, crash_killer, "Helicopter Crash", crash_fac if crash_fac != "" else "World", global_position)
+	if kill_occupants:
+		_blast_area(global_position, 16.0, 320.0, 80.0, attacker_name, attacker_faction)
 	destroyed.emit()
 	queue_free()
 

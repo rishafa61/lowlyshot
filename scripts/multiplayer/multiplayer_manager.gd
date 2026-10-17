@@ -582,6 +582,96 @@ func net_vehicle_release(vpath: String) -> void:
 	if v and v.has_method("net_release_puppet"):
 		v.net_release_puppet()
 
+# ---- Server-authoritative vehicle seats, damage & destruction ----
+## Player lookup: spawner names every player node by peer id.
+func _player_for_peer(peer_id: int) -> Node3D:
+	var sp: PlayerSpawner = spawner
+	if sp == null:
+		return null
+	return sp._get_container().get_node_or_null(str(peer_id))
+
+## Client asks the host for a seat; host picks the FIRST FREE seat (passengers
+## never steal the pilot seat) and broadcasts the assignment to everyone.
+@rpc("any_peer", "call_remote", "reliable")
+func request_vehicle_enter(vpath: String) -> void:
+	if not multiplayer.is_server():
+		return
+	var sender := multiplayer.get_remote_sender_id()
+	var v = get_tree().root.get_node_or_null(NodePath(vpath))
+	if v == null or not v.has_method("has_free_seat") or not v.has_free_seat():
+		return
+	if v.has_method("net_sync_enter"):
+		# Seat 0 only if free, otherwise first passenger seat — same rule offline
+		var seat_idx := 0
+		if v.get("occupants") != null and v.occupants.size() > 0:
+			seat_idx = v.occupants.find(null)
+			if seat_idx == -1:
+				return
+		net_vehicle_enter.rpc(vpath, sender, seat_idx)
+
+@rpc("authority", "call_local", "reliable")
+func net_vehicle_enter(vpath: String, peer_id: int, seat_idx: int) -> void:
+	var v = get_tree().root.get_node_or_null(NodePath(vpath))
+	if v == null or not v.has_method("net_sync_enter"):
+		return
+	var player := _player_for_peer(peer_id)
+	if player == null:
+		return
+	# Skip if this peer is already seated somewhere (stale enter)
+	if player.get("is_piloting") == true:
+		return
+	v.net_sync_enter(player, seat_idx)
+
+## Seated player asks the host to leave; host broadcasts so every peer
+## un-seats the same body (puppets included).
+@rpc("any_peer", "call_remote", "reliable")
+func request_vehicle_exit(vpath: String, seat_idx: int) -> void:
+	if not multiplayer.is_server():
+		return
+	var sender := multiplayer.get_remote_sender_id()
+	var v = get_tree().root.get_node_or_null(NodePath(vpath))
+	if v == null:
+		return
+	# Only the occupant of that seat may request its release
+	var occ = v.get("occupants")
+	if occ != null and seat_idx >= 0 and seat_idx < occ.size() and occ[seat_idx] != null:
+		if occ[seat_idx].get_multiplayer_authority() != sender:
+			return
+	net_vehicle_exit.rpc(vpath, sender, seat_idx)
+
+@rpc("authority", "call_local", "reliable")
+func net_vehicle_exit(vpath: String, peer_id: int, seat_idx: int) -> void:
+	var v = get_tree().root.get_node_or_null(NodePath(vpath))
+	if v == null or not v.has_method("net_sync_exit"):
+		return
+	v.net_sync_exit(seat_idx)
+
+## Damage: the SHOOTER's hit lands on the host's canonical vehicle copy.
+@rpc("any_peer", "call_remote", "reliable")
+func request_vehicle_damage(vpath: String, amount: float, attacker_name: String, weapon_name: String, faction: String, pos: Vector3) -> void:
+	if not multiplayer.is_server():
+		return
+	var v = get_tree().root.get_node_or_null(NodePath(vpath))
+	if v == null or v.get("is_destroyed") == true:
+		return
+	if v.has_method("take_damage"):
+		v.take_damage(amount, attacker_name, weapon_name, faction, pos)
+
+## Host -> clients: keep hp in sync so the pilot's hull bar is honest.
+@rpc("authority", "call_remote", "reliable")
+func net_vehicle_hp(vpath: String, new_hp: float) -> void:
+	var v = get_tree().root.get_node_or_null(NodePath(vpath))
+	if v and "hp" in v:
+		v.hp = new_hp
+
+## Host -> everyone: the canonical copy exploded; each peer explodes its own
+## copy (visuals, sound, eject bodies) so nobody keeps flying a ghost heli.
+@rpc("authority", "call_local", "reliable")
+func net_vehicle_explode(vpath: String, attacker_name: String, faction: String) -> void:
+	var v = get_tree().root.get_node_or_null(NodePath(vpath))
+	if v and v.has_method("net_sync_explode"):
+		v.net_sync_explode(attacker_name, faction)
+
 ## Player death animation broadcast
 func notify_player_death(pid: int) -> void:
 	if multiplayer.is_server():
