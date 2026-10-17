@@ -799,12 +799,24 @@ func _update_launcher_lock(delta: float) -> void:
 	var best_target: Node3D = null
 	var best_dist := LOCK_MAX_PIXEL_DIST
 
+	# Sticky tracking: keep latching the current target while it stays in range
+	if _current_lock_target and is_instance_valid(_current_lock_target) and _current_lock_target.get("is_destroyed") != true:
+		var cur_pos: Vector3 = _current_lock_target.global_position + Vector3(0, 0.8, 0)
+		var cur_to := cur_pos - camera.global_position
+		if cur_to.dot(-camera.global_transform.basis.z) > 0.0 and not camera.is_position_behind(cur_pos):
+			var cur_dist := camera.unproject_position(cur_pos).distance_to(crosshair_center)
+			if cur_dist <= LOCK_MAX_PIXEL_DIST:
+				best_target = _current_lock_target
+				best_dist = cur_dist
+
 	var vehicles := get_tree().get_nodes_in_group("vehicles")
 	for v in vehicles:
 		if not is_instance_valid(v) or not (v is Node3D):
 			continue
 		if v.get("is_destroyed") == true:
 			continue
+		if v == _current_lock_target:
+			continue # sticky path above already evaluated it
 		# Must be in front of the camera
 		var v_pos: Vector3 = v.global_position + Vector3(0, 0.8, 0)
 		var to_v := v_pos - camera.global_position
@@ -832,7 +844,8 @@ func _update_launcher_lock(delta: float) -> void:
 			_lock_timer = 0.0
 		var is_locked: bool = _lock_timer >= LOCK_HOLD_TIME
 		_locked_target = best_target if is_locked else null
-		hud.show_lock_indicator(_lock_timer / LOCK_HOLD_TIME, is_locked)
+		var target_screen_pos := camera.unproject_position(best_target.global_position + Vector3(0, 0.8, 0))
+		hud.show_lock_indicator(_lock_timer / LOCK_HOLD_TIME, is_locked, target_screen_pos)
 	else:
 		_update_launcher_lock_reset()
 
@@ -876,7 +889,8 @@ func fire_launcher() -> void:
 
 	get_tree().root.add_child(rocket)
 	rocket.global_position = spawn_pos
-	rocket.look_at(spawn_pos + rocket.direction, Vector3.UP)
+	var up := Vector3.UP if absf(rocket.direction.dot(Vector3.UP)) < 0.99 else Vector3.RIGHT
+	rocket.look_at(spawn_pos + rocket.direction, up)
 
 	# Sound & muzzle flash
 	Sfx.oneshot3d("missile", self, 20.0, 180.0, 3.0)

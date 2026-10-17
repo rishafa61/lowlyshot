@@ -204,16 +204,21 @@ func _build_launcher_lock_ui() -> void:
 		lock_box.add_child(v)
 
 ## progress 0..1 while acquiring; is_locked swaps ring for the lock diamond.
-func show_lock_indicator(progress: float, is_locked: bool) -> void:
+## screen_pos = projected vehicle position — indicator snaps onto the vehicle.
+func show_lock_indicator(progress: float, is_locked: bool, screen_pos: Vector2 = Vector2.INF) -> void:
 	if lock_ui == null:
 		return
 	lock_ui.visible = true
 	var viewport_size := lock_ui.get_viewport().get_visible_rect().size
-	var center := viewport_size * 0.5
+	var anchor := screen_pos
+	if anchor == Vector2.INF:
+		anchor = viewport_size * 0.5 # fallback: crosshair center
+	# Keep indicator on-screen
+	anchor = anchor.clamp(Vector2(30, 30), viewport_size - Vector2(30, 30))
 	lock_ring.visible = not is_locked
 	lock_box.visible = is_locked
 	var target := lock_ring if not is_locked else lock_box
-	target.position = center - Vector2(0, 0)
+	target.position = anchor
 	if not is_locked:
 		lock_ring.rotation = 0.0
 		lock_ring.scale = Vector2.ONE

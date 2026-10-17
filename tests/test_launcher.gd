@@ -44,11 +44,12 @@ func _run() -> void:
 	var rocket_scene = load("res://scenes/weapons/heavy/at4_rocket.tscn") as PackedScene
 	check(rocket_scene != null, "at4_rocket.tscn loads successfully")
 	var r_unguided = rocket_scene.instantiate()
+	check(r_unguided.direction == Vector3.ZERO, "rocket direction defaults to ZERO (shooter-derived)")
 	root.add_child(r_unguided)
 	r_unguided.global_position = Vector3(0, 5, 0)
-	r_unguided.direction = Vector3(0, 0, -1)
+	r_unguided.direction = Vector3(1, 0, 0) # shooter-set: fly +X
 	r_unguided._physics_process(0.1)
-	check(r_unguided.global_position.z < 0.0, "unguided rocket flies straight along forward vector")
+	check(r_unguided.global_position.x > 0.0 and absf(r_unguided.global_position.z) < 0.01, "unguided rocket flies straight along shooter-set direction")
 	r_unguided.queue_free()
 	await process_frame
 
@@ -81,11 +82,14 @@ func _run() -> void:
 	root.add_child(hud)
 	await process_frame
 	check(hud.has_method("show_lock_indicator"), "HUD has show_lock_indicator")
-	hud.show_lock_indicator(0.5, false) # acquiring ring
+	var snap_target := Vector2(400, 250)
+	hud.show_lock_indicator(0.5, false, snap_target) # acquiring ring snapped to target
 	check(hud.lock_ui.visible == true, "HUD lock_ui visible on acquire")
 	check(hud.lock_ring.visible == true and hud.lock_box.visible == false, "HUD shows ring when acquiring")
-	hud.show_lock_indicator(1.0, true) # locked box
+	check(hud.lock_ring.position == snap_target, "HUD lock ring snapped to vehicle pos (%s)" % hud.lock_ring.position)
+	hud.show_lock_indicator(1.0, true, snap_target) # locked box
 	check(hud.lock_box.visible == true and hud.lock_ring.visible == false, "HUD shows box when locked")
+	check(hud.lock_box.position == snap_target, "HUD lock box snapped to vehicle pos (%s)" % hud.lock_box.position)
 	hud.hide_lock_indicator()
 	check(hud.lock_ui.visible == false, "HUD hides lock UI")
 	hud.queue_free()

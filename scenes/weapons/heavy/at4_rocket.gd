@@ -13,12 +13,13 @@ extends Node3D
 var target_vehicle: Node3D = null
 var shooter_name: String = "Player"
 var shooter_faction: String = "Player"
-var direction: Vector3 = Vector3.FORWARD
+var direction: Vector3 = Vector3.ZERO # set by shooter before add_child; ZERO = derive from own forward
 var _life: float = 0.0
 var _exploded: bool = false
 
 func _ready() -> void:
-	direction = -global_transform.basis.z.normalized()
+	if direction == Vector3.ZERO:
+		direction = -global_transform.basis.z.normalized()
 
 func _physics_process(delta: float) -> void:
 	if _exploded:
