@@ -47,11 +47,18 @@ func _execute_skill(player: CharacterBody3D) -> void:
 	active_turret = turret_scene.instantiate()
 	player.get_parent().add_child(active_turret)
 	active_turret.global_position = spawn_pos
-	active_turret.faction = "Player"
+	var p_team := str(player.get("team"))
+	var is_def := p_team == "defenders"
+	active_turret.faction = "Enemy" if is_def else "Ally"
 	active_turret.target_mode = "enemies"
-	active_turret.owner_name = "Player"
+	active_turret.owner_name = player.player_name if "player_name" in player else "Player"
 	active_turret.weapon_name = "Auto-Turret"
-	active_turret.add_to_group("ally")
+	if is_def:
+		active_turret.add_to_group("enemy_turret")
+		active_turret.add_to_group("enemy")
+	else:
+		active_turret.add_to_group("ally_turret")
+		active_turret.add_to_group("ally")
 	
 	var flat_forward = -player.global_transform.basis.z
 	flat_forward.y = 0
@@ -62,8 +69,8 @@ func _execute_skill(player: CharacterBody3D) -> void:
 	var mgr = player.get_tree().current_scene
 	if mgr is MultiplayerManager:
 		mgr.spawn_utility_net("res://scenes/weapons/skills/auto_turret.tscn", spawn_pos, flat_forward, {
-			"faction": "Player",
-			"owner_name": "Player"
+			"faction": active_turret.faction,
+			"owner_name": active_turret.owner_name
 		})
 	
 	start_cooldown()

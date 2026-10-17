@@ -63,11 +63,9 @@ func find_best_target() -> void:
 		if is_valid_enemy(b):
 			potential_targets.append(b)
 			
-	# Also query nodes in group "enemy" as a reliable fallback
-	var fallback_groups: Array[String] = ["enemy"]
-	if target_mode == "player":
-		fallback_groups.append("player")
-		
+	# Query opposite faction nodes as fallback
+	var opp_group := "enemy" if faction == "Ally" else "ally"
+	var fallback_groups: Array[String] = [opp_group]
 	for group_name in fallback_groups:
 		for node in get_tree().get_nodes_in_group(group_name):
 			if node is Node3D and node not in potential_targets:
@@ -86,27 +84,30 @@ func find_best_target() -> void:
 			
 	current_target = closest_target
 
-var target_mode: String = "enemies" # "enemies" targets enemies, "player" targets player
+var target_mode: String = "enemies" # legacy, unused — targeting is faction-based now
 
 func is_valid_enemy(node: Node) -> bool:
 	if not node or not is_instance_valid(node):
 		return false
-	if target_mode == "player":
-		if node.is_in_group("player") and node.get("is_dead") != true:
-			return true
-		return false
-	
-	if node.is_in_group("player"):
-		return false
-	if node.is_in_group("ally"):
-		return false
 	if node.get("is_dead") == true:
 		return false
-	if node.is_in_group("enemy"):
-		return true
-	if node.has_method("take_damage") and not node.is_in_group("player_turret") and not node.is_in_group("ally_turret"):
-		return true
-	return false
+	var f := _faction_of(node)
+	return f != "" and f != faction
+
+## Faction of any combatant. Players are in group "player" AND their team group
+## ("ally" for attackers / "enemy" for defenders) — see player_spawner._build_player.
+func _faction_of(n: Node) -> String:
+	if n.is_in_group("ally"):
+		return "Ally"
+	if n.is_in_group("enemy"):
+		return "Enemy"
+	if n.is_in_group("player"):
+		var t := str(n.get("team"))
+		if t == "attackers":
+			return "Ally"
+		if t == "defenders":
+			return "Enemy"
+	return ""
 
 func get_target_center(target: Node3D) -> Vector3:
 	if target is CharacterBody3D:
