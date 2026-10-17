@@ -100,6 +100,10 @@ func _ready():
 	reload_bar.hide()
 	cook_bar.hide()
 	hit_marker.modulate.a = 0.0
+	bow_ui.hide()
+	skill_duration_label.hide()
+	heat_bar.hide()
+	overheat_label.hide()
 	_build_launcher_lock_ui()
 	
 	GlobalData.combat_logged.connect(print_to_console)
@@ -235,9 +239,13 @@ func hide_lock_indicator() -> void:
 		lock_ui.visible = false
 
 func toggle_combat_hud(show_hud: bool) -> void:
-	for node in [$StatsMargin, $WeaponMargin, $AmmoMargin, $StaminaContainer, $CrosshairContainer, $SkillMargin, $ProgressContainer, $MinimapMargin, $BowUI, $SkillDurationLabel]:
+	for node in [$StatsMargin, $WeaponMargin, $AmmoMargin, $StaminaContainer, $CrosshairContainer, $SkillMargin, $ProgressContainer, $MinimapMargin]:
 		node.visible = show_hud
+	# Bow/skill-duration UI are owned by the active operator skill — they may
+	# only be hidden here, never force-shown (that's what left them stuck on).
 	if not show_hud:
+		bow_ui.hide()
+		skill_duration_label.hide()
 		reload_bar.hide()
 		cook_bar.hide()
 		hide_hover_name()
@@ -245,19 +253,20 @@ func toggle_combat_hud(show_hud: bool) -> void:
 ## Aircraft mode: hide the player HUD but KEEP the crosshair (aiming) and
 ## show the aircraft panel (loadout, heat bar, hull).
 func toggle_aircraft_hud(show_aircraft: bool) -> void:
-	for node in [$StatsMargin, $WeaponMargin, $AmmoMargin, $StaminaContainer, $SkillMargin, $ProgressContainer, $MinimapMargin, $BowUI, $SkillDurationLabel]:
+	for node in [$StatsMargin, $WeaponMargin, $AmmoMargin, $StaminaContainer, $SkillMargin, $ProgressContainer, $MinimapMargin]:
 		node.visible = not show_aircraft
+	if show_aircraft:
+		bow_ui.hide()
+		skill_duration_label.hide()
 	aircraft_hud.visible = show_aircraft
 	if not show_aircraft:
-		heat_bar.value = 0.0
+		heat_bar.hide()
 		overheat_label.hide()
 		heli_guide.hide()
 
 func update_aircraft_hud(d: Dictionary) -> void:
 	if d.get("kind", "aircraft") == "helicopter":
-		var pct := 100.0 * float(d.hp) / maxf(float(d.max_hp), 1.0)
-		heat_bar.value = pct
-		heat_bar.modulate = Color(0.3, 1.0, 0.4) if pct > 50.0 else (Color(1.0, 0.75, 0.25) if pct > 25.0 else Color(1.0, 0.25, 0.2))
+		heat_bar.hide()
 		overheat_label.visible = false
 		var climb_txt := ("CLIMB" if d.climb >= 0.0 else "DESC")
 		var exit_txt := ("LANDED - F TO WALK OUT" if d.get("can_walk_out", false) else "AIRBORNE - F TO BAIL OUT")
@@ -274,9 +283,7 @@ func update_aircraft_hud(d: Dictionary) -> void:
 		return
 	heli_guide.visible = false
 	if d.get("kind", "aircraft") == "humvee":
-		var pct := 100.0 * float(d.hp) / maxf(float(d.max_hp), 1.0)
-		heat_bar.value = pct
-		heat_bar.modulate = Color(0.3, 1.0, 0.4) if pct > 50.0 else (Color(1.0, 0.75, 0.25) if pct > 25.0 else Color(1.0, 0.25, 0.2))
+		heat_bar.hide()
 		overheat_label.visible = false
 		var humvee_lines := [
 			"%s   SPD %3.0f km/h   HULL %d/%d" % [str(d.get("name", "Vehicle")), d.speed, int(d.hp), int(d.max_hp)],
@@ -286,9 +293,13 @@ func update_aircraft_hud(d: Dictionary) -> void:
 		]
 		loadout_label.text = "\n".join(humvee_lines)
 		return
-	heat_bar.value = d.heat
-	heat_bar.modulate = Color(1.6, 0.3, 0.3) if d.overheated else Color(1.0, 0.75, 0.25)
-	overheat_label.visible = d.overheated
+	# Gatling heat: vertical bar beside the crosshair — only while GAU-8 selected
+	var gatling_selected: bool = d.get("slot", -1) == 0
+	heat_bar.visible = gatling_selected
+	overheat_label.visible = gatling_selected and d.overheated
+	if gatling_selected:
+		heat_bar.value = d.heat
+		heat_bar.modulate = _heat_color(float(d.heat))
 	var missile_l := "READY" if d.missile_l <= 0.0 else "%.1fs" % d.missile_l
 	var missile_r := "READY" if d.missile_r <= 0.0 else "%.1fs" % d.missile_r
 	var gat := "OVERHEAT" if d.overheated else ("HEAT %d%%" % int(d.heat))
@@ -300,6 +311,15 @@ func update_aircraft_hud(d: Dictionary) -> void:
 		("%s[4] FLARE  x%d  (press 4)" % [">" if d.slot == 3 else " ", d.flares]),
 	]
 	loadout_label.text = "\n".join(lines)
+
+func _heat_color(heat_val: float) -> Color:
+	# Gradation: 0-40% White->Yellow, 40-80% Yellow->Red, >=80% solid/pulsing Red
+	var h := clampf(heat_val, 0.0, 100.0)
+	if h < 40.0:
+		return Color.WHITE.lerp(Color(1.0, 0.9, 0.1), h / 40.0)
+	elif h < 80.0:
+		return Color(1.0, 0.9, 0.1).lerp(Color(1.0, 0.15, 0.1), (h - 40.0) / 40.0)
+	return Color(1.0, 0.15, 0.1)
 
 func show_spectating(name_text: String, faction: String, is_first_person: bool = false) -> void:
 	var mode_str = "POV" if is_first_person else "3RD"
