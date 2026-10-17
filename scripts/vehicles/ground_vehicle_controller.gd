@@ -343,17 +343,15 @@ func _explode(kill_occupants: bool = true) -> void:
 	if is_destroyed:
 		return
 	is_destroyed = true
+	var crash_killer := _last_hit_by if _last_hit_by != "" else vehicle_name
+	var crash_fac := _last_hit_faction if _last_hit_faction != "" else "World"
 	var mgr = get_tree().current_scene
 	if GlobalData.is_networked() and multiplayer.is_server() and mgr is MultiplayerManager:
-		var crash_killer := _last_hit_by if _last_hit_by != "" else vehicle_name
-		var crash_fac := _last_hit_faction if _last_hit_faction != "" else "World"
 		mgr.net_vehicle_explode.rpc(String(get_path()), crash_killer, crash_fac)
 	_notify_release()
 	if chase_cam != null:
 		chase_cam.current = false
 	# Blast + crash kills credit whoever shot the vehicle (fallback: vehicle name)
-	var crash_killer := _last_hit_by if _last_hit_by != "" else vehicle_name
-	var crash_fac := _last_hit_faction if _last_hit_faction != "" else "World"
 	for i in occupants.size():
 		var occ = occupants[i]
 		if occ == null:

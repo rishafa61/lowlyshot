@@ -6,6 +6,7 @@
 [ext_resource type="Script" uid="uid://di4y2763f8jkg" path="res://scripts/multiplayer/spawn_point.gd" id="4_sp"]
 [ext_resource type="PackedScene" path="res://scenes/multiplayer/flag_point.tscn" id="5_flag"]
 [ext_resource type="PackedScene" path="res://scenes/vehicles/vehicle_spawner.tscn" id="6_vspawner"]
+[ext_resource type="Script" path="res://scripts/levels/boundary_zone.gd" id="7_bound"]
 
 [sub_resource type="ProceduralSkyMaterial" id="sky_mat"]
 sky_horizon_color = Color(0.68, 0.7, 0.74, 1)
@@ -193,31 +194,31 @@ navigation_mesh = SubResource("NavigationMesh_ory3k")
 transform = Transform3D(0.99875915, 0, 0, 0, 0.99875915, 0, 0, 0, 0.99875915, 0, -0.5, 0)
 material_override = SubResource("mat_ground")
 use_collision = true
-size = Vector3(400, 1, 400)
+size = Vector3(800, 1, 800)
 
 [node name="WallN" type="CSGBox3D" parent="NavigationRegion3D" unique_id=862959700]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 5, -201)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 5, -401)
 material_override = SubResource("mat_concrete")
 use_collision = true
-size = Vector3(404, 10, 2)
+size = Vector3(804, 10, 2)
 
 [node name="WallS" type="CSGBox3D" parent="NavigationRegion3D" unique_id=2062717464]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 5, 201)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 5, 401)
 material_override = SubResource("mat_concrete")
 use_collision = true
-size = Vector3(404, 10, 2)
+size = Vector3(804, 10, 2)
 
 [node name="WallE" type="CSGBox3D" parent="NavigationRegion3D" unique_id=645668184]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 201, 5, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 401, 5, 0)
 material_override = SubResource("mat_concrete")
 use_collision = true
-size = Vector3(2, 10, 400)
+size = Vector3(2, 10, 800)
 
 [node name="WallW" type="CSGBox3D" parent="NavigationRegion3D" unique_id=378189269]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -201, 5, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -401, 5, 0)
 material_override = SubResource("mat_concrete")
 use_collision = true
-size = Vector3(2, 10, 400)
+size = Vector3(2, 10, 800)
 
 [node name="Roads" type="Node3D" parent="NavigationRegion3D" unique_id=1675300161]
 
@@ -1209,3 +1210,10 @@ team = "defenders"
 
 [node name="MultiplayerHUD" type="CanvasLayer" parent="." unique_id=1676682577]
 script = ExtResource("2_hud")
+
+[node name="BoundaryZone" type="Node3D" parent="."]
+script = ExtResource("7_bound")
+inner_half_x = 420.0
+inner_half_z = 420.0
+kill_y = -30.0
+max_altitude = 350.0

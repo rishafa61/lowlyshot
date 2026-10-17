@@ -11,8 +11,11 @@ extends CanvasLayer
 # Per-slot equipped weapon names (1 Primary, 2 Secondary, 3 Melee, 4 Equip1, 5 Equip2)
 var weapon_slot_names: Array = ["Primary", "Secondary", "Melee", "Equip 1", "Equip 2"]
 
-@onready var hp_label = $StatsMargin/VBoxContainer/HealthLabel
-@onready var armor_label = $StatsMargin/VBoxContainer/ArmorLabel
+@onready var hp_label = $StatsMargin/StatsPanel/StatsRow/HealthSection/HealthTop/HealthLabel
+@onready var armor_label = $StatsMargin/StatsPanel/StatsRow/ArmorSection/ArmorTop/ArmorLabel
+@onready var health_bar = $StatsMargin/StatsPanel/StatsRow/HealthSection/HealthBar
+@onready var armor_bar = $StatsMargin/StatsPanel/StatsRow/ArmorSection/ArmorBar
+@onready var health_section = $StatsMargin/StatsPanel/StatsRow/HealthSection
 @onready var stamina_bar = $StaminaContainer/StaminaBar
 @onready var hit_marker = $ProgressContainer/HitMarker
 @onready var blood_vignette = $BloodVignette
@@ -36,6 +39,8 @@ var weapon_slot_names: Array = ["Primary", "Secondary", "Melee", "Equip 1", "Equ
 @onready var heli_guide = $AircraftHUD/HeliGuide
 @onready var heli_guide_title = $AircraftHUD/HeliGuide/VBox/Title
 @onready var heli_guide_text = $AircraftHUD/HeliGuide/VBox/GuideText
+@onready var boundary_warning = $BoundaryWarning
+@onready var boundary_countdown = $BoundaryWarning/VBox/WarnCountdown
 
 # Console nodes
 @onready var console_container = $ConsoleLayer/ConsoleContainer
@@ -258,6 +263,8 @@ func toggle_aircraft_hud(show_aircraft: bool) -> void:
 	if show_aircraft:
 		bow_ui.hide()
 		skill_duration_label.hide()
+	# Keep StatsMargin visible in aircraft so the pilot can still monitor HP & Armor!
+	$StatsMargin.visible = true
 	aircraft_hud.visible = show_aircraft
 	if not show_aircraft:
 		heat_bar.hide()
@@ -321,6 +328,13 @@ func _heat_color(heat_val: float) -> Color:
 		return Color(1.0, 0.9, 0.1).lerp(Color(1.0, 0.15, 0.1), (h - 40.0) / 40.0)
 	return Color(1.0, 0.15, 0.1)
 
+func show_boundary_warning(seconds_left: float) -> void:
+	boundary_warning.show()
+	boundary_countdown.text = "TURN BACK OR DESTROYED IN %.1fs" % maxf(0.0, seconds_left)
+
+func hide_boundary_warning() -> void:
+	boundary_warning.hide()
+
 func show_spectating(name_text: String, faction: String, is_first_person: bool = false) -> void:
 	var mode_str = "POV" if is_first_person else "3RD"
 	spectator_label.text = "SPECTATING: %s [%s] (%s)\n(A/D cycle | E toggle mode | Scroll zoom)" % [name_text, faction, mode_str]
@@ -346,11 +360,20 @@ func update_weapon_slot(active_index: int) -> void:
 			slots[i].modulate = Color(1, 1, 1, 0.5)
 			slots[i].text = "  " + label + "  "
 
-func update_stats(hp: int, _max_hp: int, armor: int, _max_armor: int, stamina: float, max_stamina: float) -> void:
-	hp_label.text = "Health: [%d]" % hp
-	armor_label.text = "Armor: [%d]" % armor
+func update_stats(hp: int, max_hp: int, armor: int, max_armor: int, stamina: float, max_stamina: float) -> void:
+	hp_label.text = "%d" % hp
+	armor_label.text = "%d" % armor
 	stamina_bar.max_value = max_stamina
 	stamina_bar.value = stamina
+	health_bar.max_value = maxf(float(max_hp), 1.0)
+	health_bar.value = clampf(float(hp), 0.0, health_bar.max_value)
+	armor_bar.max_value = maxf(float(max_armor), 1.0)
+	armor_bar.value = clampf(float(armor), 0.0, armor_bar.max_value)
+	# CS:GO low-HP peripheral cue: when hp <= 25, flash/glow bright red across number + bar
+	var is_low := hp <= 25
+	var hp_color := Color(1.0, 0.2, 0.2) if is_low else Color.WHITE
+	hp_label.add_theme_color_override("font_color", hp_color)
+	health_section.modulate = Color(1.3, 0.6, 0.6) if is_low else Color.WHITE
 
 
 func update_ammo(mag: int, reserve: int):

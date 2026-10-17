@@ -640,7 +640,7 @@ func request_vehicle_exit(vpath: String, seat_idx: int) -> void:
 	net_vehicle_exit.rpc(vpath, sender, seat_idx)
 
 @rpc("authority", "call_local", "reliable")
-func net_vehicle_exit(vpath: String, peer_id: int, seat_idx: int) -> void:
+func net_vehicle_exit(vpath: String, _peer_id: int, seat_idx: int) -> void:
 	var v = get_tree().root.get_node_or_null(NodePath(vpath))
 	if v == null or not v.has_method("net_sync_exit"):
 		return
