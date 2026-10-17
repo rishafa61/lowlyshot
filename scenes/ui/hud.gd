@@ -4,8 +4,12 @@ extends CanvasLayer
 	$WeaponMargin/VBoxContainer/Slot1,
 	$WeaponMargin/VBoxContainer/Slot2,
 	$WeaponMargin/VBoxContainer/Slot3,
-	$WeaponMargin/VBoxContainer/Slot4
+	$WeaponMargin/VBoxContainer/Slot4,
+	$WeaponMargin/VBoxContainer/Slot5
 ]
+
+# Per-slot equipped weapon names (1 Primary, 2 Secondary, 3 Melee, 4 Equip1, 5 Equip2)
+var weapon_slot_names: Array = ["Primary", "Secondary", "Melee", "Equip 1", "Equip 2"]
 
 @onready var hp_label = $StatsMargin/VBoxContainer/HealthLabel
 @onready var armor_label = $StatsMargin/VBoxContainer/ArmorLabel
@@ -300,14 +304,22 @@ func show_spectating(name_text: String, faction: String, is_first_person: bool =
 func hide_spectating() -> void:
 	spectator_label.hide()
 
+func set_weapon_names(names: Array) -> void:
+	for i in slots.size():
+		weapon_slot_names[i] = str(names[i]) if i < names.size() else weapon_slot_names[i]
+	if slots.size() > 0:
+		update_weapon_slot(-1) # redraw names, no active slot change info
+	# Re-mark the active slot if the player script tells us (cheap: next switch fixes it)
+
 func update_weapon_slot(active_index: int) -> void:
 	for i in range(slots.size()):
+		var label := "%d. %s" % [i + 1, weapon_slot_names[i]]
 		if i == active_index:
 			slots[i].modulate = Color(1, 1, 0, 1)
-			slots[i].text = "> Slot " + str(i + 1) + " <"
+			slots[i].text = "> " + label + " <"
 		else:
 			slots[i].modulate = Color(1, 1, 1, 0.5)
-			slots[i].text = "  Slot " + str(i + 1) + "  "
+			slots[i].text = "  " + label + "  "
 
 func update_stats(hp: int, _max_hp: int, armor: int, _max_armor: int, stamina: float, max_stamina: float) -> void:
 	hp_label.text = "Health: [%d]" % hp

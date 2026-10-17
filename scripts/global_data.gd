@@ -15,12 +15,14 @@ const WEAPON_CATALOG := {
 		"res://resources/weapons/desert_hawk.tres"
 	],
 	"Melee": [
-		"res://resources/weapons/knife.tres",
-		"res://resources/weapons/at4.tres"
+		"res://resources/weapons/knife.tres"
 	],
-	"Utility": [
+	"Throwable": [
 		"res://resources/weapons/grenade.tres",
 		"res://resources/weapons/flashbang.tres"
+	],
+	"Heavy": [
+		"res://resources/weapons/at4.tres"
 	]
 }
 
@@ -63,11 +65,15 @@ var weapons = {
 	"Primary": [],
 	"Secondary": [],
 	"Melee": [],
+	"Throwable": [],
+	"Heavy": [],
 	"Utility": []
 }
 
 func _ready() -> void:
 	for category in WEAPON_CATALOG.keys():
+		if not weapons.has(category):
+			weapons[category] = []
 		for path in WEAPON_CATALOG[category]:
 			var res = load(path)
 			if res is WeaponData:
@@ -89,14 +95,22 @@ func get_equipped_secondary() -> Dictionary:
 	return weapons["Secondary"][0]
 
 func get_equipped_melee() -> Dictionary:
-	for w in weapons["Melee"]:
+	for w in weapons.get("Melee", []):
 		if w["equipped"]: return w
-	return weapons["Melee"][0]
+	return weapons.get("Melee", [{}])[0]
+
+func get_equipped_throwable() -> Dictionary:
+	for w in weapons.get("Throwable", []):
+		if w["equipped"]: return w
+	return weapons.get("Throwable", [{}])[0]
 
 func get_equipped_utility() -> Dictionary:
-	for w in weapons["Utility"]:
+	return get_equipped_throwable()
+
+func get_equipped_heavy() -> Dictionary:
+	for w in weapons.get("Heavy", []):
 		if w["equipped"]: return w
-	return weapons["Utility"][0]
+	return weapons.get("Heavy", [{}])[0]
 
 
 func get_equipped_operator_script() -> Script:

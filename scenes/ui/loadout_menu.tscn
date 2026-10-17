@@ -92,10 +92,6 @@ custom_minimum_size = Vector2(300, 0)
 layout_mode = 2
 theme_override_constants/separation = 10
 
-[node name="GroupList" type="HBoxContainer" parent="Margin/VBox/Main/Left"]
-layout_mode = 2
-theme_override_constants/separation = 8
-
 [node name="SlotPrimary" type="PanelContainer" parent="Margin/VBox/Main/Left"]
 custom_minimum_size = Vector2(0, 100)
 layout_mode = 2
@@ -132,22 +128,22 @@ layout_mode = 2
 text = "Secondary Weapon"
 horizontal_alignment = 1
 
-[node name="SlotHeavy" type="PanelContainer" parent="Margin/VBox/Main/Left"]
+[node name="SlotMelee" type="PanelContainer" parent="Margin/VBox/Main/Left"]
 custom_minimum_size = Vector2(0, 100)
 layout_mode = 2
 
-[node name="VBox" type="VBoxContainer" parent="Margin/VBox/Main/Left/SlotHeavy"]
+[node name="VBox" type="VBoxContainer" parent="Margin/VBox/Main/Left/SlotMelee"]
 layout_mode = 2
 alignment = 1
 
-[node name="NameLabel" type="Label" parent="Margin/VBox/Main/Left/SlotHeavy/VBox"]
+[node name="NameLabel" type="Label" parent="Margin/VBox/Main/Left/SlotMelee/VBox"]
 layout_mode = 2
 text = "Combat Knife"
 horizontal_alignment = 1
 
-[node name="SubLabel" type="Label" parent="Margin/VBox/Main/Left/SlotHeavy/VBox"]
+[node name="SubLabel" type="Label" parent="Margin/VBox/Main/Left/SlotMelee/VBox"]
 layout_mode = 2
-text = "Heavy Weapon"
+text = "Melee Weapon"
 horizontal_alignment = 1
 
 [node name="SlotEquip1" type="PanelContainer" parent="Margin/VBox/Main/Left"]
@@ -191,7 +187,12 @@ custom_minimum_size = Vector2(460, 0)
 layout_mode = 2
 theme_override_constants/separation = 12
 
+[node name="GroupTabs" type="HBoxContainer" parent="Margin/VBox/Main/Mid"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
 [node name="CatHeader" type="PanelContainer" parent="Margin/VBox/Main/Mid"]
+visible = false
 layout_mode = 2
 
 [node name="Label" type="Label" parent="Margin/VBox/Main/Mid/CatHeader"]

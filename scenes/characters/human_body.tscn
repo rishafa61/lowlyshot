@@ -74,7 +74,7 @@ surface_material_override/0 = SubResource("StandardMaterial3D_nprww")
 metadata/surface = 0
 
 [node name="Vest" type="MeshInstance3D" parent="." unique_id=1627498195]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.37, 0)
+transform = Transform3D(1, 0, 0, 0, 1.0614681, 0, 0, 0, 1.1461667, 0, 1.37, 0)
 mesh = SubResource("Mesh_Vest")
 surface_material_override/0 = SubResource("Mat_Gear")
 metadata/surface = 2
@@ -104,7 +104,13 @@ surface_material_override/0 = SubResource("Mat_Skin")
 metadata/surface = 1
 
 [node name="Face" type="MeshInstance3D" parent="." unique_id=1406167568]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.74, -0.1)
+transform = Transform3D(1.4767474, 0, 0, 0, 0.5944338, 0, 0, 0, 0.4969197, 0, 1.8267148, -0.099838935)
+mesh = SubResource("Mesh_Face")
+surface_material_override/0 = SubResource("Mat_Gear")
+metadata/surface = 2
+
+[node name="Helmet" type="MeshInstance3D" parent="." unique_id=1743455124]
+transform = Transform3D(1.769577, 0, 0, 0, 1.9711384, 0, 0, 0, 2.7148826, 0, 1.8652847, 0.013421573)
 mesh = SubResource("Mesh_Face")
 surface_material_override/0 = SubResource("Mat_Gear")
 metadata/surface = 2
@@ -134,7 +140,7 @@ surface_material_override/0 = SubResource("Mat_Skin")
 metadata/surface = 1
 
 [node name="LeftHand" type="MeshInstance3D" parent="." unique_id=1144085291]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.3, 0.84, -0.04)
+transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, -0.3, 0.84, -0.04)
 mesh = SubResource("Mesh_Hand")
 surface_material_override/0 = SubResource("Mat_Gear")
 metadata/surface = 2
@@ -164,7 +170,7 @@ surface_material_override/0 = SubResource("Mat_Skin")
 metadata/surface = 1
 
 [node name="RightHand" type="MeshInstance3D" parent="." unique_id=1107731997]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.3, 0.84, -0.04)
+transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 0.3, 0.84, -0.04)
 mesh = SubResource("Mesh_Hand")
 surface_material_override/0 = SubResource("Mat_Gear")
 metadata/surface = 2

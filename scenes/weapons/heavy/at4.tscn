@@ -1,4 +1,4 @@
-[gd_scene load_steps=13 format=3]
+[gd_scene format=3 uid="uid://lsnl8uyp4qyw"]
 
 [sub_resource type="CylinderMesh" id="CylinderMesh_tube"]
 top_radius = 0.052
@@ -54,42 +54,42 @@ size = Vector3(0.02, 0.015, 0.45)
 albedo_color = Color(0.22, 0.2, 0.14, 1)
 roughness = 0.9
 
-[node name="AT4" type="Node3D"]
+[node name="AT4" type="Node3D" unique_id=82752951]
 
-[node name="MainTube" type="MeshInstance3D" parent="."]
+[node name="MainTube" type="MeshInstance3D" parent="." unique_id=1463749327]
 transform = Transform3D(1, 0, 0, 0, -4.37114e-08, 1, 0, -1, -4.37114e-08, 0, 0, 0)
 mesh = SubResource("CylinderMesh_tube")
 surface_material_override/0 = SubResource("Mat_olive")
 
-[node name="YellowBand" type="MeshInstance3D" parent="."]
+[node name="YellowBand" type="MeshInstance3D" parent="." unique_id=1078957552]
 transform = Transform3D(1, 0, 0, 0, -4.37114e-08, 1, 0, -1, -4.37114e-08, 0, 0, -0.15)
 mesh = SubResource("CylinderMesh_yellow_band")
 surface_material_override/0 = SubResource("Mat_yellow")
 
-[node name="FrontBumper" type="MeshInstance3D" parent="."]
+[node name="FrontBumper" type="MeshInstance3D" parent="." unique_id=987498425]
 transform = Transform3D(1, 0, 0, 0, -4.37114e-08, 1, 0, -1, -4.37114e-08, 0, 0, -0.49)
 mesh = SubResource("CylinderMesh_front_bumper")
 surface_material_override/0 = SubResource("Mat_black_bumper")
 
-[node name="RearBumper" type="MeshInstance3D" parent="."]
+[node name="RearBumper" type="MeshInstance3D" parent="." unique_id=531429108]
 transform = Transform3D(1, 0, 0, 0, -4.37114e-08, 1, 0, -1, -4.37114e-08, 0, 0, 0.48)
 mesh = SubResource("CylinderMesh_rear_bumper")
 surface_material_override/0 = SubResource("Mat_black_bumper")
 
-[node name="Grip" type="MeshInstance3D" parent="."]
+[node name="Grip" type="MeshInstance3D" parent="." unique_id=149140124]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.12, -0.2)
 mesh = SubResource("BoxMesh_grip")
 surface_material_override/0 = SubResource("Mat_black_bumper")
 
-[node name="SightHousing" type="MeshInstance3D" parent="."]
+[node name="SightHousing" type="MeshInstance3D" parent="." unique_id=250600047]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.07, -0.05)
 mesh = SubResource("BoxMesh_sight")
 surface_material_override/0 = SubResource("Mat_sight")
 
-[node name="Sling" type="MeshInstance3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.06, -0.08, 0.05)
+[node name="Sling" type="MeshInstance3D" parent="." unique_id=626043025]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.049437698, -0.014626682, 0.05)
 mesh = SubResource("BoxMesh_sling")
 surface_material_override/0 = SubResource("Mat_sling")
 
-[node name="Muzzle" type="Marker3D" parent="."]
+[node name="Muzzle" type="Marker3D" parent="." unique_id=597198635]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -0.56)

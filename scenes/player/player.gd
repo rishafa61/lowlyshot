@@ -65,7 +65,7 @@ var _pre_pilot_layer: int = 1
 var _pre_pilot_mask: int = 1
 
 # Weapon Loadout State
-enum Slot { RIFLE, PISTOL, MELEE, GRENADE }
+enum Slot { RIFLE, PISTOL, MELEE, THROWABLE, HEAVY }
 var active_slot = Slot.PISTOL
 var weapons = [] # Will be populated in _ready()
 var fire_cooldown: float = 0.0
@@ -155,10 +155,12 @@ func _ready() -> void:
 		GlobalData.get_equipped_primary().duplicate(),
 		GlobalData.get_equipped_secondary().duplicate(),
 		GlobalData.get_equipped_melee().duplicate(),
-		GlobalData.get_equipped_utility().duplicate()
+		GlobalData.get_equipped_throwable().duplicate(),
+		GlobalData.get_equipped_heavy().duplicate()
 	]
-	weapons[Slot.GRENADE]["amount"] = 1
+	weapons[Slot.THROWABLE]["amount"] = 1
 	
+	_push_hud_slot_names()
 	switch_weapon(Slot.RIFLE)
 	weapon_holder.position = WEAPON_POS_HIP
 	weapon_holder.visible = true
@@ -501,11 +503,12 @@ func respawn():
 	if weapons[Slot.PISTOL].has("max_mag"):
 		weapons[Slot.PISTOL]["mag"] = weapons[Slot.PISTOL]["max_mag"]
 		weapons[Slot.PISTOL]["res"] = weapons[Slot.PISTOL]["max_res"]
-	if weapons[Slot.MELEE].has("max_mag") and weapons[Slot.MELEE].get("type", "") == "launcher":
-		weapons[Slot.MELEE]["mag"] = weapons[Slot.MELEE]["max_mag"]
-		weapons[Slot.MELEE]["res"] = weapons[Slot.MELEE]["max_res"]
-	weapons[Slot.GRENADE]["amount"] = 1
+	if weapons[Slot.HEAVY].has("max_mag"):
+		weapons[Slot.HEAVY]["mag"] = weapons[Slot.HEAVY]["max_mag"]
+		weapons[Slot.HEAVY]["res"] = weapons[Slot.HEAVY]["max_res"]
+	weapons[Slot.THROWABLE]["amount"] = 1
 	
+	_push_hud_slot_names()
 	switch_weapon(Slot.RIFLE) # Reset to default sidearm
 	
 	if hud: 
@@ -568,7 +571,8 @@ func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("weapon_1"): switch_weapon(Slot.RIFLE)
 	if event.is_action_pressed("weapon_2"): switch_weapon(Slot.PISTOL)
 	if event.is_action_pressed("weapon_3"): switch_weapon(Slot.MELEE)
-	if event.is_action_pressed("weapon_4"): switch_weapon(Slot.GRENADE)
+	if event.is_action_pressed("weapon_4"): switch_weapon(Slot.THROWABLE)
+	if event.is_action_pressed("weapon_5"): switch_weapon(Slot.HEAVY)
 
 	# Operator Skill
 	if event.is_action_pressed("use_skill"):
@@ -590,9 +594,9 @@ func _unhandled_input(event: InputEvent) -> void:
 		flashlight.visible = not flashlight.visible
 
 
-	# Grenade Logic
-	if active_slot == Slot.GRENADE:
-		if event.is_action_pressed("fire") and not is_cooking and weapons[Slot.GRENADE]["amount"] > 0:
+	# Throwable Logic (Equipment 01 — key 4)
+	if active_slot == Slot.THROWABLE:
+		if event.is_action_pressed("fire") and not is_cooking and weapons[Slot.THROWABLE]["amount"] > 0:
 			is_cooking = true
 			cook_timer = 0.0
 		if event.is_action_released("fire") and is_cooking:
@@ -602,15 +606,12 @@ func _unhandled_input(event: InputEvent) -> void:
 		if active_operator.override_aim():
 			return # Skip the rest of the inputs if aim is overridden
 
-	# Melee Heavy Attack
+	# Melee Attack
 	if active_slot == Slot.MELEE:
-		if weapons[Slot.MELEE].get("type", "") == "launcher":
-			pass # launcher fire handled in _physics_process (lock-aware)
-		else:
-			if event.is_action_pressed("aim") and fire_cooldown <= 0:
-				melee_attack(true) # true = heavy right click
-			if event.is_action_pressed("fire") and fire_cooldown <= 0:
-				melee_attack(false)
+		if event.is_action_pressed("aim") and fire_cooldown <= 0:
+			melee_attack(true) # true = heavy right click
+		if event.is_action_pressed("fire") and fire_cooldown <= 0:
+			melee_attack(false)
 
 	# Gun reload
 	var w = weapons[active_slot]
@@ -651,17 +652,25 @@ func switch_weapon(slot: Slot) -> void:
 	camera.fov = FOV_NORMAL
 
 	
-	if active_slot != Slot.MELEE or w.get("type", "") != "launcher":
+	if active_slot != Slot.HEAVY or w.get("type", "") != "launcher":
 		_update_launcher_lock_reset()
 
 	if hud:
 		hud.update_weapon_slot(slot)
 		if w["type"] == "gun" or w.get("type", "") == "launcher":
 			hud.update_ammo(w.get("mag", 1), w.get("res", 0))
-		elif w["type"] == "util":
-			hud.update_ammo(w["amount"], 0)
+		elif w["type"] in ["util", "throwable"]:
+			hud.update_ammo(w.get("amount", 0), 0)
 		else:
 			hud.update_ammo(0, 0) # hide or show 0
+
+func _push_hud_slot_names() -> void:
+	if not hud or not hud.has_method("set_weapon_names"):
+		return
+	var names: Array[String] = []
+	for item in weapons:
+		names.append(str(item.get("name", "Slot")))
+	hud.set_weapon_names(names)
 
 
 
@@ -858,7 +867,9 @@ func fire_launcher() -> void:
 		rocket.direction = (rocket.target_vehicle.global_position + Vector3(0, 0.8, 0) - spawn_pos).normalized()
 	else:
 		var space := get_world_3d().direct_space_state
-		var hit := space.intersect_ray(PhysicsRayQueryParameters3D.create(camera.global_position, camera.global_position + aim_dir * 300.0, [get_rid()]))
+		var query := PhysicsRayQueryParameters3D.create(camera.global_position, camera.global_position + aim_dir * 300.0)
+		query.exclude = [get_rid()]
+		var hit := space.intersect_ray(query)
 		if hit:
 			rocket.direction = (hit.position - spawn_pos).normalized()
 		else:
@@ -945,10 +956,10 @@ func melee_attack(is_heavy: bool):
 func throw_grenade():
 	is_cooking = false
 	hud.update_cook_bar(-1.0)
-	weapons[Slot.GRENADE]["amount"] -= 1
-	hud.update_ammo(weapons[Slot.GRENADE]["amount"], 0)
+	weapons[Slot.THROWABLE]["amount"] -= 1
+	hud.update_ammo(weapons[Slot.THROWABLE]["amount"], 0)
 	
-	var w = weapons[Slot.GRENADE]
+	var w = weapons[Slot.THROWABLE]
 	var proj_path = "res://scenes/weapons/utilities/grenade_projectile.tscn"
 	if w.get("id", "") == "flashbang":
 		proj_path = "res://scenes/weapons/utilities/flashbang_projectile.tscn"

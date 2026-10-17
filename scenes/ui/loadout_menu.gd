@@ -6,11 +6,11 @@ extends Control
 @onready var slot_cards := {
 	"Primary": $Margin/VBox/Main/Left/SlotPrimary,
 	"Secondary": $Margin/VBox/Main/Left/SlotSecondary,
-	"Heavy": $Margin/VBox/Main/Left/SlotHeavy,
+	"Melee": $Margin/VBox/Main/Left/SlotMelee,
 	"Equip1": $Margin/VBox/Main/Left/SlotEquip1,
 	"Equip2": $Margin/VBox/Main/Left/SlotEquip2,
 }
-@onready var group_list: HBoxContainer = $Margin/VBox/Main/Left/GroupList
+@onready var group_list: HBoxContainer = $Margin/VBox/Main/Mid/GroupTabs
 @onready var cat_header: Label = $Margin/VBox/Main/Mid/CatHeader/Label
 @onready var item_name: Label = $Margin/VBox/Main/Mid/Detail/Panel/ItemName
 @onready var item_desc: Label = $Margin/VBox/Main/Mid/Detail/Panel/ItemDesc
@@ -23,16 +23,17 @@ extends Control
 const SLOT_DEFS := [
 	{"key": "Primary", "cat": "Primary", "label": "Primary Weapon"},
 	{"key": "Secondary", "cat": "Secondary", "label": "Secondary Weapon"},
-	{"key": "Heavy", "cat": "Melee", "label": "Heavy Weapon"},
-	{"key": "Equip1", "cat": "Utility", "label": "Equipment 01"},
-	{"key": "Equip2", "cat": "Utility", "label": "Equipment 02"},
+	{"key": "Melee", "cat": "Melee", "label": "Melee Weapon"},
+	{"key": "Equip1", "cat": "Throwable", "label": "Equipment 01"},
+	{"key": "Equip2", "cat": "Heavy", "label": "Equipment 02"},
 ]
 
 const WEAPON_GROUPS := {
 	"Primary": {"Assault Rifles": ["ak47", "m4a4"], "Sniper Rifles": ["m700"]},
 	"Secondary": {"Pistols": ["glock", "desert_hawk"]},
-	"Melee": {"Melee": ["knife"], "Launchers": ["at4"]},
-	"Utility": {"Equipment 01": ["grenade"], "Equipment 02": ["flashbang"]},
+	"Melee": {"Melee": ["knife"]},
+	"Throwable": {"Throwables": ["grenade", "flashbang"]},
+	"Heavy": {"Heavy Weapons": ["at4"]},
 }
 
 const COL_BG := Color("141a22")
@@ -125,21 +126,17 @@ func _weapon_by_id(id: String) -> Dictionary:
 	return {}
 
 func _equipped_in(cat: String) -> Dictionary:
-	for w in GlobalData.weapons[cat]:
+	var list: Array = GlobalData.weapons.get(cat, [])
+	for w in list:
 		if w.get("equipped", false):
 			return w
-	return GlobalData.weapons[cat][0] if GlobalData.weapons[cat].size() > 0 else {}
+	return list[0] if list.size() > 0 else {}
 
 func _refresh_slots() -> void:
 	for def in SLOT_DEFS:
 		var card: PanelContainer = slot_cards[def["key"]]
 		var vbox: VBoxContainer = card.get_child(0)
-		var eq: Dictionary
-		if def["key"] in ["Equip1", "Equip2"]:
-			var own_id := "grenade" if def["key"] == "Equip1" else "flashbang"
-			eq = _weapon_by_id(own_id)
-		else:
-			eq = _equipped_in(def["cat"])
+		var eq := _equipped_in(def["cat"])
 		(vbox.get_node("NameLabel") as Label).text = str(eq.get("name", "—")) if not eq.is_empty() else "—"
 		(vbox.get_node("SubLabel") as Label).text = def["label"]
 		var is_eq: bool = eq.get("equipped", false)
@@ -154,16 +151,11 @@ func _set_slot(key: String) -> void:
 	for def in SLOT_DEFS:
 		if def["key"] == key:
 			cat = def["cat"]
-	# Horizontal category buttons above slot cards
+	# Horizontal category buttons above the weapon list
 	for c in group_list.get_children():
 		c.queue_free()
 	var first_group := ""
 	var groups = WEAPON_GROUPS.get(cat, {})
-	if key == "Equip1":
-		groups = {"Equipment 01": WEAPON_GROUPS["Utility"].get("Equipment 01", [])}
-	elif key == "Equip2":
-		groups = {"Equipment 02": WEAPON_GROUPS["Utility"].get("Equipment 02", [])}
-
 	for group in groups:
 		var gb := Button.new()
 		gb.text = group
@@ -183,17 +175,11 @@ func _set_group(group: String) -> void:
 		if gb is Button:
 			gb.modulate = Color(1, 0.85, 0.4) if gb.text == group else Color(0.65, 0.65, 0.7)
 
-	var ids: Array = []
-	if current_slot == "Equip1":
-		ids = WEAPON_GROUPS["Utility"].get("Equipment 01", [])
-	elif current_slot == "Equip2":
-		ids = WEAPON_GROUPS["Utility"].get("Equipment 02", [])
-	else:
-		var cat := ""
-		for def in SLOT_DEFS:
-			if def["key"] == current_slot:
-				cat = def["cat"]
-		ids = WEAPON_GROUPS.get(cat, {}).get(group, [])
+	var cat := ""
+	for def in SLOT_DEFS:
+		if def["key"] == current_slot:
+			cat = def["cat"]
+	var ids: Array = WEAPON_GROUPS.get(cat, {}).get(group, [])
 
 	for c in weapon_list.get_children():
 		c.queue_free()
@@ -259,7 +245,7 @@ func _on_equip_pressed() -> void:
 	for def in SLOT_DEFS:
 		if def["key"] == current_slot:
 			cat = def["cat"]
-	for w in GlobalData.weapons[cat]:
+	for w in GlobalData.weapons.get(cat, []):
 		w["equipped"] = false
 	selected_item["equipped"] = true
 	_refresh_slots()

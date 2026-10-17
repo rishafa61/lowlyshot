@@ -607,8 +607,8 @@ anchor_left = 1.0
 anchor_top = 1.0
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = -150.0
-offset_top = -250.0
+offset_left = -260.0
+offset_top = -300.0
 offset_bottom = -100.0
 grow_horizontal = 0
 grow_vertical = 0
@@ -634,6 +634,10 @@ text = "  Slot 3  "
 [node name="Slot4" type="Label" parent="WeaponMargin/VBoxContainer"]
 layout_mode = 2
 text = "  Slot 4  "
+
+[node name="Slot5" type="Label" parent="WeaponMargin/VBoxContainer"]
+layout_mode = 2
+text = "  Slot 5  "
 
 [node name="AmmoMargin" type="MarginContainer" parent="."]
 anchors_preset = 3
