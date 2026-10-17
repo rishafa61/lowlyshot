@@ -1,64 +1,231 @@
 [gd_scene format=3 uid="uid://bsng5sis2atev"]
 
-[sub_resource type="BoxMesh" id="BoxMesh_barrel"]
-size = Vector3(0.08, 0.15, 1.2)
+[sub_resource type="StandardMaterial3D" id="mat_green"]
+albedo_color = Color(0.24, 0.66, 0.24, 1)
+roughness = 0.55
 
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_gun"]
-albedo_color = Color(0.25, 0.3, 0.25, 1)
-metallic = 0.6
+[sub_resource type="StandardMaterial3D" id="mat_black"]
+albedo_color = Color(0.13, 0.13, 0.14, 1)
+metallic = 0.75
+roughness = 0.4
 
-[sub_resource type="CylinderMesh" id="CylinderMesh_scope"]
-top_radius = 0.06
-bottom_radius = 0.06
-height = 0.4
+[sub_resource type="StandardMaterial3D" id="mat_lens"]
+albedo_color = Color(0.12, 0.72, 0.95, 1)
+emission_enabled = true
+emission = Color(0.1, 0.6, 0.85, 1)
+emission_energy_multiplier = 0.6
+roughness = 0.15
 
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_scope"]
-albedo_color = Color(0.597176, 0.597176, 0.597176, 1)
-metallic = 0.9
+[sub_resource type="BoxMesh" id="m_forestock"]
+size = Vector3(0.062, 0.085, 0.5)
+
+[sub_resource type="BoxMesh" id="m_midstock"]
+size = Vector3(0.062, 0.09, 0.22)
+
+[sub_resource type="BoxMesh" id="m_comb"]
+size = Vector3(0.055, 0.065, 0.22)
+
+[sub_resource type="BoxMesh" id="m_toe"]
+size = Vector3(0.055, 0.05, 0.2)
+
+[sub_resource type="BoxMesh" id="m_grip"]
+size = Vector3(0.048, 0.12, 0.05)
+
+[sub_resource type="BoxMesh" id="m_butt"]
+size = Vector3(0.05, 0.155, 0.045)
+
+[sub_resource type="BoxMesh" id="m_buttpad"]
+size = Vector3(0.055, 0.16, 0.018)
+
+[sub_resource type="BoxMesh" id="m_cheek"]
+size = Vector3(0.045, 0.018, 0.13)
+
+[sub_resource type="BoxMesh" id="m_receiver"]
+size = Vector3(0.055, 0.065, 0.32)
+
+[sub_resource type="CylinderMesh" id="m_barrel"]
+top_radius = 0.017
+bottom_radius = 0.017
+height = 0.82
+
+[sub_resource type="CylinderMesh" id="m_muzzlering"]
+top_radius = 0.021
+bottom_radius = 0.021
+height = 0.04
+
+[sub_resource type="BoxMesh" id="m_bolt"]
+size = Vector3(0.055, 0.014, 0.014)
+
+[sub_resource type="SphereMesh" id="m_boltknob"]
+radius = 0.013
+height = 0.026
+
+[sub_resource type="BoxMesh" id="m_trigger"]
+size = Vector3(0.012, 0.035, 0.012)
+
+[sub_resource type="BoxMesh" id="m_guard"]
+size = Vector3(0.014, 0.008, 0.09)
+
+[sub_resource type="BoxMesh" id="m_guardfront"]
+size = Vector3(0.014, 0.03, 0.008)
+
+[sub_resource type="BoxMesh" id="m_mag"]
+size = Vector3(0.042, 0.085, 0.09)
+
+[sub_resource type="BoxMesh" id="m_ring"]
+size = Vector3(0.018, 0.028, 0.024)
+
+[sub_resource type="CylinderMesh" id="m_tube"]
+top_radius = 0.026
+bottom_radius = 0.026
+height = 0.26
+
+[sub_resource type="CylinderMesh" id="m_bell"]
+top_radius = 0.042
+bottom_radius = 0.03
+height = 0.08
+
+[sub_resource type="CylinderMesh" id="m_lens"]
+top_radius = 0.036
+bottom_radius = 0.036
+height = 0.006
+
+[sub_resource type="CylinderMesh" id="m_ocular"]
+top_radius = 0.038
+bottom_radius = 0.032
+height = 0.055
+
+[sub_resource type="CylinderMesh" id="m_turret"]
+top_radius = 0.011
+bottom_radius = 0.011
+height = 0.022
 
 [node name="Sniper" type="Node3D"]
 
+[node name="Forestock" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.025, -0.4)
+mesh = SubResource("m_forestock")
+surface_material_override/0 = SubResource("mat_green")
+
+[node name="Midstock" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.03, 0)
+mesh = SubResource("m_midstock")
+surface_material_override/0 = SubResource("mat_green")
+
+[node name="Comb" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.055, 0.21)
+mesh = SubResource("m_comb")
+surface_material_override/0 = SubResource("mat_green")
+
+[node name="Toe" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.07, 0.21)
+mesh = SubResource("m_toe")
+surface_material_override/0 = SubResource("mat_green")
+
+[node name="Grip" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0.939693, 0.34202, 0, -0.34202, 0.939693, 0, -0.105, 0.045)
+mesh = SubResource("m_grip")
+surface_material_override/0 = SubResource("mat_green")
+
+[node name="Butt" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0.335)
+mesh = SubResource("m_butt")
+surface_material_override/0 = SubResource("mat_green")
+
+[node name="Buttpad" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0.362)
+mesh = SubResource("m_buttpad")
+surface_material_override/0 = SubResource("mat_black")
+
+[node name="CheekRest" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.098, 0.21)
+mesh = SubResource("m_cheek")
+surface_material_override/0 = SubResource("mat_black")
+
+[node name="Receiver" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.028, -0.06)
+mesh = SubResource("m_receiver")
+surface_material_override/0 = SubResource("mat_black")
+
 [node name="Barrel" type="MeshInstance3D" parent="."]
-transform = Transform3D(1.38161, 0, 0, 0, 1, 0, 0, 0, 0.580352, 0, 0, -0.311867)
-mesh = SubResource("BoxMesh_barrel")
-surface_material_override/0 = SubResource("StandardMaterial3D_gun")
+transform = Transform3D(1, 0, 0, 0, 0, 1, 0, -1, 0, 0, 0.035, -0.6)
+mesh = SubResource("m_barrel")
+surface_material_override/0 = SubResource("mat_black")
 
-[node name="Barrel7" type="MeshInstance3D" parent="."]
-transform = Transform3D(1.38161, 0, 0, 0, 0.730502, 0, 0, 0, 0.165668, 0, 0, 0.118365)
-mesh = SubResource("BoxMesh_barrel")
-surface_material_override/0 = SubResource("StandardMaterial3D_gun")
+[node name="MuzzleRing" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0, 1, 0, -1, 0, 0, 0.035, -1.0)
+mesh = SubResource("m_muzzlering")
+surface_material_override/0 = SubResource("mat_black")
 
-[node name="Barrel8" type="MeshInstance3D" parent="."]
-transform = Transform3D(1.38161, 0, 0, 0, 0.509436, -0.118735, 0, 0.523553, 0.115533, 0, -0.140609, 0.0348114)
-mesh = SubResource("BoxMesh_barrel")
-surface_material_override/0 = SubResource("StandardMaterial3D_gun")
+[node name="BoltHandle" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.04, 0.03, 0.035)
+mesh = SubResource("m_bolt")
+surface_material_override/0 = SubResource("mat_black")
 
-[node name="Barrel6" type="MeshInstance3D" parent="."]
-transform = Transform3D(1.69386, 0, 0, 0, 1.3849, 0, 0, 0, 0.245338, 0, 0.011625, 0.357029)
-mesh = SubResource("BoxMesh_barrel")
-surface_material_override/0 = SubResource("StandardMaterial3D_gun")
+[node name="BoltKnob" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.072, 0.03, 0.035)
+mesh = SubResource("m_boltknob")
+surface_material_override/0 = SubResource("mat_black")
 
-[node name="Barrel4" type="MeshInstance3D" parent="."]
-transform = Transform3D(1.01144, 0, 0, 0, 0.308743, 0, 0, 0, 0.133301, 0, 0.0755835, -0.560869)
-mesh = SubResource("BoxMesh_barrel")
-surface_material_override/0 = SubResource("StandardMaterial3D_gun")
+[node name="Trigger" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.05, 0.02)
+mesh = SubResource("m_trigger")
+surface_material_override/0 = SubResource("mat_black")
 
-[node name="Barrel5" type="MeshInstance3D" parent="."]
-transform = Transform3D(1.01144, 0, 0, 0, 0.308743, 0, 0, 0, 0.133301, 0, 0.0755835, -0.039288)
-mesh = SubResource("BoxMesh_barrel")
-surface_material_override/0 = SubResource("StandardMaterial3D_gun")
+[node name="TriggerGuard" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.075, 0.015)
+mesh = SubResource("m_guard")
+surface_material_override/0 = SubResource("mat_black")
 
-[node name="Barrel3" type="MeshInstance3D" parent="."]
-transform = Transform3D(1.10347, 0, 0, 0, 0.719826, 0, 0, 0, 0.397044, 0, 0, -0.880316)
-mesh = SubResource("BoxMesh_barrel")
-surface_material_override/0 = SubResource("StandardMaterial3D_gun")
+[node name="TriggerGuardFront" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.062, 0.058)
+mesh = SubResource("m_guardfront")
+surface_material_override/0 = SubResource("mat_black")
 
-[node name="Barrel2" type="MeshInstance3D" parent="."]
-transform = Transform3D(0.966087, 0, 0, 0, 0.658437, 0, 0, 0, 0.122446, 0.000752687, 0.108061, -0.289981)
-mesh = SubResource("BoxMesh_barrel")
-surface_material_override/0 = SubResource("StandardMaterial3D_gun")
+[node name="Magazine" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.085, -0.13)
+mesh = SubResource("m_mag")
+surface_material_override/0 = SubResource("mat_black")
 
-[node name="Scope" type="MeshInstance3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, -4.64378e-08, -1, 0, 1.06237, -4.37114e-08, 0, 0.180461, -0.258278)
-mesh = SubResource("CylinderMesh_scope")
-surface_material_override/0 = SubResource("StandardMaterial3D_scope")
+[node name="ScopeRingFront" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.078, -0.16)
+mesh = SubResource("m_ring")
+surface_material_override/0 = SubResource("mat_black")
+
+[node name="ScopeRingRear" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.078, -0.02)
+mesh = SubResource("m_ring")
+surface_material_override/0 = SubResource("mat_black")
+
+[node name="ScopeTube" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0, 1, 0, -1, 0, 0, 0.115, -0.09)
+mesh = SubResource("m_tube")
+surface_material_override/0 = SubResource("mat_black")
+
+[node name="ScopeBell" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0, 1, 0, -1, 0, 0, 0.115, -0.245)
+mesh = SubResource("m_bell")
+surface_material_override/0 = SubResource("mat_black")
+
+[node name="ScopeLens" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0, 1, 0, -1, 0, 0, 0.115, -0.284)
+mesh = SubResource("m_lens")
+surface_material_override/0 = SubResource("mat_lens")
+
+[node name="ScopeOcular" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0, 1, 0, -1, 0, 0, 0.115, 0.065)
+mesh = SubResource("m_ocular")
+surface_material_override/0 = SubResource("mat_black")
+
+[node name="TurretTop" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.148, -0.09)
+mesh = SubResource("m_turret")
+surface_material_override/0 = SubResource("mat_black")
+
+[node name="TurretSide" type="MeshInstance3D" parent="."]
+transform = Transform3D(0, 1, 0, -1, 0, 0, 0, 0, 1, 0.03, 0.115, -0.09)
+mesh = SubResource("m_turret")
+surface_material_override/0 = SubResource("mat_black")
+
+[node name="Muzzle" type="Marker3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.035, -1.03)
