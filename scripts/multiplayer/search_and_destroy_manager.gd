@@ -400,9 +400,10 @@ func _play_round_stinger(winner: String) -> void:
 	if players_data.has(my_peer):
 		my_team = players_data[my_peer].get("team", "")
 	var key := "round_win" if winner == my_team else "round_loss"
-	if not Sfx.has(key):
-		key = "bomb_tick"
-	Sfx.oneshot2d(key, -4.0)
+	if Sfx.has_method("oneshot2d"):
+		Sfx.oneshot2d(key, -4.0)
+	elif Sfx.has_method("oneshot3d") and is_instance_valid(spawner):
+		Sfx.oneshot3d(key, spawner, 50.0, 300.0, 0.0)
 
 func _show_round_result_ui(winner: String, reason: String) -> void:
 	var msg := "%s WIN THE ROUND\n(%s)" % [winner.to_upper(), reason.to_upper()]
@@ -568,7 +569,7 @@ func _broadcast_bomb_tick() -> void:
 		net_bomb_tick(bomb_world_position)
 
 @rpc("authority", "call_local", "reliable")
-func net_bomb_tick(pos: Vector3) -> void:
+func net_bomb_tick(_pos: Vector3) -> void:
 	Sfx.oneshot3d("bomb_tick", spawner, 45.0, 220.0, 4.0)
 
 # ----------------- Client-to-Host Interaction Requests -----------------

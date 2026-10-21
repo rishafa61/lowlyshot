@@ -10,7 +10,7 @@ extends Node3D
 var blink_speed: float = 2.0
 var _t: float = 0.0
 
-func setup(is_planted: bool, site_id: String = "") -> void:
+func setup(is_planted: bool, _site_id: String = "") -> void:
 	blink_speed = 4.0 if is_planted else 1.5
 
 func _process(delta: float) -> void:
