@@ -14,15 +14,15 @@ func _initialize() -> void:
 	root.add_child(mgr)
 	mgr._ready()
 
-	# 1. Freeze flag follows state (default off in parent; S&D overrides)
+	# 1. Freeze flag follows state — freeze ONLY during warmup intermission
 	mgr.set_state(mgr.MatchState.WARMUP)
 	check.call(mgr.players_frozen == true, "WARMUP freezes players")
 	mgr.set_state(mgr.MatchState.ACTIVE)
 	check.call(mgr.players_frozen == false, "ACTIVE unfreezes players")
 	mgr.set_state(mgr.MatchState.ROUND_END)
-	check.call(mgr.players_frozen == true, "ROUND_END freezes players")
+	check.call(mgr.players_frozen == false, "ROUND_END unfreezes players")
 	mgr.set_state(mgr.MatchState.MATCH_END)
-	check.call(mgr.players_frozen == true, "MATCH_END freezes players")
+	check.call(mgr.players_frozen == false, "MATCH_END unfreezes players")
 
 	# 2. sync_state (client path) also updates the freeze flag
 	mgr.sync_state(mgr.MatchState.WARMUP, 1, 5)

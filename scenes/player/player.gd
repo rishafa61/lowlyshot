@@ -524,6 +524,7 @@ func _die():
 	die()
 
 func die():
+	is_dead = true
 	# Drop carried bomb if this player is the S&D carrier
 	var mgr_scene = get_tree().current_scene
 	if mgr_scene and mgr_scene.has_method("drop_bomb") and mgr_scene.get("bomb_carrier_peer") != null:

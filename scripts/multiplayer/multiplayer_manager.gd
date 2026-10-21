@@ -430,7 +430,7 @@ func set_state(new_state: MatchState) -> void:
 		MatchState.ACTIVE: timer = round_time
 		MatchState.ROUND_END: timer = 5
 		MatchState.MATCH_END: timer = 10
-	players_frozen = current_state != MatchState.ACTIVE
+	players_frozen = current_state == MatchState.WARMUP
 	if multiplayer.has_multiplayer_peer():
 		sync_state.rpc(current_state, current_round, timer)
 	else:
@@ -441,7 +441,7 @@ func sync_state(state: MatchState, round_num: int, time_left: int) -> void:
 	current_state = state
 	current_round = round_num
 	timer = time_left
-	players_frozen = current_state != MatchState.ACTIVE
+	players_frozen = current_state == MatchState.WARMUP
 	match_state_changed.emit(current_state)
 	time_tick.emit(timer)
 

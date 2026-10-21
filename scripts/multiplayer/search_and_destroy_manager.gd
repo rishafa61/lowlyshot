@@ -107,8 +107,8 @@ func set_state(new_state: MatchState) -> void:
 			timer = 10
 			if is_multiplayer_authority():
 				_on_match_end_state()
-	# Freeze everyone (players + bots) outside ACTIVE — overrides parent flag
-	players_frozen = current_state != MatchState.ACTIVE
+	# Only freeze players during pre-round warmup/intermission (not on round end)
+	players_frozen = current_state == MatchState.WARMUP
 
 	if multiplayer.has_multiplayer_peer():
 		sync_state.rpc(current_state, current_round, timer)

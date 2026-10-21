@@ -30,13 +30,16 @@ func _ready() -> void:
 	_ensure_bus(SFX_BUS)
 	_ensure_bus(MUSIC_BUS)
 	for key in SOUNDS:
-		var s: AudioStream = load(SOUNDS[key])
+		var path: String = SOUNDS[key]
+		if path == "":
+			continue # synthesized cue, built in _synthesize_cues()
+		var s: AudioStream = load(path)
 		if s:
 			# Duplicate: imported resources are read-only; we own an editable
 			# copy so loop points etc. can be set at runtime.
 			_streams[key] = s.duplicate()
 		else:
-			push_warning("Sfx: missing sound file %s" % SOUNDS[key])
+			push_warning("Sfx: missing sound file %s" % path)
 	# ponytail: synthesized cues instead of recorded WAVs — swap in real
 	# recordings by adding files to SOUNDS; the generated ones yield.
 	_synthesize_cues()
