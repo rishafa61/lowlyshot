@@ -17,6 +17,7 @@ var dart_ref: Node3D = null
 var dart_home_parent: Node = null
 var dart_home_transform: Transform3D = Transform3D.IDENTITY
 var world_dart: Node3D = null
+var _miss_hint_cd: float = 0.0
 
 func _ready() -> void:
 	op_name = "Greppy"
@@ -42,6 +43,7 @@ func _restore_dart() -> void:
 	dart_home_parent = null
 
 func _physics_process(delta: float) -> void:
+	_miss_hint_cd = maxf(_miss_hint_cd - delta, 0.0)
 	if current_cooldown > 0.0:
 		current_cooldown -= delta
 
@@ -112,7 +114,11 @@ func _process_aim_preview() -> void:
 func _fire_hook() -> void:
 	var hit: Dictionary = _get_crosshair_hit()
 	if hit.is_empty():
-		cancel_skill()
+		# No anchor within MAX_RANGE: keep the grappler equipped — the player
+		# re-aims and clicks again. Only warn, never auto-cancel/swap weapon.
+		if _miss_hint_cd <= 0.0 and player_ref and player_ref.get("hud"):
+			_miss_hint_cd = 0.8
+			player_ref.hud.show_center_hint("Need to be closer")
 		return
 
 	target_point = hit.position as Vector3

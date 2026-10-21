@@ -19,6 +19,10 @@ var weapon_label: String = "AGM-65"
 var attacker_name: String = "Pilot"
 var attacker_faction: String = "Player"
 var source_body: PhysicsBody3D = null
+var target_vehicle: Node3D = null
+var turn_rate: float = 5.5
+## Network replica: visual-only — damage already runs on the shooter's machine.
+var is_net_replica: bool = false
 
 var _armed := false
 var _dir := Vector3.FORWARD
@@ -36,7 +40,7 @@ static func compute_blast_damage(dist: float, radius: float, center_dmg: float, 
 	var t := (dist - radius * 0.5) / (radius * 0.5)
 	return lerpf(center_dmg, outer_dmg, t)
 
-static func spawn_missile(pos: Vector3, dir: Vector3, attacker: String, faction: String, source: PhysicsBody3D) -> AircraftOrdnance:
+static func spawn_missile(pos: Vector3, dir: Vector3, attacker: String, faction: String, source: PhysicsBody3D, locked_target: Node3D = null) -> AircraftOrdnance:
 	var o := AircraftOrdnance.new()
 	o.mode = Mode.MISSILE
 	o.blast_radius = 8.0
@@ -46,6 +50,7 @@ static func spawn_missile(pos: Vector3, dir: Vector3, attacker: String, faction:
 	o._life = MISSILE_LIFETIME
 	o._dir = dir.normalized()
 	o._arm_time = 0.05
+	o.target_vehicle = locked_target
 	o._armed_setup(pos, attacker, faction, source)
 	o.gravity_scale = 0.0
 	o.linear_velocity = o._dir * MISSILE_SPEED
@@ -87,6 +92,9 @@ func _ready() -> void:
 	if source_body is PhysicsBody3D:
 		add_collision_exception_with(source_body)
 	body_entered.connect(_on_body_entered)
+	# Incoming-missile warning: vehicles poll this group
+	if mode == Mode.MISSILE and target_vehicle != null:
+		add_to_group("homing_missile")
 
 func _build_mesh() -> MeshInstance3D:
 	var mi := MeshInstance3D.new()
@@ -119,6 +127,15 @@ func _physics_process(delta: float) -> void:
 			_armed = true
 		return
 	# High-speed sweep: detect collisions between last and current frame positions
+	# Missile lock homing: steer velocity toward the locked vehicle (same
+	# mechanism as the AT4 rocket); no lock = straight flight as usual.
+	if mode == Mode.MISSILE and target_vehicle and is_instance_valid(target_vehicle) and target_vehicle.is_inside_tree():
+		var t_pos: Vector3 = target_vehicle.global_position + Vector3(0, 0.8, 0)
+		var desired := (t_pos - global_position).normalized()
+		var cur := linear_velocity.normalized()
+		cur = cur.lerp(desired, clampf(turn_rate * delta, 0.0, 1.0)).normalized()
+		linear_velocity = cur * MISSILE_SPEED
+		look_at(global_position + cur, Vector3.UP)
 	var step := linear_velocity * delta
 	if step.length_squared() > 0.01:
 		var space := get_world_3d().direct_space_state
@@ -140,7 +157,11 @@ func _on_body_entered(body: Node) -> void:
 func explode() -> void:
 	if not is_inside_tree():
 		return
-	_blast(global_position, blast_radius, center_damage, outer_damage, weapon_label)
+	# Replicas are visual-only: blast visuals, no damage (shooter-authoritative)
+	if not is_net_replica:
+		_blast(global_position, blast_radius, center_damage, outer_damage, weapon_label)
+	else:
+		_spawn_blast_visual(global_position, blast_radius)
 	queue_free()
 
 func _blast(pos: Vector3, radius: float, center_dmg: float, outer_dmg: float, label: String) -> void:
@@ -168,6 +189,10 @@ func _blast(pos: Vector3, radius: float, center_dmg: float, outer_dmg: float, la
 	_spawn_blast_visual(pos, radius)
 
 func _spawn_blast_visual(pos: Vector3, radius: float) -> void:
+	spawn_blast_visual(pos, radius)
+
+## Shared explosion flash sphere + boom — used by missiles and vehicle deaths.
+static func spawn_blast_visual(pos: Vector3, radius: float) -> void:
 	var explosion := MeshInstance3D.new()
 	var sphere := SphereMesh.new()
 	sphere.radius = radius
@@ -177,11 +202,15 @@ func _spawn_blast_visual(pos: Vector3, radius: float) -> void:
 	mat.albedo_color = Color(1.0, 0.5, 0.0, 1.0)
 	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	explosion.material_override = mat
-	get_tree().root.add_child(explosion)
-	explosion.global_position = pos
+	var root = Engine.get_main_loop().root
+	root.add_child(explosion)
+	explosion.position = pos
 	var timer := Timer.new()
-	timer.wait_time = 0.2
+	timer.wait_time = 0.25
 	timer.one_shot = true
 	timer.autostart = true
 	timer.timeout.connect(explosion.queue_free)
 	explosion.add_child(timer)
+	var sfx = root.get_node_or_null("Sfx")
+	if sfx:
+		sfx.oneshot3d("bomb", explosion, 40.0, 300.0, 6.0)

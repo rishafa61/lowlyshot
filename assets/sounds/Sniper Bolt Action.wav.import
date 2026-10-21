@@ -1,0 +1,24 @@
+[remap]
+
+importer="wav"
+type="AudioStreamWAV"
+uid="uid://bf6bjposj3cyw"
+path="res://.godot/imported/Sniper Bolt Action.wav-014356594745c631b7e90c35e1cfd764.sample"
+
+[deps]
+
+source_file="res://assets/sounds/Sniper Bolt Action.wav"
+dest_files=["res://.godot/imported/Sniper Bolt Action.wav-014356594745c631b7e90c35e1cfd764.sample"]
+
+[params]
+
+force/8_bit=false
+force/mono=false
+force/max_rate=false
+force/max_rate_hz=44100
+edit/trim=false
+edit/normalize=false
+edit/loop_mode=0
+edit/loop_begin=0
+edit/loop_end=-1
+compress/mode=2

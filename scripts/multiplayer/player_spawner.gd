@@ -127,7 +127,17 @@ func apply_remote_state(peer_id: int, pos: Vector3, yaw: float, pitch: float) ->
 func _remove_local(peer_id: int) -> void:
 	var container := _get_container()
 	var player = container.get_node_or_null(str(peer_id))
+	# Fallback: if the player was seated in a vehicle when despawned/disconnected,
+	# reparent() moved it under the vehicle seat, out of `container`. Search the
+	# scene tree so the old node is guaranteed destroyed and can't linger as a ghost.
+	if player == null:
+		var needle := str(peer_id)
+		for p in get_tree().get_nodes_in_group("player"):
+			if is_instance_valid(p) and p.name == needle:
+				player = p
+				break
 	if player:
 		# remove first so the name is free immediately when a respawn follows in the same frame
-		container.remove_child(player)
+		if player.get_parent():
+			player.get_parent().remove_child(player)
 		player.queue_free()

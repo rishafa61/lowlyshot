@@ -4,8 +4,7 @@
 [ext_resource type="Script" path="res://scenes/ui/weapon_preview.gd" id="2_wp"]
 
 [sub_resource type="Environment" id="Environment_preview"]
-background_mode = 1
-background_color = Color(0.08, 0.1, 0.13, 0)
+background_mode = 0
 ambient_light_source = 2
 ambient_light_color = Color(0.55, 0.6, 0.7, 1)
 ambient_light_energy = 1.0

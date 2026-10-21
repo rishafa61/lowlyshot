@@ -267,4 +267,5 @@ transform = Transform3D(1, 0, 0, 0, 0.978, 0.208, 0, -0.208, 0.978, 0, 0, 0)
 spring_length = 8.0
 
 [node name="ChaseCamera" type="Camera3D" parent="ChasePivot/ChaseArm" unique_id=872100823]
+far = 800.0
 fov = 70.0

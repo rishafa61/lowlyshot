@@ -1,7 +1,7 @@
 extends Node3D
 
 var missile_scene = preload("res://scenes/weapons/skills/airstrike_missile.tscn")
-var missiles_to_spawn = 3
+var missiles_to_spawn = 1
 var timer = 0.0
 var spawn_delay = 0.4
 var is_net_replica: bool = false

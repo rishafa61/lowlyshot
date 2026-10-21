@@ -22,21 +22,19 @@ func _run() -> void:
 	for i in 3:
 		await process_frame
 
-	var mesh_inst: MeshInstance3D = body.get_node_or_null("MergedMesh")
-	check(mesh_inst != null, "merged mesh created at runtime")
+	var mesh_inst: MeshInstance3D = body._mesh_inst
+	check(mesh_inst != null, "mesh instance created at runtime")
 	if mesh_inst:
-		check(mesh_inst.mesh.get_surface_count() == 3, "3 surfaces")
+		check(mesh_inst.mesh.get_surface_count() >= 3, "surfaces present (got %d)" % mesh_inst.mesh.get_surface_count())
 		check(mesh_inst.mesh.get_faces().size() > 0, "has triangles")
-		var aabb := mesh_inst.mesh.get_aabb()
-		check(aabb.position.y > -0.1 and aabb.end.y < 2.2, "AABB sane: %s" % aabb)
-	var leftovers: Array = body._find_parts(body).filter(func(m): return m.name != "MergedMesh")
-	check(leftovers.is_empty(), "editable parts freed after merge")
+	var rig: Node3D = body.find_child("metarig", true, false)
+	check(rig == null or rig.transform == Transform3D.IDENTITY, "rig transform normalized (no stale Blender armature offset)")
 
 	body.set_tint(Color(1, 0, 0))
 	await process_frame
 	if mesh_inst:
-		var mat: StandardMaterial3D = mesh_inst.get_surface_override_material(0)
-		check(mat != null and mat.albedo_color == Color(1, 0, 0), "set_tint applies")
+		var mat: StandardMaterial3D = mesh_inst.get_surface_override_material(1)
+		check(mat != null and mat.albedo_color == Color(1, 0, 0), "set_tint applies to surface 1")
 	check(body.get_tint() == Color(1, 0, 0), "get_tint reads back")
 
 	if mesh_inst:

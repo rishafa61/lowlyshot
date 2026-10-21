@@ -2,75 +2,88 @@
 class_name HumanBody
 extends Node3D
 
-## Humanoid rig with editor-friendly workflow:
-## - EDITOR: human_body.tscn holds individual part meshes (torso, limbs...).
-##   Edit them freely; the `tint_color` export live-previews the clothes color.
-## - RUNTIME: parts are merged ONCE into a single shared ArrayMesh
-##   (3 surfaces: 0=clothes/tintable, 1=skin, 2=gear) so every character
-##   costs 3 draw calls instead of ~24 nodes — fixes stutter with many bots.
-## Tag parts with metadata/surface = 0 (clothes), 1 (skin) or 2 (gear).
+## Humanoid rig wrapping Body.tscn with synced animations:
+## - Idle: standby / standing still
+## - Run: running, walking, jumping
+## - Crouch: crouching
+## - Slide: sliding
+## Rig and Rig_001 are authoring actions and ignored.
+## Surface 1 (Clothes) and Surface 2 (Pants) receive the team tint.
 
 const DEFAULT_CLOTHES := Color(0.36, 0.40, 0.33)
-const SKIN := Color(0.78, 0.62, 0.48)
-const GEAR := Color(0.14, 0.14, 0.16)
+const TINT_SURFACES: Array[int] = [1, 2]
+const HUMAN_AABB := AABB(Vector3(-0.5, 0.0, -0.3), Vector3(1.0, 1.9, 0.6))
 
-static var _shared_mesh: ArrayMesh
+# Scaling: Body.tscn is ~7.99m in pose, feet at -5.434m.
+# Scale 0.2375 + Y offset 1.2907 places feet at Y=0 and top of helmet at Y=1.9m,
+# matching the 2.0m CapsuleShape3D collision exactly.
+const MODEL_SCALE := Vector3(0.2375, 0.2375, 0.2375)
+const MODEL_OFFSET := Vector3(0.0, 1.2907, 0.0)
 
 @export var tint_color := DEFAULT_CLOTHES:
 	set(c):
 		tint_color = c
-		_apply_editor_tint()
+		_apply_tint()
 
 var _tint_mat: StandardMaterial3D
 var _mesh_inst: MeshInstance3D
 var _flash_tween: Tween
+var _anim_player: AnimationPlayer
+var _current_anim: String = ""
 
 func _ready() -> void:
-	if Engine.is_editor_hint():
-		_apply_editor_tint()
-		return
-	# Runtime: swap editable parts for the merged performance mesh.
-	if _shared_mesh == null:
-		_shared_mesh = _build_mesh_from_parts()
-	var old_parts := _find_parts(self)
-	for mi in old_parts:
-		mi.queue_free()
-	_tint_mat = StandardMaterial3D.new()
-	_tint_mat.albedo_color = tint_color
-	_tint_mat.roughness = 0.85
-	_mesh_inst = MeshInstance3D.new()
-	_mesh_inst.name = "MergedMesh"
-	_mesh_inst.mesh = _shared_mesh
-	_mesh_inst.set_surface_override_material(0, _tint_mat)
-	add_child(_mesh_inst)
-
-func _apply_editor_tint() -> void:
+	_resolve_nodes()
+	_apply_tint()
 	if not Engine.is_editor_hint():
+		play_anim("Idle")
+
+func _resolve_nodes() -> void:
+	if _mesh_inst == null or not is_instance_valid(_mesh_inst):
+		_mesh_inst = find_child("Player", true, false) as MeshInstance3D
+		if _mesh_inst != null:
+			_mesh_inst.custom_aabb = HUMAN_AABB
+	if _anim_player == null or not is_instance_valid(_anim_player):
+		_anim_player = find_child("AnimationPlayer", true, false) as AnimationPlayer
+		if _anim_player != null:
+			# Configure looping for continuous motions
+			for a in ["Idle", "Run"]:
+				if _anim_player.has_animation(a):
+					_anim_player.get_animation(a).loop_mode = Animation.LOOP_LINEAR
+
+	# Ensure scaling and 180-deg Y-rotation are enforced at runtime (Godot forward is -Z)
+	var model := get_node_or_null("PlayerModel") as Node3D
+	if model != null:
+		model.basis = Basis(Vector3.UP, PI).scaled(MODEL_SCALE)
+		model.position = MODEL_OFFSET
+
+func _apply_tint() -> void:
+	_resolve_nodes()
+	if _mesh_inst == null:
 		return
 	if _tint_mat == null:
 		_tint_mat = StandardMaterial3D.new()
 		_tint_mat.roughness = 0.85
 	_tint_mat.albedo_color = tint_color
-	for mi in _find_parts(self):
-		if int(mi.get_meta("surface", 0)) == 0:
-			mi.set_surface_override_material(0, _tint_mat)
+	for s in TINT_SURFACES:
+		if s < _mesh_inst.mesh.get_surface_count():
+			_mesh_inst.set_surface_override_material(s, _tint_mat)
 
 func set_tint(c: Color) -> void:
 	tint_color = c
-	if _tint_mat:
-		_tint_mat.albedo_color = c
+	_apply_tint()
 
 func get_tint() -> Color:
 	return tint_color
 
 func set_overlay(mat: Material) -> void:
+	_resolve_nodes()
 	if _mesh_inst:
 		_mesh_inst.material_overlay = mat
 
 func clear_overlay() -> void:
 	set_overlay(null)
 
-## Flash whole body red then fade back to `normal` color (hit feedback).
+## Flash body red then fade back to `normal` color (hit feedback).
 func flash_hit(normal: Color) -> void:
 	if _flash_tween:
 		_flash_tween.kill()
@@ -78,62 +91,35 @@ func flash_hit(normal: Color) -> void:
 	_flash_tween = create_tween()
 	_flash_tween.tween_method(set_tint, Color(1, 0, 0), normal, 0.2)
 
-func _find_parts(root: Node) -> Array[MeshInstance3D]:
-	var out: Array[MeshInstance3D] = []
-	for n in root.get_children():
-		if n is MeshInstance3D:
-			out.append(n)
-		if n.get_child_count() > 0:
-			out.append_array(_find_parts(n))
-	return out
+# ---------------- Animation Sync ----------------
 
-static func _make_mat(c: Color, rough: float) -> StandardMaterial3D:
-	var m := StandardMaterial3D.new()
-	m.albedo_color = c
-	m.roughness = rough
-	return m
+## High-level movement state to model animation mapping.
+## Ignores internal authoring actions (Rig, Rig_001).
+func sync_movement(is_moving: bool, is_crouching: bool, is_sliding: bool, is_airborne: bool = false) -> void:
+	if is_sliding:
+		play_anim("Slide")
+	elif is_crouching:
+		play_anim("Crouch")
+	elif is_airborne:
+		play_anim("Run") # Jump re-uses run animation per design
+	elif is_moving:
+		play_anim("Run") # Both walk and run map to the run anim
+	else:
+		play_anim("Idle")
 
-static func _merge_surface(dst: Array, src: Array) -> void:
-	if dst.is_empty():
-		for e in src:
-			dst.append(e)
+func play_anim(anim_name: String) -> void:
+	if _anim_player == null:
+		_resolve_nodes()
+	if _anim_player == null:
 		return
-	var off: int = dst[Mesh.ARRAY_VERTEX].size()
-	# Packed arrays pass by value — mutate local copies, reassign back.
-	for key in [Mesh.ARRAY_VERTEX, Mesh.ARRAY_NORMAL, Mesh.ARRAY_TANGENT, Mesh.ARRAY_TEX_UV]:
-		if dst[key] != null and src[key] != null:
-			var d = dst[key]
-			d.append_array(src[key])
-			dst[key] = d
-	var idx: PackedInt32Array = src[Mesh.ARRAY_INDEX]
-	for i in idx.size():
-		idx[i] += off
-	var di: PackedInt32Array = dst[Mesh.ARRAY_INDEX]
-	di.append_array(idx)
-	dst[Mesh.ARRAY_INDEX] = di
+	# Ignore authoring actions
+	if anim_name == "Rig" or anim_name == "Rig_001":
+		return
+	if _current_anim == anim_name and _anim_player.is_playing():
+		return
+	if _anim_player.has_animation(anim_name):
+		_current_anim = anim_name
+		_anim_player.play(anim_name)
 
-func _build_mesh_from_parts() -> ArrayMesh:
-	var inv := global_transform.affine_inverse()
-	var groups: Array = [[], [], []]
-	for mi in _find_parts(self):
-		var pm := mi.mesh as PrimitiveMesh
-		if pm == null:
-			continue
-		var xf := inv * mi.global_transform
-		var arrays: Array = pm.get_mesh_arrays()
-		var v: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
-		var n: PackedVector3Array = arrays[Mesh.ARRAY_NORMAL]
-		for i in v.size():
-			v[i] = xf * v[i]
-			n[i] = xf.basis * n[i]
-		arrays[Mesh.ARRAY_VERTEX] = v
-		arrays[Mesh.ARRAY_NORMAL] = n
-		_merge_surface(groups[clampi(int(mi.get_meta("surface", 0)), 0, 2)], arrays)
-	var out := ArrayMesh.new()
-	out.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, groups[0])
-	out.surface_set_material(0, _make_mat(DEFAULT_CLOTHES, 0.85))
-	out.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, groups[1])
-	out.surface_set_material(1, _make_mat(SKIN, 0.8))
-	out.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, groups[2])
-	out.surface_set_material(2, _make_mat(GEAR, 0.65))
-	return out
+func get_current_anim() -> String:
+	return _current_anim

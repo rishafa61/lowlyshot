@@ -1,0 +1,319 @@
+[gd_scene format=3 uid="uid://df7auhammsmg1"]
+
+[ext_resource type="Script" uid="uid://cn57yqiwadmp7" path="res://scripts/weapons/steyr_aug.gd" id="1_script"]
+
+[sub_resource type="BoxMesh" id="Mesh_StockRear"]
+size = Vector3(0.052, 0.13, 0.2)
+
+[sub_resource type="StandardMaterial3D" id="Mat_poly_green"]
+albedo_color = Color(0.27, 0.32, 0.23, 1)
+metallic = 0.05
+roughness = 0.72
+
+[sub_resource type="BoxMesh" id="Mesh_ButtPad"]
+size = Vector3(0.056, 0.138, 0.018)
+
+[sub_resource type="StandardMaterial3D" id="Mat_black_poly"]
+albedo_color = Color(0.08, 0.08, 0.09, 1)
+metallic = 0.1
+roughness = 0.8
+
+[sub_resource type="BoxMesh" id="Mesh_StockComb"]
+size = Vector3(0.046, 0.024, 0.18)
+
+[sub_resource type="TorusMesh" id="Mesh_SlingLoop"]
+inner_radius = 0.008
+outer_radius = 0.015
+
+[sub_resource type="StandardMaterial3D" id="Mat_metal_dark"]
+albedo_color = Color(0.12, 0.13, 0.14, 1)
+metallic = 0.85
+roughness = 0.38
+
+[sub_resource type="BoxMesh" id="Mesh_StockMid"]
+size = Vector3(0.05, 0.09, 0.16)
+
+[sub_resource type="BoxMesh" id="Mesh_Magwell"]
+size = Vector3(0.042, 0.07, 0.065)
+
+[sub_resource type="StandardMaterial3D" id="Mat_mag_housing"]
+albedo_color = Color(0.15, 0.16, 0.17, 1)
+metallic = 0.5
+roughness = 0.5
+
+[sub_resource type="BoxMesh" id="Mesh_MagRelease"]
+size = Vector3(0.016, 0.025, 0.015)
+
+[sub_resource type="BoxMesh" id="Mesh_MagUpper"]
+size = Vector3(0.028, 0.08, 0.042)
+
+[sub_resource type="BoxMesh" id="Mesh_MagLower"]
+size = Vector3(0.026, 0.09, 0.038)
+
+[sub_resource type="StandardMaterial3D" id="Mat_mag_steel"]
+albedo_color = Color(0.72, 0.74, 0.76, 1)
+metallic = 0.95
+roughness = 0.22
+
+[sub_resource type="BoxMesh" id="Mesh_MagBaseplate"]
+size = Vector3(0.03, 0.01, 0.042)
+
+[sub_resource type="BoxMesh" id="Mesh_PistolGrip"]
+size = Vector3(0.038, 0.11, 0.052)
+
+[sub_resource type="BoxMesh" id="Mesh_GuardLoop"]
+size = Vector3(0.022, 0.018, 0.17)
+
+[sub_resource type="BoxMesh" id="Mesh_GuardBottom"]
+size = Vector3(0.024, 0.016, 0.035)
+
+[sub_resource type="BoxMesh" id="Mesh_Trigger"]
+size = Vector3(0.012, 0.032, 0.012)
+
+[sub_resource type="BoxMesh" id="Mesh_ReceiverUpper"]
+size = Vector3(0.048, 0.06, 0.26)
+
+[sub_resource type="BoxMesh" id="Mesh_ReceiverFwd"]
+size = Vector3(0.046, 0.052, 0.12)
+
+[sub_resource type="BoxMesh" id="Mesh_TopRail"]
+size = Vector3(0.024, 0.016, 0.36)
+
+[sub_resource type="BoxMesh" id="Mesh_SightBase"]
+size = Vector3(0.024, 0.024, 0.03)
+
+[sub_resource type="CylinderMesh" id="Mesh_SightPost"]
+top_radius = 0.002
+bottom_radius = 0.002
+height = 0.016
+
+[sub_resource type="BoxMesh" id="Mesh_SightEar"]
+size = Vector3(0.003, 0.022, 0.018)
+
+[sub_resource type="BoxMesh" id="Mesh_RearSightBase"]
+size = Vector3(0.028, 0.024, 0.032)
+
+[sub_resource type="TorusMesh" id="Mesh_RearAperture"]
+inner_radius = 0.004
+outer_radius = 0.011
+
+[sub_resource type="BoxMesh" id="Mesh_ChargingHandle"]
+size = Vector3(0.014, 0.032, 0.028)
+
+[sub_resource type="BoxMesh" id="Mesh_UnderRail"]
+size = Vector3(0.022, 0.012, 0.13)
+
+[sub_resource type="BoxMesh" id="Mesh_ForegripClamp"]
+size = Vector3(0.032, 0.022, 0.045)
+
+[sub_resource type="CylinderMesh" id="Mesh_Foregrip"]
+top_radius = 0.016
+bottom_radius = 0.018
+height = 0.1
+
+[sub_resource type="CylinderMesh" id="Mesh_ForegripCap"]
+top_radius = 0.019
+bottom_radius = 0.019
+height = 0.014
+
+[sub_resource type="CylinderMesh" id="Mesh_Barrel"]
+top_radius = 0.011
+bottom_radius = 0.011
+height = 0.16
+
+[sub_resource type="BoxMesh" id="Mesh_GasBlock"]
+size = Vector3(0.028, 0.036, 0.032)
+
+[sub_resource type="CylinderMesh" id="Mesh_MuzzleBrake"]
+top_radius = 0.014
+bottom_radius = 0.014
+height = 0.042
+
+[sub_resource type="BoxMesh" id="Mesh_EjectPort"]
+size = Vector3(0.006, 0.024, 0.052)
+
+[node name="SteyrAUG" type="Node3D" unique_id=820088035]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.0095412135, 0)
+script = ExtResource("1_script")
+
+[node name="StockRear" type="MeshInstance3D" parent="." unique_id=101706936]
+transform = Transform3D(1, 0, 0, 0, 0.6561425, 0, 0, 0, 0.7941941, 0, 0.10734275, 0.16342108)
+mesh = SubResource("Mesh_StockRear")
+surface_material_override/0 = SubResource("Mat_poly_green")
+
+[node name="StockRear2" type="MeshInstance3D" parent="." unique_id=86951205]
+transform = Transform3D(1, 0, 0, 0, 0.6561425, 0, 0, 0, 0.48977116, 0, 0.05359271, 0.19151752)
+mesh = SubResource("Mesh_StockRear")
+surface_material_override/0 = SubResource("Mat_poly_green")
+
+[node name="StockButtPad" type="MeshInstance3D" parent="." unique_id=1216345504]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.08713652, 0.24278033)
+mesh = SubResource("Mesh_ButtPad")
+surface_material_override/0 = SubResource("Mat_black_poly")
+
+[node name="StockComb" type="MeshInstance3D" parent="." unique_id=650190201]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.12749667, 0.08920629)
+mesh = SubResource("Mesh_StockComb")
+surface_material_override/0 = SubResource("Mat_poly_green")
+
+[node name="SlingLoop" type="MeshInstance3D" parent="." unique_id=1137740051]
+transform = Transform3D(-1.1717233e-10, 0.01670082, 0.9998606, 0.71357095, 0.7004853, -0.011700309, -0.7005831, 0.7134717, -0.011917222, -0.037518416, 0.088964865, 0.0019118786)
+mesh = SubResource("Mesh_SlingLoop")
+surface_material_override/0 = SubResource("Mat_metal_dark")
+
+[node name="StockMid" type="MeshInstance3D" parent="." unique_id=1523384009]
+transform = Transform3D(0.9547875, 0, 0, 0, 0.9547875, 0, 0, 0, 0.9547875, 0, 0.08, 0.01)
+mesh = SubResource("Mesh_StockMid")
+surface_material_override/0 = SubResource("Mat_poly_green")
+
+[node name="MagwellAdapter" type="MeshInstance3D" parent="." unique_id=1944162282]
+transform = Transform3D(1, 0, 0, 0, 0.9716301, -0.23643808, 0, 0.23643808, 0.9716301, 0, 0.03578767, 0.08452552)
+mesh = SubResource("Mesh_Magwell")
+surface_material_override/0 = SubResource("Mat_mag_housing")
+
+[node name="MagRelease" type="MeshInstance3D" parent="." unique_id=1268194721]
+transform = Transform3D(1, 0, 0, 0, 0.915845, -0.40153208, 0, 0.40153208, 0.915845, 0, -0.0045170505, 0.10411027)
+mesh = SubResource("Mesh_MagRelease")
+surface_material_override/0 = SubResource("Mat_metal_dark")
+
+[node name="MagUpper" type="MeshInstance3D" parent="." unique_id=591608963]
+transform = Transform3D(1, 0, 0, 0, 0.9716301, -0.23643808, 0, 0.23643808, 0.9716301, 0, -0.021714937, 0.056170385)
+mesh = SubResource("Mesh_MagUpper")
+surface_material_override/0 = SubResource("Mat_mag_housing")
+
+[node name="MagLower" type="MeshInstance3D" parent="." unique_id=990248823]
+transform = Transform3D(1, 0, 0, 0, 0.9716301, -0.23643808, 0, 0.23643808, 0.9716301, 0, -0.041616865, 0.06892209)
+mesh = SubResource("Mesh_MagLower")
+surface_material_override/0 = SubResource("Mat_mag_steel")
+
+[node name="MagBaseplate" type="MeshInstance3D" parent="." unique_id=2008528944]
+transform = Transform3D(1, 0, 0, 0, 0.9716301, -0.23643808, 0, 0.23643808, 0.9716301, 0, -0.09236479, 0.055547234)
+mesh = SubResource("Mesh_MagBaseplate")
+surface_material_override/0 = SubResource("Mat_black_poly")
+
+[node name="PistolGrip" type="MeshInstance3D" parent="." unique_id=1143920872]
+transform = Transform3D(1, 0, 0, 0, 0.9654287, 0.26076913, 0, -0.26076913, 0.9654287, 0, 0.022092156, -0.037953347)
+mesh = SubResource("Mesh_PistolGrip")
+surface_material_override/0 = SubResource("Mat_poly_green")
+
+[node name="TriggerGuardLoop" type="MeshInstance3D" parent="." unique_id=1370352532]
+transform = Transform3D(1, 0, 0, 0, -0.260904, 0.96541953, 0, -0.96541953, -0.260904, 0, 0.042218156, -0.12838352)
+mesh = SubResource("Mesh_GuardLoop")
+surface_material_override/0 = SubResource("Mat_poly_green")
+
+[node name="TriggerGuardLoop2" type="MeshInstance3D" parent="." unique_id=509749279]
+transform = Transform3D(1, 0, 0, 0, -1.1781087, 0.07541369, 0, -4.3593388, -0.020380503, 0, -0.017898161, -0.06298802)
+mesh = SubResource("Mesh_GuardLoop")
+surface_material_override/0 = SubResource("Mat_poly_green")
+
+[node name="TriggerGuardBottom" type="MeshInstance3D" parent="." unique_id=5730275]
+transform = Transform3D(1, 0, 0, 0, 0.9700805, 0.24278328, 0, -0.24278328, 0.9700805, 0, -0.028328318, -0.03324527)
+mesh = SubResource("Mesh_GuardBottom")
+surface_material_override/0 = SubResource("Mat_poly_green")
+
+[node name="Trigger" type="MeshInstance3D" parent="." unique_id=1323370598]
+transform = Transform3D(1, 0, 0, 0, 0.9028101, -0.45740137, 0, 0.47578502, 0.867927, 0, 0.09355393, -0.08689663)
+mesh = SubResource("Mesh_Trigger")
+surface_material_override/0 = SubResource("Mat_metal_dark")
+
+[node name="ReceiverUpper" type="MeshInstance3D" parent="." unique_id=547517655]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.135, -0.12)
+mesh = SubResource("Mesh_ReceiverUpper")
+surface_material_override/0 = SubResource("Mat_metal_dark")
+
+[node name="ReceiverFwd" type="MeshInstance3D" parent="." unique_id=911891044]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.12, -0.26)
+mesh = SubResource("Mesh_ReceiverFwd")
+surface_material_override/0 = SubResource("Mat_poly_green")
+
+[node name="TopRail" type="MeshInstance3D" parent="." unique_id=1181186564]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.14671381, -0.12)
+mesh = SubResource("Mesh_TopRail")
+surface_material_override/0 = SubResource("Mat_metal_dark")
+
+[node name="FrontSightBase" type="MeshInstance3D" parent="." unique_id=1081281888]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.1651824, -0.28)
+mesh = SubResource("Mesh_SightBase")
+surface_material_override/0 = SubResource("Mat_metal_dark")
+
+[node name="FrontSightPost" type="MeshInstance3D" parent="." unique_id=916313861]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.1801824, -0.28)
+mesh = SubResource("Mesh_SightPost")
+surface_material_override/0 = SubResource("Mat_metal_dark")
+
+[node name="FrontSightEarL" type="MeshInstance3D" parent="." unique_id=1836506598]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.01, 0.1781824, -0.28)
+mesh = SubResource("Mesh_SightEar")
+surface_material_override/0 = SubResource("Mat_metal_dark")
+
+[node name="FrontSightEarR" type="MeshInstance3D" parent="." unique_id=874099556]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.01, 0.1781824, -0.28)
+mesh = SubResource("Mesh_SightEar")
+surface_material_override/0 = SubResource("Mat_metal_dark")
+
+[node name="RearSightBase" type="MeshInstance3D" parent="." unique_id=646671723]
+transform = Transform3D(0.7804759, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.1608283, 0.03)
+mesh = SubResource("Mesh_RearSightBase")
+surface_material_override/0 = SubResource("Mat_metal_dark")
+
+[node name="RearSightAperture" type="MeshInstance3D" parent="." unique_id=1099097851]
+transform = Transform3D(0.7804759, 0, 0, 0, 0, -1, 0, 1, 0, 0, 0.17582831, 0.03)
+mesh = SubResource("Mesh_RearAperture")
+surface_material_override/0 = SubResource("Mat_metal_dark")
+
+[node name="ChargingHandle" type="MeshInstance3D" parent="." unique_id=1074936108]
+transform = Transform3D(1.0592985, 0.27654213, 0, -0.5129388, 0.57110256, 0, 0, 0, 0.8895935, -0.032, 0.155, -0.22)
+mesh = SubResource("Mesh_ChargingHandle")
+surface_material_override/0 = SubResource("Mat_poly_green")
+
+[node name="UnderRail" type="MeshInstance3D" parent="." unique_id=604907499]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.085175894, -0.2787859)
+mesh = SubResource("Mesh_UnderRail")
+surface_material_override/0 = SubResource("Mat_metal_dark")
+
+[node name="ForegripClamp" type="MeshInstance3D" parent="." unique_id=22421999]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.08595883, -0.24929646)
+mesh = SubResource("Mesh_ForegripClamp")
+surface_material_override/0 = SubResource("Mat_black_poly")
+
+[node name="Foregrip" type="MeshInstance3D" parent="." unique_id=1640675032]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.025958832, -0.24929646)
+mesh = SubResource("Mesh_Foregrip")
+surface_material_override/0 = SubResource("Mat_black_poly")
+
+[node name="ForegripCap" type="MeshInstance3D" parent="." unique_id=1667159536]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.027041167, -0.24929646)
+mesh = SubResource("Mesh_ForegripCap")
+surface_material_override/0 = SubResource("Mat_black_poly")
+
+[node name="Barrel" type="MeshInstance3D" parent="." unique_id=660532874]
+transform = Transform3D(1, 0, 0, 0, 0, -1, 0, 1, 0, 0, 0.108, -0.38)
+mesh = SubResource("Mesh_Barrel")
+surface_material_override/0 = SubResource("Mat_metal_dark")
+
+[node name="GasBlock" type="MeshInstance3D" parent="." unique_id=2108467103]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.125, -0.33)
+mesh = SubResource("Mesh_GasBlock")
+surface_material_override/0 = SubResource("Mat_metal_dark")
+
+[node name="MuzzleBrake" type="MeshInstance3D" parent="." unique_id=581556559]
+transform = Transform3D(1, 0, 0, 0, 0, -1, 0, 1, 0, 0, 0.108, -0.47)
+mesh = SubResource("Mesh_MuzzleBrake")
+surface_material_override/0 = SubResource("Mat_metal_dark")
+
+[node name="EjectPort" type="MeshInstance3D" parent="." unique_id=1513844044]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.026, 0.128, 0.04)
+mesh = SubResource("Mesh_EjectPort")
+surface_material_override/0 = SubResource("Mat_metal_dark")
+
+[node name="Muzzle" type="Marker3D" parent="." unique_id=225623350]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.108, -0.495)
+
+[node name="ShellPort" type="Marker3D" parent="." unique_id=1962184842]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.035, 0.128, 0.04)
+
+[node name="AimPoint" type="Marker3D" parent="." unique_id=1403198506]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.208, -0.12)
+
+[node name="GripPoint" type="Marker3D" parent="." unique_id=156267700]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.005, -0.31)

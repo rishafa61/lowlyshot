@@ -1,0 +1,336 @@
+[gd_scene format=3 uid="uid://b3rpd762lmg01"]
+
+[ext_resource type="Script" uid="uid://kdthi3boq7tr" path="res://scripts/weapons/rpd_lmg.gd" id="1_script"]
+
+[sub_resource type="BoxMesh" id="Mesh_StockClub"]
+size = Vector3(0.048, 0.11, 0.22)
+
+[sub_resource type="StandardMaterial3D" id="Mat_wood_soviet"]
+albedo_color = Color(0.55, 0.27, 0.11, 1)
+metallic = 0.04
+roughness = 0.58
+
+[sub_resource type="BoxMesh" id="Mesh_StockNeck"]
+size = Vector3(0.042, 0.065, 0.08)
+
+[sub_resource type="StandardMaterial3D" id="Mat_steel_dark"]
+albedo_color = Color(0.14, 0.15, 0.165, 1)
+metallic = 0.88
+roughness = 0.42
+
+[sub_resource type="BoxMesh" id="Mesh_ButtPlate"]
+size = Vector3(0.052, 0.116, 0.016)
+
+[sub_resource type="StandardMaterial3D" id="Mat_buttplate"]
+albedo_color = Color(0.08, 0.08, 0.09, 1)
+metallic = 0.85
+roughness = 0.5
+
+[sub_resource type="BoxMesh" id="Mesh_ReceiverMain"]
+size = Vector3(0.056, 0.082, 0.28)
+
+[sub_resource type="BoxMesh" id="Mesh_FeedCover"]
+size = Vector3(0.054, 0.024, 0.18)
+
+[sub_resource type="BoxMesh" id="Mesh_GripBody"]
+size = Vector3(0.034, 0.095, 0.044)
+
+[sub_resource type="BoxMesh" id="Mesh_TriggerGuard"]
+size = Vector3(0.01, 0.028, 0.065)
+
+[sub_resource type="BoxMesh" id="Mesh_Trigger"]
+size = Vector3(0.01, 0.025, 0.01)
+
+[sub_resource type="BoxMesh" id="Mesh_DrumBracket"]
+size = Vector3(0.05, 0.04, 0.06)
+
+[sub_resource type="CylinderMesh" id="Mesh_Drum"]
+top_radius = 0.08
+bottom_radius = 0.08
+height = 0.075
+
+[sub_resource type="StandardMaterial3D" id="Mat_drum_metal"]
+albedo_color = Color(0.18, 0.19, 0.2, 1)
+metallic = 0.8
+roughness = 0.5
+
+[sub_resource type="CylinderMesh" id="Mesh_DrumHub"]
+top_radius = 0.038
+bottom_radius = 0.038
+height = 0.082
+
+[sub_resource type="TorusMesh" id="Mesh_DrumHandle"]
+inner_radius = 0.02
+outer_radius = 0.028
+
+[sub_resource type="BoxMesh" id="Mesh_BeltSegment"]
+size = Vector3(0.024, 0.045, 0.016)
+
+[sub_resource type="CylinderMesh" id="Mesh_BulletBrass"]
+top_radius = 0.006
+bottom_radius = 0.006
+height = 0.032
+
+[sub_resource type="StandardMaterial3D" id="Mat_brass_ammo"]
+albedo_color = Color(0.85, 0.72, 0.22, 1)
+metallic = 0.95
+roughness = 0.25
+
+[sub_resource type="BoxMesh" id="Mesh_HandguardLower"]
+size = Vector3(0.054, 0.055, 0.13)
+
+[sub_resource type="BoxMesh" id="Mesh_HandguardLobe"]
+size = Vector3(0.062, 0.035, 0.06)
+
+[sub_resource type="CylinderMesh" id="Mesh_GasTube"]
+top_radius = 0.013
+bottom_radius = 0.013
+height = 0.28
+
+[sub_resource type="CylinderMesh" id="Mesh_Barrel"]
+top_radius = 0.012
+bottom_radius = 0.012
+height = 0.44
+
+[sub_resource type="BoxMesh" id="Mesh_GasBlock"]
+size = Vector3(0.032, 0.05, 0.038)
+
+[sub_resource type="BoxMesh" id="Mesh_BipodMount"]
+size = Vector3(0.036, 0.036, 0.042)
+
+[sub_resource type="CylinderMesh" id="Mesh_BipodLeg"]
+top_radius = 0.007
+bottom_radius = 0.007
+height = 0.26
+
+[sub_resource type="BoxMesh" id="Mesh_BipodFoot"]
+size = Vector3(0.014, 0.014, 0.03)
+
+[sub_resource type="BoxMesh" id="Mesh_RearSightBase"]
+size = Vector3(0.03, 0.022, 0.05)
+
+[sub_resource type="BoxMesh" id="Mesh_RearSightLeaf"]
+size = Vector3(0.024, 0.008, 0.04)
+
+[sub_resource type="BoxMesh" id="Mesh_FrontSightBase"]
+size = Vector3(0.026, 0.044, 0.03)
+
+[sub_resource type="CylinderMesh" id="Mesh_FrontPost"]
+top_radius = 0.002
+bottom_radius = 0.002
+height = 0.018
+
+[sub_resource type="TorusMesh" id="Mesh_FrontHood"]
+inner_radius = 0.012
+outer_radius = 0.018
+
+[sub_resource type="CylinderMesh" id="Mesh_MuzzleBrake"]
+top_radius = 0.015
+bottom_radius = 0.015
+height = 0.05
+
+[sub_resource type="BoxMesh" id="Mesh_ChargingHandle"]
+size = Vector3(0.032, 0.014, 0.018)
+
+[sub_resource type="BoxMesh" id="Mesh_EjectPort"]
+size = Vector3(0.006, 0.028, 0.065)
+
+[node name="RPD" type="Node3D" unique_id=1383932017]
+script = ExtResource("1_script")
+
+[node name="StockClub" type="MeshInstance3D" parent="." unique_id=110030013]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.06115933, 0.26)
+mesh = SubResource("Mesh_StockClub")
+surface_material_override/0 = SubResource("Mat_wood_soviet")
+
+[node name="StockNeck" type="MeshInstance3D" parent="." unique_id=793436949]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.08353903, 0.12)
+mesh = SubResource("Mesh_StockNeck")
+surface_material_override/0 = SubResource("Mat_steel_dark")
+
+[node name="ButtPlate" type="MeshInstance3D" parent="." unique_id=1832958959]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.060601864, 0.372)
+mesh = SubResource("Mesh_ButtPlate")
+surface_material_override/0 = SubResource("Mat_buttplate")
+
+[node name="ReceiverMain" type="MeshInstance3D" parent="." unique_id=751548617]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.095, -0.05)
+mesh = SubResource("Mesh_ReceiverMain")
+surface_material_override/0 = SubResource("Mat_steel_dark")
+
+[node name="FeedCover" type="MeshInstance3D" parent="." unique_id=795867209]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.142, -0.05)
+mesh = SubResource("Mesh_FeedCover")
+surface_material_override/0 = SubResource("Mat_steel_dark")
+
+[node name="PistolGrip" type="MeshInstance3D" parent="." unique_id=644659971]
+transform = Transform3D(1, 0, 0, 0, 1.4605315, -0.27924424, 0, 0.39132985, 1.0422025, 0, 0.0040803924, 0.07131993)
+mesh = SubResource("Mesh_GripBody")
+surface_material_override/0 = SubResource("Mat_wood_soviet")
+
+[node name="TriggerGuard" type="MeshInstance3D" parent="." unique_id=54718891]
+transform = Transform3D(1, 0, 0, 0, 0.38664135, 0, 0, 0, 0.7563598, 0, 0.023990076, 0.02776822)
+mesh = SubResource("Mesh_TriggerGuard")
+surface_material_override/0 = SubResource("Mat_steel_dark")
+
+[node name="TriggerGuard2" type="MeshInstance3D" parent="." unique_id=1169844962]
+transform = Transform3D(1, 0, 0, 0, -0.18088676, 0.6684803, 0, -0.34171847, -0.35385627, 0, 0.049008857, -0.0036855303)
+mesh = SubResource("Mesh_TriggerGuard")
+surface_material_override/0 = SubResource("Mat_steel_dark")
+
+[node name="Trigger" type="MeshInstance3D" parent="." unique_id=1668570627]
+transform = Transform3D(1, 0, 0, 0, 0.921032, -0.38948688, 0, 0.38948688, 0.921032, 0, 0.049477223, 0.036560073)
+mesh = SubResource("Mesh_Trigger")
+surface_material_override/0 = SubResource("Mat_steel_dark")
+
+[node name="DrumBracket" type="MeshInstance3D" parent="." unique_id=277917877]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.045, -0.1)
+mesh = SubResource("Mesh_DrumBracket")
+surface_material_override/0 = SubResource("Mat_steel_dark")
+
+[node name="DrumMagazine" type="MeshInstance3D" parent="." unique_id=1630447760]
+transform = Transform3D(1.9106855e-15, 4.371139e-08, 1, 1, -4.371139e-08, 0, 4.371139e-08, 1, -4.371139e-08, -0.008, -0.050363574, -0.1211353)
+mesh = SubResource("Mesh_Drum")
+surface_material_override/0 = SubResource("Mat_drum_metal")
+
+[node name="DrumHub" type="MeshInstance3D" parent="." unique_id=1471508739]
+transform = Transform3D(1.9106855e-15, 4.371139e-08, 1, 1, -4.371139e-08, 0, 4.371139e-08, 1, -4.371139e-08, -0.008, -0.050363574, -0.1211353)
+mesh = SubResource("Mesh_DrumHub")
+surface_material_override/0 = SubResource("Mat_steel_dark")
+
+[node name="DrumHandle" type="MeshInstance3D" parent="." unique_id=562816320]
+transform = Transform3D(-4.371139e-08, -1, 0, -4.371139e-08, 1.9106855e-15, -1, 1, -4.371139e-08, -4.371139e-08, -0.036340807, 0.04773284, -0.1211353)
+mesh = SubResource("Mesh_DrumHandle")
+surface_material_override/0 = SubResource("Mat_steel_dark")
+
+[node name="AmmoBelt" type="MeshInstance3D" parent="." unique_id=2095195371]
+transform = Transform3D(1, 0, 0, 0, 1.5283128, 0, 0, 0, 1, -0.035, 0.07438635, -0.095884174)
+mesh = SubResource("Mesh_BeltSegment")
+surface_material_override/0 = SubResource("Mat_steel_dark")
+
+[node name="AmmoBullet1" type="MeshInstance3D" parent="." unique_id=453040298]
+transform = Transform3D(1, 0, 0, 0, 0, -1, 0, 1, 0, -0.032, 0.11251465, -0.09429722)
+mesh = SubResource("Mesh_BulletBrass")
+surface_material_override/0 = SubResource("Mat_brass_ammo")
+
+[node name="AmmoBullet2" type="MeshInstance3D" parent="." unique_id=2100082947]
+transform = Transform3D(1, 0, 0, 0, 0, -1, 0, 1, 0, -0.032, 0.09651466, -0.09429722)
+mesh = SubResource("Mesh_BulletBrass")
+surface_material_override/0 = SubResource("Mat_brass_ammo")
+
+[node name="AmmoBullet3" type="MeshInstance3D" parent="." unique_id=693682776]
+transform = Transform3D(1, 0, 0, 0, 0, -1, 0, 1, 0, -0.032, 0.07740745, -0.09429722)
+mesh = SubResource("Mesh_BulletBrass")
+surface_material_override/0 = SubResource("Mat_brass_ammo")
+
+[node name="AmmoBullet4" type="MeshInstance3D" parent="." unique_id=282917857]
+transform = Transform3D(1, 0, 0, 0, 0, -1, 0, 1, 0, -0.032, 0.059520677, -0.09429722)
+mesh = SubResource("Mesh_BulletBrass")
+surface_material_override/0 = SubResource("Mat_brass_ammo")
+
+[node name="AmmoBullet5" type="MeshInstance3D" parent="." unique_id=1891021728]
+transform = Transform3D(1, 0, 0, 0, 0, -1, 0, 1, 0, -0.032, 0.04133439, -0.09429722)
+mesh = SubResource("Mesh_BulletBrass")
+surface_material_override/0 = SubResource("Mat_brass_ammo")
+
+[node name="Handguard" type="MeshInstance3D" parent="." unique_id=1774740546]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.085, -0.25)
+mesh = SubResource("Mesh_HandguardLower")
+surface_material_override/0 = SubResource("Mat_wood_soviet")
+
+[node name="HandguardLobe" type="MeshInstance3D" parent="." unique_id=1760780542]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.085, -0.27)
+mesh = SubResource("Mesh_HandguardLobe")
+surface_material_override/0 = SubResource("Mat_wood_soviet")
+
+[node name="GasTube" type="MeshInstance3D" parent="." unique_id=1191931328]
+transform = Transform3D(1, 0, 0, 0, 0, -1, 0, 1.144232, 0, 0, 0.081372425, -0.43381155)
+mesh = SubResource("Mesh_GasTube")
+surface_material_override/0 = SubResource("Mat_steel_dark")
+
+[node name="Barrel" type="MeshInstance3D" parent="." unique_id=308282921]
+transform = Transform3D(1, 0, 0, 0, 0, -1, 0, 1, 0, 0, 0.108, -0.42)
+mesh = SubResource("Mesh_Barrel")
+surface_material_override/0 = SubResource("Mat_steel_dark")
+
+[node name="GasBlock" type="MeshInstance3D" parent="." unique_id=1067089655]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.095, -0.38)
+mesh = SubResource("Mesh_GasBlock")
+surface_material_override/0 = SubResource("Mat_steel_dark")
+
+[node name="BipodMount" type="MeshInstance3D" parent="." unique_id=1981669794]
+transform = Transform3D(1, 0, 0, 0, 1.9226305, 0, 0, 0, 1, 0, 0.09, -0.56)
+mesh = SubResource("Mesh_BipodMount")
+surface_material_override/0 = SubResource("Mat_steel_dark")
+
+[node name="BipodLegL" type="MeshInstance3D" parent="." unique_id=564086112]
+transform = Transform3D(1, 0, 0, 0, 0, -1.0265762, 0, 1.212309, 0, -0.022, 0.05862945, -0.3985725)
+mesh = SubResource("Mesh_BipodLeg")
+surface_material_override/0 = SubResource("Mat_steel_dark")
+
+[node name="BipodLegR" type="MeshInstance3D" parent="." unique_id=2145502183]
+transform = Transform3D(1, 0, 0, 0, 0, -1.0265762, 0, 1.212309, 0, 0.022, 0.05862945, -0.3985725)
+mesh = SubResource("Mesh_BipodLeg")
+surface_material_override/0 = SubResource("Mat_steel_dark")
+
+[node name="BipodFootL" type="MeshInstance3D" parent="." unique_id=1350133299]
+transform = Transform3D(1, 0, 0, 0, 1.0265762, 0, 0, 0, 1.212309, -0.022, 0.048363686, -0.24097234)
+mesh = SubResource("Mesh_BipodFoot")
+surface_material_override/0 = SubResource("Mat_steel_dark")
+
+[node name="BipodFootR" type="MeshInstance3D" parent="." unique_id=1298168348]
+transform = Transform3D(1, 0, 0, 0, 1.0265762, 0, 0, 0, 1.212309, 0.022, 0.048363686, -0.24097234)
+mesh = SubResource("Mesh_BipodFoot")
+surface_material_override/0 = SubResource("Mat_steel_dark")
+
+[node name="RearSightBase" type="MeshInstance3D" parent="." unique_id=506235284]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.16, -0.100763805)
+mesh = SubResource("Mesh_RearSightBase")
+surface_material_override/0 = SubResource("Mat_steel_dark")
+
+[node name="RearSightLeaf" type="MeshInstance3D" parent="." unique_id=2135039859]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.174, -0.10990732)
+mesh = SubResource("Mesh_RearSightLeaf")
+surface_material_override/0 = SubResource("Mat_steel_dark")
+
+[node name="FrontSightBase" type="MeshInstance3D" parent="." unique_id=656022967]
+transform = Transform3D(1, 0, 0, 0, 0.84206694, 0, 0, 0, 0.8737861, 0, 0.1401943, -0.5546851)
+mesh = SubResource("Mesh_FrontSightBase")
+surface_material_override/0 = SubResource("Mat_steel_dark")
+
+[node name="FrontSightPost" type="MeshInstance3D" parent="." unique_id=1468212135]
+transform = Transform3D(1, 0, 0, 0, 0.84206694, 0, 0, 0, 0.8737861, 0, 0.15956183, -0.5546851)
+mesh = SubResource("Mesh_FrontPost")
+surface_material_override/0 = SubResource("Mat_steel_dark")
+
+[node name="FrontSightHood" type="MeshInstance3D" parent="." unique_id=1547311942]
+transform = Transform3D(1, 0, 0, 0, 0, -0.84206694, 0, 0.8737861, 0, 0, 0.15956183, -0.5546851)
+mesh = SubResource("Mesh_FrontHood")
+surface_material_override/0 = SubResource("Mat_steel_dark")
+
+[node name="MuzzleBrake" type="MeshInstance3D" parent="." unique_id=133851443]
+transform = Transform3D(1, 0, 0, 0, 0, -1, 0, 1, 0, 0, 0.108, -0.655)
+mesh = SubResource("Mesh_MuzzleBrake")
+surface_material_override/0 = SubResource("Mat_steel_dark")
+
+[node name="ChargingHandle" type="MeshInstance3D" parent="." unique_id=1544943004]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.038, 0.11, -0.118986875)
+mesh = SubResource("Mesh_ChargingHandle")
+surface_material_override/0 = SubResource("Mat_steel_dark")
+
+[node name="EjectPort" type="MeshInstance3D" parent="." unique_id=354707369]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.03, 0.11, -0.06)
+mesh = SubResource("Mesh_EjectPort")
+surface_material_override/0 = SubResource("Mat_steel_dark")
+
+[node name="Muzzle" type="Marker3D" parent="." unique_id=733238507]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.108, -0.685)
+
+[node name="ShellPort" type="Marker3D" parent="." unique_id=1401059438]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.04, 0.11, -0.06)
+
+[node name="AimPoint" type="Marker3D" parent="." unique_id=2049082630]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.176, -0.38)
+
+[node name="GripPoint" type="Marker3D" parent="." unique_id=1111357847]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.06, -0.25)

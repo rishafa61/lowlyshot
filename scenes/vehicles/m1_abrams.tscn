@@ -1,0 +1,224 @@
+[gd_scene format=3 uid="uid://dm1abrams001"]
+
+[ext_resource type="Script" uid="uid://bhh68627fow8k" path="res://scripts/vehicles/tank_controller.gd" id="1_script"]
+
+[sub_resource type="BoxShape3D" id="shape_tank_hull"]
+size = Vector3(3.6, 1.8, 7.4)
+
+[sub_resource type="StandardMaterial3D" id="mat_tank_tan"]
+albedo_color = Color(0.68, 0.62, 0.46, 1)
+metallic = 0.2
+roughness = 0.75
+
+[sub_resource type="BoxMesh" id="mesh_hull_center"]
+material = SubResource("mat_tank_tan")
+size = Vector3(2.4, 0.9, 7)
+
+[sub_resource type="BoxMesh" id="mesh_glacis_slope"]
+material = SubResource("mat_tank_tan")
+size = Vector3(2.38, 0.45, 1.8)
+
+[sub_resource type="BoxMesh" id="mesh_side_skirt"]
+material = SubResource("mat_tank_tan")
+size = Vector3(0.25, 0.85, 6.8)
+
+[sub_resource type="StandardMaterial3D" id="mat_treads"]
+albedo_color = Color(0.18, 0.17, 0.16, 1)
+metallic = 0.5
+roughness = 0.85
+
+[sub_resource type="BoxMesh" id="mesh_tread"]
+material = SubResource("mat_treads")
+size = Vector3(0.55, 0.75, 7.2)
+
+[sub_resource type="BoxMesh" id="mesh_turret_main"]
+material = SubResource("mat_tank_tan")
+size = Vector3(2.5, 0.95, 3.8)
+
+[sub_resource type="BoxMesh" id="mesh_turret_wedge"]
+material = SubResource("mat_tank_tan")
+size = Vector3(1.2, 0.85, 1.4)
+
+[sub_resource type="BoxMesh" id="mesh_turret_bustle"]
+material = SubResource("mat_tank_tan")
+size = Vector3(2.4, 0.7, 1.4)
+
+[sub_resource type="StandardMaterial3D" id="mat_dark_metal"]
+albedo_color = Color(0.12, 0.12, 0.12, 1)
+metallic = 0.7
+roughness = 0.4
+
+[sub_resource type="CylinderMesh" id="mesh_commander_cupola"]
+material = SubResource("mat_dark_metal")
+top_radius = 0.38
+bottom_radius = 0.42
+height = 0.3
+
+[sub_resource type="BoxMesh" id="mesh_m2_hb"]
+material = SubResource("mat_dark_metal")
+size = Vector3(0.12, 0.15, 0.9)
+
+[sub_resource type="BoxMesh" id="mesh_mantlet"]
+material = SubResource("mat_tank_tan")
+size = Vector3(0.75, 0.65, 0.9)
+
+[sub_resource type="CylinderMesh" id="mesh_barrel"]
+material = SubResource("mat_tank_tan")
+top_radius = 0.11
+bottom_radius = 0.14
+height = 4.8
+
+[sub_resource type="CylinderMesh" id="mesh_bore_evacuator"]
+material = SubResource("mat_tank_tan")
+top_radius = 0.18
+bottom_radius = 0.18
+height = 0.85
+
+[sub_resource type="SphereShape3D" id="shape_interact"]
+radius = 4.2
+
+[node name="M1Abrams" type="CharacterBody3D" unique_id=1489559467 groups=["vehicles"]]
+script = ExtResource("1_script")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=1650824851]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0)
+shape = SubResource("shape_tank_hull")
+
+[node name="Model" type="Node3D" parent="." unique_id=1839364272]
+transform = Transform3D(1.5690132, 0, 0, 0, 1.2718064, 0, 0, 0, 1.1228735, 0, 0, 0)
+
+[node name="Hull" type="Node3D" parent="Model" unique_id=2127094794]
+
+[node name="HullCenter" type="MeshInstance3D" parent="Model/Hull" unique_id=1757339800]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.85, 0)
+mesh = SubResource("mesh_hull_center")
+
+[node name="GlacisPlate" type="MeshInstance3D" parent="Model/Hull" unique_id=793235595]
+transform = Transform3D(0.9999998, 0, 0, 0, 1.3039209, 0.38341954, 0, -0.47458795, 1.0534371, 0, 0.9024944, -2.833034)
+mesh = SubResource("mesh_glacis_slope")
+
+[node name="LeftSkirt" type="MeshInstance3D" parent="Model/Hull" unique_id=595786275]
+transform = Transform3D(0.7671525, 0, 0, 0, 0.48967147, 0, 0, 0, 1, -1.227444, 0.9052118, 0)
+mesh = SubResource("mesh_side_skirt")
+
+[node name="RightSkirt" type="MeshInstance3D" parent="Model/Hull" unique_id=1614534650]
+transform = Transform3D(0.7671525, 0, 0, 0, 0.48967147, 0, 0, 0, 1, 1.227444, 0.9052118, 0)
+mesh = SubResource("mesh_side_skirt")
+
+[node name="LeftTrack" type="MeshInstance3D" parent="Model/Hull" unique_id=509566506]
+transform = Transform3D(0.9905479, 0, 0, 0, 1.2727056, 0, 0, 0, 1, -1.4362944, 0.4, 0)
+mesh = SubResource("mesh_tread")
+
+[node name="RightTrack" type="MeshInstance3D" parent="Model/Hull" unique_id=666912369]
+transform = Transform3D(0.9905479, 0, 0, 0, 1.2727056, 0, 0, 0, 1, 1.4362944, 0.4, 0)
+mesh = SubResource("mesh_tread")
+
+[node name="Turret" type="Node3D" parent="Model" unique_id=1070930218]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.35, 0.2)
+
+[node name="TurretCenter" type="MeshInstance3D" parent="Model/Turret" unique_id=2130451588]
+transform = Transform3D(0.8105475, 0, 0, 0, 1.0713325, 0, 0, 0, 0.717357, 0, 0.79114974, -0.15916961)
+mesh = SubResource("mesh_turret_main")
+
+[node name="WedgeLeft" type="MeshInstance3D" parent="Model/Turret" unique_id=682794593]
+transform = Transform3D(0.46359187, 0, 0.22401492, 0, 0.988, 0, -0.18730345, 0, 0.5544559, -0.3898585, 0.48000014, -1.2352052)
+mesh = SubResource("mesh_turret_wedge")
+
+[node name="WedgeRight" type="MeshInstance3D" parent="Model/Turret" unique_id=2042395251]
+transform = Transform3D(0.46359187, 0, -0.36748937, 0, 1.111, 0, 0.18730345, 0, 0.90956724, 0.3898585, 0.48000014, -1.2352052)
+mesh = SubResource("mesh_turret_wedge")
+
+[node name="BustleRack" type="MeshInstance3D" parent="Model/Turret" unique_id=1924693186]
+transform = Transform3D(0.6664779, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.6, 1.7)
+mesh = SubResource("mesh_turret_bustle")
+
+[node name="BustleRack2" type="MeshInstance3D" parent="Model/Turret" unique_id=786303828]
+transform = Transform3D(0.6664779, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.2598983, 0.28085166)
+mesh = SubResource("mesh_turret_bustle")
+
+[node name="CommanderHatch" type="MeshInstance3D" parent="Model/Turret" unique_id=399416667]
+transform = Transform3D(0.9999999, 0, 0, 0, 1, 0, 0, 0, 1, -0.044325385, 1.3611497, 0.2)
+mesh = SubResource("mesh_commander_cupola")
+
+[node name="GunnerCam" type="Camera3D" parent="Model/Turret/CommanderHatch"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.55, -0.25)
+current = false
+fov = 70.0
+
+[node name="CommanderGun" type="MeshInstance3D" parent="Model/Turret/CommanderHatch" unique_id=923979172]
+transform = Transform3D(0.58361447, 0, 0, 0, 0.9999999, 0, 0, 0, 0.667255, 0, 0.33793736, -0.80124736)
+mesh = SubResource("mesh_m2_hb")
+
+[node name="CommanderGun7" type="MeshInstance3D" parent="Model/Turret/CommanderHatch" unique_id=923381809]
+transform = Transform3D(0.3283758, 0, 0, 0, 0.43128783, 0, 0, 0, 0.66725487, 0, 0.33793736, -1.026357)
+mesh = SubResource("mesh_m2_hb")
+
+[node name="CommanderGun5" type="MeshInstance3D" parent="Model/Turret/CommanderHatch" unique_id=506454869]
+transform = Transform3D(0.30154702, 0, 0, 0, 0.9999999, 0, 0, 0, 0.07070086, 0, 0.38104153, -0.80124736)
+mesh = SubResource("mesh_m2_hb")
+
+[node name="CommanderGun6" type="MeshInstance3D" parent="Model/Turret/CommanderHatch" unique_id=860641357]
+transform = Transform3D(1.8298488, 0, 0, 0, 0.63244903, 0, 0, 0, 0.07070086, 0, 0.32441187, -0.80124736)
+mesh = SubResource("mesh_m2_hb")
+
+[node name="CommanderGun2" type="MeshInstance3D" parent="Model/Turret/CommanderHatch" unique_id=1850252394]
+transform = Transform3D(1, 0, 0, 0, 1.7736772, 0, 0, 0, 0.20386854, 0, 0.17909312, -0.520498)
+mesh = SubResource("mesh_m2_hb")
+
+[node name="CommanderGun4" type="MeshInstance3D" parent="Model/Turret/CommanderHatch" unique_id=619586286]
+transform = Transform3D(1, 0, 0, 0, 1.7736772, 0, 0, 0, 0.2038685, 0, 0.04963565, -0.3510773)
+mesh = SubResource("mesh_m2_hb")
+
+[node name="CommanderGun3" type="MeshInstance3D" parent="Model/Turret/CommanderHatch" unique_id=12404631]
+transform = Transform3D(1, 0, 0, 0, 1.0214541, 0, 0, 0, 0.31980893, 0.10067341, 0.26005864, -0.6321378)
+mesh = SubResource("mesh_m2_hb")
+
+[node name="BarrelPivot" type="Node3D" parent="Model/Turret" unique_id=1506314310]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.48, -1.85)
+
+[node name="Mantlet" type="MeshInstance3D" parent="Model/Turret/BarrelPivot" unique_id=1326168269]
+transform = Transform3D(0.99999994, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.23606777, -0.100000024)
+mesh = SubResource("mesh_mantlet")
+
+[node name="Barrel" type="MeshInstance3D" parent="Model/Turret/BarrelPivot" unique_id=460454027]
+transform = Transform3D(0.99999994, 0, 0, 0, -4.37114e-08, 1, 0, -1, -4.37114e-08, 0, 0.23606777, -2.5)
+mesh = SubResource("mesh_barrel")
+
+[node name="BoreEvacuator" type="MeshInstance3D" parent="Model/Turret/BarrelPivot" unique_id=1764289886]
+transform = Transform3D(0.99999994, 0, 0, 0, -4.37114e-08, 1, 0, -1, -4.37114e-08, 0, 0.23606777, -2.7999997)
+mesh = SubResource("mesh_bore_evacuator")
+
+[node name="Muzzle" type="Marker3D" parent="Model/Turret/BarrelPivot" unique_id=1369884977]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -4.95)
+
+[node name="MuzzleFlash" type="OmniLight3D" parent="Model/Turret/BarrelPivot/Muzzle" unique_id=395304715]
+transform = Transform3D(0.6373432, 0, 0, 0, 0.78628325, 0, 0, 0, 0.89057225, 0, 0.23606777, 0)
+light_color = Color(1, 0.75, 0.25, 1)
+light_energy = 8.0
+omni_range = 14.0
+
+[node name="Seats" type="Node3D" parent="." unique_id=31175470]
+
+[node name="DriverSeat" type="Marker3D" parent="Seats" unique_id=150697348]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.7, -1.4)
+
+[node name="TurretSeat" type="Marker3D" parent="Seats" unique_id=1205376300]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.6, 1.3, 0.2)
+
+[node name="InteractArea" type="Area3D" parent="." unique_id=1529420839]
+collision_layer = 0
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="InteractArea" unique_id=1144975716]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
+shape = SubResource("shape_interact")
+
+[node name="ChasePivot" type="Node3D" parent="." unique_id=1179586472]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 5.572955, 6.5070763)
+
+[node name="ChaseArm" type="SpringArm3D" parent="ChasePivot" unique_id=1875528792]
+transform = Transform3D(1, 0, 0, 0, 0.984808, 0.173648, 0, -0.173648, 0.984808, 0, 0.4, 0)
+spring_length = 9.5
+margin = 0.35
+
+[node name="ChaseCamera" type="Camera3D" parent="ChasePivot/ChaseArm" unique_id=1008049011]
+far = 800.0

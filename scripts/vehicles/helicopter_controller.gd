@@ -43,6 +43,20 @@ const GRAVITY := 9.8
 const GROUND_RAY := 1.9 ## wheel contact sits ~1.67m below center; ray must be shorter so
 						## "grounded" means the gear actually touches, not hovering nearby
 
+# Door MGs (seat 2 = Model/MG left, seat 3 = Model/MG2 right) — same heat
+# attributes as the tank's commander M2 cupola gun
+const MG_DMG := 20.0
+const MG_RATE := 0.125            ## 8 rounds/s
+const MG_RANGE := 500.0
+const MG_SPREAD := 0.004
+const MG_HEAT_PER_SHOT := 2.0     ## ~6s hold to reach the peak
+const MG_HEAT_COOL_RATE := 25.0
+const MG_OVERHEAT_RESUME := 35.0
+const MG_OVERHEAT_LOCK := 3.0
+const MG_MAX_YAW := 1.1           ## traverse ±63° around the straight-out-the-door pose
+const MG_PITCH_DOWN := 0.9        ## door gunners need steep depression from altitude
+const MG_PITCH_UP := 0.35
+
 var hp: float
 var is_destroyed := false
 
@@ -62,6 +76,17 @@ var _yaw: float = 0.0            ## integrated heading — drives kinematic atti
 var _cam_yaw: float = 0.0
 var _cam_pitch: float = -0.2
 
+# Door MG state (index 0 = left MG/seat 2, index 1 = right MG2/seat 3)
+var mg_heat: Array[float] = [0.0, 0.0]
+var mg_overheated: Array[bool] = [false, false]
+var mg_overheat_left: Array[float] = [0.0, 0.0]
+var mg_cd: Array[float] = [0.0, 0.0]
+var mg_yaw: Array[float] = [0.0, 0.0]
+var mg_pitch: Array[float] = [0.0, 0.0]
+var _mg_yaw_target: Array[float] = [0.0, 0.0]
+var _mg_pitch_target: Array[float] = [0.0, 0.0]
+var _mg_base_yaw: Array[float] = [] ## scene-authored ±90° mount yaw, captured in _ready
+
 # Seats & occupants (index 0 is pilot, 1..5 are passengers)
 var seats: Array[Marker3D] = []
 var occupants: Array = []
@@ -77,6 +102,7 @@ var _net_target_pos := Vector3.ZERO
 var _net_target_quat := Quaternion.IDENTITY
 var _net_target_vel := Vector3.ZERO
 var _net_send_timer := 0.0
+var _net_aim_timer := 0
 
 ## Streams this vehicle's transform to other machines while locally driven.
 func _net_send_state(delta: float) -> void:
@@ -99,6 +125,18 @@ func _notify_release() -> void:
 @onready var chase_cam: Camera3D = get_node_or_null("ChasePivot/ChaseArm/ChaseCamera")
 @onready var rotor_front: Node3D = get_node_or_null("Model/RotorFront")
 @onready var rotor_rear: Node3D = get_node_or_null("Model/RotorRear")
+@onready var mg_nodes: Array[Node3D] = [
+	get_node_or_null("Model/MG") as Node3D,
+	get_node_or_null("Model/MG2") as Node3D,
+]
+@onready var mg_cams: Array[Camera3D] = [
+	get_node_or_null("Model/MG/GunnerCam") as Camera3D,
+	get_node_or_null("Model/MG2/GunnerCam") as Camera3D,
+]
+@onready var mg_barrels: Array[Node3D] = [
+	get_node_or_null("Model/MG/Barrel") as Node3D,
+	get_node_or_null("Model/MG2/Barrel") as Node3D,
+]
 
 func _ready() -> void:
 	gravity_scale = 0.0 ## applied manually in _apply_flight
@@ -107,8 +145,13 @@ func _ready() -> void:
 	can_sleep = false ## forces drive flight; a sleeping body would ignore them mid-hover
 	body_entered.connect(_on_impact)
 	hp = max_hp
+	for mg in mg_nodes:
+		_mg_base_yaw.append(mg.rotation.y if mg != null else 0.0)
 	if chase_cam != null:
 		chase_cam.current = false
+	for cam in mg_cams:
+		if cam != null:
+			cam.current = false
 	_yaw = global_transform.basis.get_euler(EULER_ORDER_YXZ).y # sync heading with scene-authored basis
 	_setup_seats()
 	if chase_arm != null:
@@ -161,15 +204,32 @@ func _on_body_entered(body: Node3D) -> void:
 	if hud == null:
 		return
 	_prompt_player = body
-	hud.show_hover_name(prompt_text, false)
+	if hud.has_method("show_enter_prompt"):
+		hud.show_enter_prompt()
+	elif hud.has_method("show_hover_name"):
+		hud.show_hover_name(prompt_text, false)
 
 func _on_body_exited(body: Node3D) -> void:
 	if body == _prompt_player:
 		_prompt_player = null
-		if body.get("hud") != null:
-			body.get("hud").hide_hover_name()
+		var hud = body.get("hud")
+		if hud != null:
+			if hud.has_method("hide_enter_prompt"):
+				hud.hide_enter_prompt()
+			if hud.has_method("hide_hover_name"):
+				hud.hide_hover_name()
 
 func _unhandled_input(event: InputEvent) -> void:
+	if event is InputEventKey and event.pressed and not event.echo:
+		# CTRL + 1..9: switch to that seat (if free)
+		var target := -1
+		if (event.ctrl_pressed or Input.is_key_pressed(KEY_CTRL)) and event.keycode >= KEY_1 and event.keycode <= KEY_9:
+			target = event.keycode - KEY_1
+		elif (event.ctrl_pressed or Input.is_key_pressed(KEY_CTRL)) and event.keycode >= KEY_KP_1 and event.keycode <= KEY_KP_9:
+			target = event.keycode - KEY_KP_1
+		if target != -1:
+			_request_seat_switch(target)
+			return
 	if not event.is_action_pressed("vehicle_interact"):
 		return
 	var mgr = get_tree().current_scene
@@ -201,33 +261,115 @@ func _input(event: InputEvent) -> void:
 	if not has_local:
 		return
 	if event is InputEventMouseMotion:
-		var is_driver := occupants.size() > 0 and occupants[0] != null and occupants[0].get("hud") != null
+		var seat := _local_seat_idx()
 		var freelook := Input.is_action_pressed("camera_freelook") # ALT held
-		if is_driver and not freelook:
+		if seat == 0 and not freelook:
 			# Rate-style tilt control: mouse sets a tilt SPEED, not a stored angle.
 			# An opposite mouse flick reverses the bank instantly — no unwinding.
 			_tilt_vel.x = clampf(_tilt_vel.x - event.relative.y * pitch_sens, -tilt_input_cap, tilt_input_cap)
 			_tilt_vel.y = clampf(_tilt_vel.y + event.relative.x * roll_sens, -tilt_input_cap, tilt_input_cap)
+		elif seat == 2 or seat == 3:
+			# Door gunner: aims the mounted MG (gun + its camera rotate together).
+			var g := seat - 2
+			_mg_yaw_target[g] = clampf(_mg_yaw_target[g] - event.relative.x * mouse_sens, -MG_MAX_YAW, MG_MAX_YAW)
+			# Same sign convention as the tank cupola: mouse down = aim down.
+			_mg_pitch_target[g] = clampf(_mg_pitch_target[g] - event.relative.y * mouse_sens, -MG_PITCH_DOWN, MG_PITCH_UP)
+			_send_aim(seat, _mg_yaw_target[g], _mg_pitch_target[g])
 		else:
 			# ALT held (driver) or passenger: camera orbits, heli keeps its tilt
 			_cam_yaw -= event.relative.x * mouse_sens
 			_cam_pitch = clampf(_cam_pitch - event.relative.y * mouse_sens, -0.7, 0.4)
+
+func _local_seat_idx() -> int:
+	for i in occupants.size():
+		var occ = occupants[i]
+		if occ != null and occ.get("hud") != null:
+			return i
+	return -1
+
+func _request_seat_switch(target_idx: int) -> void:
+	if target_idx < 0 or target_idx >= seats.size() or is_destroyed:
+		return
+	var my_idx := -1
+	for i in occupants.size():
+		if occupants[i] != null and occupants[i].get("hud") != null:
+			my_idx = i
+			break
+	if my_idx == -1 or my_idx == target_idx:
+		return
+	if occupants[target_idx] != null:
+		var hud = occupants[my_idx].get("hud")
+		if hud and hud.has_method("show_hover_name"):
+			hud.show_hover_name("Seat %d is occupied!" % (target_idx + 1), false)
+		return
+	var mgr = get_tree().current_scene
+	var net := GlobalData.is_networked() and mgr is MultiplayerManager
+	if net:
+		mgr.request_vehicle_switch_seat.rpc_id(1, String(get_path()), my_idx, target_idx)
+	else:
+		net_sync_switch_seat(occupants[my_idx], my_idx, target_idx)
+
+func net_sync_switch_seat(player_node: Node3D, from_idx: int, to_idx: int) -> void:
+	if from_idx < 0 or from_idx >= occupants.size() or to_idx < 0 or to_idx >= occupants.size():
+		return
+	if occupants[from_idx] != player_node or occupants[to_idx] != null:
+		return
+	occupants[from_idx] = null
+	occupants[to_idx] = player_node
+	if player_node.has_method("switch_aircraft_seat"):
+		player_node.switch_aircraft_seat(seats[to_idx])
+	else:
+		player_node.enter_aircraft(seats[to_idx])
+	if from_idx == 0:
+		_notify_release()
+		if not is_grounded():
+			_is_abandoned = true
+			_pilotless_time = 0.0
+			_last_bailed_pilot = player_node
+	if to_idx == 0:
+		_is_abandoned = false
+		_pilotless_time = 0.0
+		_last_bailed_pilot = null
+	if player_node.get("hud") != null:
+		_update_active_camera(to_idx)
+	_update_hud()
+
+## Door-gunner seats (2 = left MG, 3 = right MG2) get the FPS camera mounted on
+## the gun itself; every other seat orbits the chase cam.
+func _update_active_camera(local_seat_idx: int) -> void:
+	if local_seat_idx == 2 or local_seat_idx == 3:
+		var cam: Camera3D = mg_cams[local_seat_idx - 2]
+		if cam != null:
+			cam.current = true
+		if chase_cam != null:
+			chase_cam.current = false
+	else:
+		for cam in mg_cams:
+			if cam != null:
+				cam.current = false
+		if chase_cam != null:
+			chase_cam.current = local_seat_idx >= 0
 
 func net_sync_enter(player_node: Node3D, seat_idx: int) -> void:
 	if seat_idx < 0 or seat_idx >= occupants.size() or is_destroyed:
 		return
 	occupants[seat_idx] = player_node
 	_prompt_player = null
+	var hud = player_node.get("hud")
+	if hud != null and hud.has_method("hide_enter_prompt"):
+		hud.hide_enter_prompt()
 	if seat_idx == 0:
 		_is_abandoned = false
 		_pilotless_time = 0.0
 		_last_bailed_pilot = null
 	player_node.enter_aircraft(seats[seat_idx])
-	var is_local := player_node.get("hud") != null
-	if seat_idx == 0 and chase_cam != null and is_local:
-		chase_cam.current = true
+	# Any LOCAL occupant (pilot OR passenger) needs a view: enter_aircraft turned
+	# off their first-person camera. Passengers orbit the chase cam (see _input);
+	# door gunners (seats 2/3) look through the gun-mounted camera instead.
+	if player_node.get("hud") != null:
 		_cam_yaw = 0.0
 		_cam_pitch = -0.2
+		_update_active_camera(seat_idx)
 	pilot_entered.emit(player_node)
 	_update_hud()
 
@@ -236,9 +378,8 @@ func net_sync_exit(seat_idx: int) -> void:
 		return
 	var player: Node3D = occupants[seat_idx]
 	occupants[seat_idx] = null
-	var is_local := player.get("hud") != null
-	if seat_idx == 0 and chase_cam != null and is_local:
-		chase_cam.current = false
+	if player.get("hud") != null:
+		_update_active_camera(-1)
 	var side := 3.2 if seats[seat_idx].position.x >= 0.0 else -3.2
 	var exit_pos := seats[seat_idx].global_position + global_basis * Vector3(side, 0.4, 0.0)
 	var bail_vel := linear_velocity * 0.5
@@ -270,8 +411,8 @@ func _exit(idx: int) -> void:
 		return
 	var player: Node3D = occupants[idx]
 	occupants[idx] = null
-	if idx == 0 and chase_cam != null:
-		chase_cam.current = false
+	if player.get("hud") != null:
+		_update_active_camera(-1)
 	var side := 3.2 if seats[idx].position.x >= 0.0 else -3.2
 	var exit_pos := seats[idx].global_position + global_basis * Vector3(side, 0.4, 0.0)
 	if can_walk_out():
@@ -301,7 +442,111 @@ func _exit(idx: int) -> void:
 func _process(delta: float) -> void:
 	_animate_rotors(delta)
 	_update_camera(delta)
+	_process_door_mgs(delta)
 	_update_hud()
+
+func _process_door_mgs(delta: float) -> void:
+	var local_seat := _local_seat_idx()
+	for g in 2:
+		# Smooth yaw/pitch toward gunner targets
+		mg_yaw[g] = lerp_angle(mg_yaw[g], _mg_yaw_target[g], minf(delta * 14.0, 1.0))
+		mg_pitch[g] = lerpf(mg_pitch[g], _mg_pitch_target[g], minf(delta * 14.0, 1.0))
+		var mg_node: Node3D = mg_nodes[g]
+		if mg_node != null and g < _mg_base_yaw.size():
+			mg_node.rotation = Vector3(mg_pitch[g], _mg_base_yaw[g] + mg_yaw[g], 0.0)
+
+		# Fire & heat tick
+		mg_cd[g] = maxf(mg_cd[g] - delta, 0.0)
+		var is_this_gunner := (local_seat == (g + 2))
+		if is_this_gunner:
+			if mg_overheated[g]:
+				mg_overheat_left[g] -= delta
+				if mg_overheat_left[g] <= 0.0:
+					mg_overheated[g] = false
+					mg_heat[g] = MG_OVERHEAT_RESUME
+			else:
+				var firing := Input.is_action_pressed("fire")
+				if firing and mg_cd[g] <= 0.0:
+					_fire_door_mg(g)
+					mg_cd[g] = MG_RATE
+				if not firing:
+					mg_heat[g] = maxf(mg_heat[g] - MG_HEAT_COOL_RATE * delta, 0.0)
+		else:
+			mg_heat[g] = maxf(mg_heat[g] - MG_HEAT_COOL_RATE * delta, 0.0)
+
+func _fire_door_mg(gun_idx: int) -> void:
+	if mg_overheated[gun_idx]:
+		return
+	var cam: Camera3D = mg_cams[gun_idx]
+	if cam == null:
+		return
+	mg_heat[gun_idx] = minf(mg_heat[gun_idx] + MG_HEAT_PER_SHOT, 100.0)
+	if mg_heat[gun_idx] >= 100.0:
+		mg_overheated[gun_idx] = true
+		mg_overheat_left[gun_idx] = MG_OVERHEAT_LOCK
+
+	var seat_idx := gun_idx + 2
+	var shooter: Node3D = occupants[seat_idx] if seat_idx < occupants.size() else null
+	var s_name := str(shooter.get("player_name")) if shooter and shooter.get("player_name") else "Door Gunner"
+	var s_fac := str(shooter.get("team")) if shooter and shooter.get("team") else "Player"
+
+	var cam_xf := cam.global_transform
+	var dir := (-cam_xf.basis.z + cam_xf.basis.x * randf_range(-MG_SPREAD, MG_SPREAD) \
+			+ cam_xf.basis.y * randf_range(-MG_SPREAD, MG_SPREAD)).normalized()
+	var end := cam_xf.origin + dir * MG_RANGE
+	var space := get_world_3d().direct_space_state
+	var q := PhysicsRayQueryParameters3D.create(cam_xf.origin, end, ~0, [get_rid()])
+	q.collide_with_areas = true
+	q.collide_with_bodies = true
+	var hit := space.intersect_ray(q)
+	var hit_pos := end
+	if hit:
+		hit_pos = hit.position
+		var target = hit.collider
+		if target != self and (target as Object).has_method("take_damage"):
+			target.take_damage(MG_DMG, s_name, "Door MG", s_fac, hit_pos)
+			var hud = shooter.get("hud") if shooter else null
+			if hud and target.is_in_group("enemy"):
+				hud.show_hit_marker(MG_DMG)
+		_mg_splash(hit_pos, target, s_name, s_fac)
+
+	# Bullet tracer exits directly from the barrel's tip
+	var barrel: Node3D = mg_barrels[gun_idx]
+	var muzzle_pos: Vector3
+	if barrel != null:
+		# Barrel extends along its -Z; boxmesh half-length ~0.9m
+		muzzle_pos = barrel.global_position + (-barrel.global_transform.basis.z * 0.9)
+	else:
+		muzzle_pos = cam_xf.origin
+	Sfx.pool_fire3d("rifle_single", self, 18.0, 160.0, 3.0)
+	var mgr = get_tree().current_scene
+	if GlobalData.is_networked() and mgr is MultiplayerManager:
+		mgr.send_tracer(muzzle_pos, hit_pos, 0.14, false) # fat door MG tracer, all peers
+	elif shooter != null and shooter.has_method("create_tracer"):
+		shooter.create_tracer(muzzle_pos, hit_pos, 0.14)
+
+func _mg_splash(pos: Vector3, direct_hit: Object, s_name: String, s_fac: String) -> void:
+	var space := get_world_3d().direct_space_state
+	var query := PhysicsShapeQueryParameters3D.new()
+	var sphere := SphereShape3D.new()
+	sphere.radius = 4.0
+	query.shape = sphere
+	query.transform = Transform3D(Basis(), pos)
+	query.collide_with_areas = true
+	query.collide_with_bodies = true
+	query.exclude = [get_rid()]
+	var hit: Array = []
+	for res in space.intersect_shape(query, 16):
+		var col = res.collider
+		if col == null or col == self or col == direct_hit:
+			continue
+		if not (col as Object).has_method("take_damage") or col in hit:
+			continue
+		hit.append(col)
+		var dist: float = pos.distance_to(col.global_position)
+		var dmg: float = AircraftOrdnance.compute_blast_damage(dist, 4.0, MG_DMG * 0.7, MG_DMG * 0.2)
+		if dmg > 0.0:
+			col.take_damage(dmg, s_name, "Door MG Splash", s_fac, pos)
 
 func _animate_rotors(delta: float) -> void:
 	var target_rpm: float = engine_power * 32.0 ## rad/s
@@ -335,12 +580,35 @@ func _update_camera(delta: float) -> void:
 	chase_arm.rotation.x = lerp(chase_arm.rotation.x, target_pitch, w)
 
 func net_set_target(pos: Vector3, rot: Vector3, vel: Vector3, eng: float) -> void:
+	if not pos.is_finite() or not rot.is_finite() or not vel.is_finite():
+		return
 	_net_puppet = true
 	freeze = true # stop local physics fighting network position
 	_net_target_pos = pos
-	_net_target_quat = Basis.from_euler(rot).get_rotation_quaternion()
+	var b := Basis.from_euler(rot)
+	if b.is_finite():
+		_net_target_quat = b.get_rotation_quaternion().normalized()
 	_net_target_vel = vel
-	engine_power = eng
+	engine_power = eng if is_finite(eng) else 0.0
+
+## Local door gunner streams their MG aim targets to the other peers (20 Hz cap).
+func _send_aim(seat_idx: int, yaw: float, pitch: float) -> void:
+	var now := Time.get_ticks_msec()
+	if now - _net_aim_timer < 50: # mouse events fire far faster than the 20 Hz net budget
+		return
+	_net_aim_timer = now
+	var mgr = get_tree().current_scene
+	if mgr and mgr.has_method("send_vehicle_aim"):
+		mgr.send_vehicle_aim(String(get_path()), seat_idx, yaw, pitch)
+
+## Remote door gunner applied their aim: seat 2 = left MG (gun 0), seat 3 = right MG (gun 1).
+func net_set_aim(seat_idx: int, yaw: float, pitch: float) -> void:
+	if not is_finite(yaw) or not is_finite(pitch):
+		return
+	if seat_idx >= 2 and seat_idx <= 3:
+		var g := seat_idx - 2
+		_mg_yaw_target[g] = yaw
+		_mg_pitch_target[g] = pitch
 
 func net_release_puppet() -> void:
 	_net_puppet = false
@@ -349,10 +617,16 @@ func net_release_puppet() -> void:
 func _physics_process(delta: float) -> void:
 	if _net_puppet:
 		var t := minf(1.0, delta * 15.0)
-		global_position = global_position.lerp(_net_target_pos, t)
-		var q := global_basis.get_rotation_quaternion().slerp(_net_target_quat, t)
-		global_basis = Basis(q)
-		linear_velocity = _net_target_vel
+		if _net_target_pos.is_finite():
+			global_position = global_position.lerp(_net_target_pos, t)
+		if _net_target_quat.is_finite() and global_basis.is_finite():
+			var cur_q := global_basis.get_rotation_quaternion()
+			if cur_q.is_finite():
+				var q := cur_q.slerp(_net_target_quat, t)
+				if q.is_finite():
+					global_basis = Basis(q).orthonormalized()
+		if _net_target_vel.is_finite():
+			linear_velocity = _net_target_vel
 		# Rotor audio for observers
 		if engine_power > 0.05 and _rotor_sfx == null:
 			_rotor_sfx = Sfx.loop3d("heli", self, 10.0, 120.0, 0.0)
@@ -501,10 +775,15 @@ func _apply_flight(delta: float, grounded: bool, landing_cut: bool = false) -> v
 	if landing_cut or (grounded and collective < 0.3):
 		_target_pitch = 0.0
 		_target_roll = 0.0
+	if not global_transform.basis.is_finite():
+		global_transform.basis = Basis.IDENTITY
 	var target_basis := Basis(Vector3.UP, _yaw) \
 			* Basis(Vector3.RIGHT, -_target_pitch) \
 			* Basis(Vector3.BACK, -_target_roll)
-	global_transform.basis = global_transform.basis.slerp(target_basis, 1.0 - exp(-attitude_rate * delta)).orthonormalized()
+	if target_basis.is_finite():
+		var next_basis := global_transform.basis.slerp(target_basis, 1.0 - exp(-attitude_rate * delta))
+		if next_basis.is_finite():
+			global_transform.basis = next_basis.orthonormalized()
 	angular_velocity = Vector3.ZERO
 	# Wedge recovery: if a collision (blast/hard touchdown) left the airframe
 	# sideways against the terrain, gently pop it upward so it unwedges cleanly.
@@ -525,15 +804,31 @@ func _update_hud() -> void:
 	for o in occupants:
 		if o != null: used += 1
 	var free_seats := occupants.size() - used
-	for occ in occupants:
+	var seats_map: Array = []
+	for o in occupants:
+		seats_map.append(o != null)
+	var my_seat := _local_seat_idx()
+	# Incoming homing missile (AT4 locked onto us): warning + beeps for local crew
+	var mgr = get_tree().current_scene
+	var inbound: bool = mgr != null and mgr.has_method("is_missile_inbound") \
+		and mgr.is_missile_inbound(self)
+	if inbound and my_seat != -1:
+		var lhud = occupants[my_seat].get("hud")
+		if lhud != null and lhud.has_method("set_missile_warning"):
+			lhud.set_missile_warning(true)
+	for idx in occupants.size():
+		var occ = occupants[idx]
 		if occ == null:
 			continue
 		var hud = occ.get("hud")
 		if hud != null and hud.has_method("update_aircraft_hud"):
-			var is_pilot: bool = (occ == occupants[0])
+			var is_pilot: bool = (idx == 0)
+			var is_gunner: bool = (idx == 2 or idx == 3)
+			var gun_idx := idx - 2 if is_gunner else -1
 			hud.update_aircraft_hud({
 				"kind": "helicopter",
 				"name": heli_name,
+				"seat_role": ("DOOR GUNNER (L)" if idx == 2 else ("DOOR GUNNER (R)" if idx == 3 else ("PILOT" if is_pilot else "PASSENGER"))),
 				"speed": linear_velocity.length() * 3.6,
 				"climb": linear_velocity.y,
 				"alt": global_position.y,
@@ -543,7 +838,12 @@ func _update_hud() -> void:
 				"max_hp": max_hp,
 				"seats_free": free_seats,
 				"seats_total": occupants.size(),
+				"seats_map": seats_map,
+				"my_seat": my_seat,
 				"is_pilot": is_pilot,
+				"is_gunner": is_gunner,
+				"heat": mg_heat[gun_idx] if is_gunner else 0.0,
+				"overheated": mg_overheated[gun_idx] if is_gunner else false,
 				"grounded": is_grounded(),
 				"can_walk_out": can_walk_out(),
 			})
@@ -581,8 +881,7 @@ func _explode(attacker_name: String = "", attacker_faction: String = "", kill_oc
 	if GlobalData.is_networked() and multiplayer.is_server() and mgr is MultiplayerManager:
 		mgr.net_vehicle_explode.rpc(String(get_path()), attacker_name, attacker_faction)
 	_notify_release()
-	if chase_cam != null:
-		chase_cam.current = false
+	_update_active_camera(-1)
 	# Crash kills credit whoever shot the heli down (fall back to the vehicle name)
 	var crash_killer := _last_hit_by if _last_hit_by != "" else attacker_name
 	var crash_fac := _last_hit_faction if _last_hit_faction != "" else attacker_faction
@@ -598,11 +897,15 @@ func _explode(attacker_name: String = "", attacker_faction: String = "", kill_oc
 			occ.take_damage(9999.0, crash_killer, "Helicopter Crash", crash_fac if crash_fac != "" else "World", global_position)
 	if kill_occupants:
 		_blast_area(global_position, 16.0, 320.0, 80.0, attacker_name, attacker_faction)
+	AircraftOrdnance.spawn_blast_visual(global_position, 16.0)
 	destroyed.emit()
 	queue_free()
 
 func _on_impact(body: Node) -> void:
 	if is_destroyed:
+		return
+	# Passengers or infantry touching the airframe must never explode it
+	if body == null or body.is_in_group("player") or body is CharacterBody3D:
 		return
 	if body == _last_bailed_pilot:
 		return
@@ -612,6 +915,9 @@ func _on_impact(body: Node) -> void:
 		_explode()
 		return
 	var speed := linear_velocity.length()
+	# Parked / engineless heli: contact bumps and solver spikes are not crashes
+	if engine_power <= 0.01 and not _is_abandoned:
+		return
 	# Hard crash: excessive vertical speed or inverted impact
 	if (speed > 16.0 and global_basis.y.dot(Vector3.UP) < 0.3) or speed > 32.0:
 		_explode()

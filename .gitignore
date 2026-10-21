@@ -3,4 +3,18 @@ build/
 godot-copy-all-errors-*/
 *.tmp
 *~
+*.TMP
+
+# Third-party junk / other engine experiments at repo root
+Unity/
+Unreal Engine/
+Exports/
+Godot/
+Unity_Setup.png
+UnrealEngine_Setup.png
+Preview.png
+
+*.png.import
+License.txt
+
 # Editor import cache included via project import; keep everything else tracked

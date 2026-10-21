@@ -1,16 +1,14 @@
-[gd_scene load_steps=4 format=3]
+[gd_scene format=3 uid="uid://cqkk06yao1i80"]
 
-[ext_resource type="Script" path="res://scenes/ui/operator_menu.gd" id="1_script"]
-[ext_resource type="PackedScene" path="res://scenes/ui/standby_character.tscn" id="2_char"]
+[ext_resource type="Script" uid="uid://vddhwyr4s0jp" path="res://scenes/ui/operator_menu.gd" id="1_script"]
+[ext_resource type="PackedScene" uid="uid://d4jkjrt46ijox" path="res://scenes/ui/standby_character.tscn" id="2_char"]
 
 [sub_resource type="Environment" id="Environment_preview"]
-background_mode = 1
-background_color = Color(0.08, 0.1, 0.13, 0)
 ambient_light_source = 2
 ambient_light_color = Color(0.4, 0.45, 0.55, 1)
 ambient_light_energy = 0.85
 
-[node name="OperatorMenu" type="Control"]
+[node name="OperatorMenu" type="Control" unique_id=1480723469]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -19,7 +17,7 @@ grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_script")
 
-[node name="Background" type="ColorRect" parent="."]
+[node name="Background" type="ColorRect" parent="." unique_id=1988056807]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -28,7 +26,7 @@ grow_horizontal = 2
 grow_vertical = 2
 color = Color(0.0784314, 0.101961, 0.133333, 1)
 
-[node name="Margin" type="MarginContainer" parent="."]
+[node name="Margin" type="MarginContainer" parent="." unique_id=812480444]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -40,124 +38,124 @@ theme_override_constants/margin_top = 30
 theme_override_constants/margin_right = 60
 theme_override_constants/margin_bottom = 30
 
-[node name="VBox" type="VBoxContainer" parent="Margin"]
+[node name="VBox" type="VBoxContainer" parent="Margin" unique_id=1189892101]
 layout_mode = 2
 theme_override_constants/separation = 16
 
-[node name="TopBar" type="HBoxContainer" parent="Margin/VBox"]
+[node name="TopBar" type="HBoxContainer" parent="Margin/VBox" unique_id=764938185]
 layout_mode = 2
 theme_override_constants/separation = 12
 
-[node name="Title" type="Label" parent="Margin/VBox/TopBar"]
+[node name="Title" type="Label" parent="Margin/VBox/TopBar" unique_id=1199478791]
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_colors/font_color = Color(0.909804, 0.639216, 0.239216, 1)
 theme_override_font_sizes/font_size = 28
 text = "OPERATOR SELECTION"
 
-[node name="Main" type="HBoxContainer" parent="Margin/VBox"]
+[node name="Main" type="HBoxContainer" parent="Margin/VBox" unique_id=1080710888]
 layout_mode = 2
 size_flags_vertical = 3
 theme_override_constants/separation = 24
 
-[node name="Left" type="VBoxContainer" parent="Margin/VBox/Main"]
+[node name="Left" type="VBoxContainer" parent="Margin/VBox/Main" unique_id=2095855390]
 custom_minimum_size = Vector2(260, 0)
 layout_mode = 2
 theme_override_constants/separation = 6
 
-[node name="GroupList" type="VBoxContainer" parent="Margin/VBox/Main/Left"]
+[node name="GroupList" type="VBoxContainer" parent="Margin/VBox/Main/Left" unique_id=889701933]
 layout_mode = 2
 theme_override_constants/separation = 6
 
-[node name="Mid" type="VBoxContainer" parent="Margin/VBox/Main"]
+[node name="Mid" type="VBoxContainer" parent="Margin/VBox/Main" unique_id=1491473423]
 custom_minimum_size = Vector2(520, 0)
 layout_mode = 2
 theme_override_constants/separation = 12
 
-[node name="CatHeader" type="PanelContainer" parent="Margin/VBox/Main/Mid"]
+[node name="CatHeader" type="PanelContainer" parent="Margin/VBox/Main/Mid" unique_id=2032637059]
 layout_mode = 2
 
-[node name="Label" type="Label" parent="Margin/VBox/Main/Mid/CatHeader"]
+[node name="Label" type="Label" parent="Margin/VBox/Main/Mid/CatHeader" unique_id=1735593850]
 layout_mode = 2
 text = "Assault"
 
-[node name="WeaponList" type="VBoxContainer" parent="Margin/VBox/Main/Mid"]
+[node name="WeaponList" type="VBoxContainer" parent="Margin/VBox/Main/Mid" unique_id=1402947333]
 layout_mode = 2
 size_flags_vertical = 3
 theme_override_constants/separation = 6
 
-[node name="Detail" type="PanelContainer" parent="Margin/VBox/Main/Mid"]
+[node name="Detail" type="PanelContainer" parent="Margin/VBox/Main/Mid" unique_id=1327154315]
 layout_mode = 2
 
-[node name="Panel" type="VBoxContainer" parent="Margin/VBox/Main/Mid/Detail"]
+[node name="Panel" type="VBoxContainer" parent="Margin/VBox/Main/Mid/Detail" unique_id=651599004]
 layout_mode = 2
 theme_override_constants/separation = 10
 
-[node name="ItemName" type="Label" parent="Margin/VBox/Main/Mid/Detail/Panel"]
+[node name="ItemName" type="Label" parent="Margin/VBox/Main/Mid/Detail/Panel" unique_id=168593213]
 layout_mode = 2
 text = "Vanguard"
 
-[node name="ItemDesc" type="Label" parent="Margin/VBox/Main/Mid/Detail/Panel"]
+[node name="ItemDesc" type="Label" parent="Margin/VBox/Main/Mid/Detail/Panel" unique_id=65030710]
 layout_mode = 2
 text = "Adrenaline (Heal 25, +25% speed 5s)"
 
-[node name="StatsBox" type="VBoxContainer" parent="Margin/VBox/Main/Mid/Detail/Panel"]
+[node name="StatsBox" type="VBoxContainer" parent="Margin/VBox/Main/Mid/Detail/Panel" unique_id=804327121]
 layout_mode = 2
 theme_override_constants/separation = 6
 
-[node name="BtnEquip" type="Button" parent="Margin/VBox/Main/Mid/Detail/Panel"]
+[node name="BtnEquip" type="Button" parent="Margin/VBox/Main/Mid/Detail/Panel" unique_id=26283837]
 custom_minimum_size = Vector2(0, 48)
 layout_mode = 2
 text = "EQUIP"
 
-[node name="Right" type="VBoxContainer" parent="Margin/VBox/Main"]
+[node name="Right" type="VBoxContainer" parent="Margin/VBox/Main" unique_id=411451559]
 layout_mode = 2
 size_flags_horizontal = 3
 
-[node name="Preview" type="SubViewportContainer" parent="Margin/VBox/Main/Right"]
+[node name="Preview" type="SubViewportContainer" parent="Margin/VBox/Main/Right" unique_id=1112678727]
 layout_mode = 2
 size_flags_vertical = 3
 stretch = true
 
-[node name="SubViewport" type="SubViewport" parent="Margin/VBox/Main/Right/Preview"]
+[node name="SubViewport" type="SubViewport" parent="Margin/VBox/Main/Right/Preview" unique_id=2075758722]
 transparent_bg = true
 handle_input_locally = false
-size = Vector2i(500, 700)
+size = Vector2i(972, 905)
 render_target_update_mode = 4
 
-[node name="WorldEnvironment" type="WorldEnvironment" parent="Margin/VBox/Main/Right/Preview/SubViewport"]
+[node name="WorldEnvironment" type="WorldEnvironment" parent="Margin/VBox/Main/Right/Preview/SubViewport" unique_id=619207311]
 environment = SubResource("Environment_preview")
 
-[node name="Camera3D" type="Camera3D" parent="Margin/VBox/Main/Right/Preview/SubViewport"]
-transform = Transform3D(-0.99999, 0, 0.00438, 0, 1, 0, -0.00438, 0, -0.99999, 0, 1.25, -2.8)
+[node name="Camera3D" type="Camera3D" parent="Margin/VBox/Main/Right/Preview/SubViewport" unique_id=643234376]
+transform = Transform3D(-0.9999904, 0, 0.0043800017, 0, 1, 0, -0.0043800017, 0, -0.9999904, 0, 1.392905, -1.4906695)
 current = true
 
-[node name="KeyLight" type="DirectionalLight3D" parent="Margin/VBox/Main/Right/Preview/SubViewport"]
+[node name="KeyLight" type="DirectionalLight3D" parent="Margin/VBox/Main/Right/Preview/SubViewport" unique_id=1014952890]
 transform = Transform3D(-0.965926, -0.174052, 0.190479, 0, 0.73755, 0.67529, -0.258819, 0.652338, -0.712373, 0, 2.5, -2.5)
 light_energy = 1.4
 shadow_enabled = true
 
-[node name="FillLight" type="DirectionalLight3D" parent="Margin/VBox/Main/Right/Preview/SubViewport"]
+[node name="FillLight" type="DirectionalLight3D" parent="Margin/VBox/Main/Right/Preview/SubViewport" unique_id=778730150]
 transform = Transform3D(0.939693, -0.116978, -0.321394, 0, 0.939693, -0.34202, 0.34202, 0.321394, 0.882595, -2, 1.5, -2)
-light_energy = 0.5
 light_color = Color(0.7, 0.8, 1, 1)
+light_energy = 0.5
 
-[node name="RimLight" type="DirectionalLight3D" parent="Margin/VBox/Main/Right/Preview/SubViewport"]
+[node name="RimLight" type="DirectionalLight3D" parent="Margin/VBox/Main/Right/Preview/SubViewport" unique_id=1101359397]
 transform = Transform3D(0.939693, -0.116978, -0.321394, 0, 0.939693, -0.34202, 0.34202, 0.321394, 0.882595, 1.5, 2, -2)
-light_energy = 0.6
 light_color = Color(1, 0.95, 0.85, 1)
+light_energy = 0.6
 
-[node name="Standby" parent="Margin/VBox/Main/Right/Preview/SubViewport" instance=ExtResource("2_char")]
+[node name="Standby" parent="Margin/VBox/Main/Right/Preview/SubViewport" unique_id=1311636186 instance=ExtResource("2_char")]
 
-[node name="BottomBar" type="HBoxContainer" parent="Margin/VBox"]
+[node name="BottomBar" type="HBoxContainer" parent="Margin/VBox" unique_id=708220448]
 layout_mode = 2
 theme_override_constants/separation = 20
 
-[node name="BtnBack" type="Button" parent="Margin/VBox/BottomBar"]
+[node name="BtnBack" type="Button" parent="Margin/VBox/BottomBar" unique_id=108218544]
 custom_minimum_size = Vector2(120, 44)
 layout_mode = 2
 text = "< BACK"
 
-[node name="HintEquip" type="Label" parent="Margin/VBox/BottomBar"]
+[node name="HintEquip" type="Label" parent="Margin/VBox/BottomBar" unique_id=2144039493]
 layout_mode = 2
 text = "[E] Equip Selected"

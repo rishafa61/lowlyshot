@@ -27,6 +27,7 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.8, 0)
 
 [node name="Camera3D" type="Camera3D" parent="Head" unique_id=1934086118]
 current = true
+far = 1200.0
 
 [node name="InteractRay" type="RayCast3D" parent="Head/Camera3D" unique_id=1542662016]
 target_position = Vector3(0, 0, -3)

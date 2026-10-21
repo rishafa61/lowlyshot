@@ -1,0 +1,22 @@
+[gd_resource type="Resource" script_class="WeaponData" format=3 uid="uid://cle7np71hg8yb"]
+
+[ext_resource type="Script" uid="uid://bb02xcedscp06" path="res://scripts/weapon_data.gd" id="1_script"]
+
+[resource]
+script = ExtResource("1_script")
+id = "steyr_aug"
+display_name = "Steyr AUG"
+dmg = 15.0
+rng = 55.0
+stab = 78.0
+fire_rate = 0.0857
+res = 120
+max_res = 120
+reload_time = 2.2
+recoil_v = 0.022
+recoil_h = 0.008
+kick_vm = 0.06
+spread_per_shot = 0.014
+owned = true
+price = 2800
+scene_path = "res://scenes/weapons/main/SteyrAUG.tscn"

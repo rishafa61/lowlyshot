@@ -8,7 +8,11 @@ const WEAPON_CATALOG := {
 	"Primary": [
 		"res://resources/weapons/ak47.tres",
 		"res://resources/weapons/m700.tres",
-		"res://resources/weapons/m4a4.tres"
+		"res://resources/weapons/m4a4.tres",
+		"res://resources/weapons/mp5.tres",
+		"res://resources/weapons/remington_870.tres",
+		"res://resources/weapons/steyr_aug.tres",
+		"res://resources/weapons/rpd.tres"
 	],
 	"Secondary": [
 		"res://resources/weapons/glock.tres",

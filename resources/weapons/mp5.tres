@@ -1,0 +1,26 @@
+[gd_resource type="Resource" script_class="WeaponData" format=3]
+
+[ext_resource type="Script" path="res://scripts/weapon_data.gd" id="1_script"]
+
+[resource]
+script = ExtResource("1_script")
+id = "mp5"
+display_name = "MP5"
+dmg = 20.0
+rng = 40.0
+stab = 75.0
+fire_rate = 0.075
+mag = 30
+max_mag = 30
+res = 120
+max_res = 120
+auto = true
+reload_time = 2.0
+recoil_v = 0.018
+recoil_h = 0.006
+kick_vm = 0.055
+spread_per_shot = 0.015
+owned = true
+price = 2400
+scene_path = "res://scenes/weapons/main/mp5.tscn"
+hold_style = "rifle"

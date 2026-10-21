@@ -1,0 +1,29 @@
+[gd_resource type="Resource" script_class="WeaponData" format=3]
+
+[ext_resource type="Script" path="res://scripts/weapon_data.gd" id="1_script"]
+
+[resource]
+script = ExtResource("1_script")
+id = "remington_870"
+display_name = "Remington 870"
+dmg = 10.0
+rng = 28.0
+stab = 40.0
+fire_rate = 0.65
+mag = 6
+max_mag = 6
+res = 24
+max_res = 24
+auto = false
+is_shotgun = true
+pellets = 8
+spread_base = 0.045
+reload_time = 0.52
+recoil_v = 0.09
+recoil_h = 0.012
+kick_vm = 0.22
+spread_per_shot = 0.01
+owned = true
+price = 2200
+scene_path = "res://scenes/weapons/main/remington_870.tscn"
+hold_style = "rifle"

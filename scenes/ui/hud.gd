@@ -35,12 +35,20 @@ var weapon_slot_names: Array = ["Primary", "Secondary", "Melee", "Equip 1", "Equ
 @onready var aircraft_hud = $AircraftHUD
 @onready var heat_bar = $AircraftHUD/HeatBar
 @onready var overheat_label = $AircraftHUD/OverheatLabel
+@onready var altitude_label = $AircraftHUD/AltitudeLabel
 @onready var loadout_label = $AircraftHUD/LoadoutPanel
 @onready var heli_guide = $AircraftHUD/HeliGuide
 @onready var heli_guide_title = $AircraftHUD/HeliGuide/VBox/Title
 @onready var heli_guide_text = $AircraftHUD/HeliGuide/VBox/GuideText
 @onready var boundary_warning = $BoundaryWarning
 @onready var boundary_countdown = $BoundaryWarning/VBox/WarnCountdown
+
+# Vehicle seat grid (bottom right corner UI for multi-seat vehicles)
+var seat_grid_panel: PanelContainer = null
+var seat_grid_container: GridContainer = null
+var seat_grid_hint: Label = null
+var _seat_boxes: Array[PanelContainer] = []
+var _seat_labels: Array[Label] = []
 
 # Console nodes
 @onready var console_container = $ConsoleLayer/ConsoleContainer
@@ -109,6 +117,10 @@ func _ready():
 	skill_duration_label.hide()
 	heat_bar.hide()
 	overheat_label.hide()
+	_style_heat_bar()
+	_style_weapon_slots()
+	_style_ammo_counter()
+	_style_tactical_hud()
 	_build_launcher_lock_ui()
 	
 	GlobalData.combat_logged.connect(print_to_console)
@@ -157,7 +169,7 @@ func add_killfeed_entry(killer: String, killer_faction: String, weapon: String, 
 	tween.tween_property(panel, "modulate:a", 0.0, 0.5)
 	tween.tween_callback(panel.queue_free)
 
-func show_hover_name(name_text: String, is_enemy: bool) -> void:
+func show_hover_name(name_text: String, is_enemy: bool = false) -> void:
 	crosshair_name.text = name_text
 	crosshair_name.add_theme_color_override("font_color", Color(1.0, 0.35, 0.35) if is_enemy else Color(0.35, 0.85, 1.0))
 	crosshair_name.show()
@@ -165,12 +177,311 @@ func show_hover_name(name_text: String, is_enemy: bool) -> void:
 func hide_hover_name() -> void:
 	crosshair_name.hide()
 
+# ---------------- Vehicle enter prompt ----------------
+## Keycap-styled "[F] ENTER" prompt centered on the player's screen just below
+## the crosshair. Shown by vehicles when the local player steps into their
+## InteractArea — screen-space so it never drifts off-vehicle or behind walls.
+
+var enter_prompt_ui: Control = null
+
+func show_enter_prompt() -> void:
+	if enter_prompt_ui == null:
+		_build_enter_prompt()
+	enter_prompt_ui.visible = true
+	enter_prompt_ui.modulate.a = 0.0
+	enter_prompt_ui.scale = Vector2.ONE * 0.85
+	var tw := create_tween().set_parallel(true)
+	tw.tween_property(enter_prompt_ui, "modulate:a", 1.0, 0.12)
+	tw.tween_property(enter_prompt_ui, "scale", Vector2.ONE, 0.22).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+
+func hide_enter_prompt() -> void:
+	if enter_prompt_ui == null or not enter_prompt_ui.visible:
+		return
+	var tw := create_tween()
+	tw.tween_property(enter_prompt_ui, "modulate:a", 0.0, 0.1)
+	tw.tween_callback(func(): enter_prompt_ui.visible = false)
+
+func _build_enter_prompt() -> void:
+	var center := CenterContainer.new()
+	center.set_anchors_preset(Control.PRESET_FULL_RECT)
+	center.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(center)
+	var stack := VBoxContainer.new()
+	stack.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	stack.alignment = BoxContainer.ALIGNMENT_CENTER
+	center.add_child(stack)
+	var spacer := Control.new()
+	spacer.custom_minimum_size = Vector2(0, 130) # push the row just below the crosshair
+	spacer.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	stack.add_child(spacer)
+	enter_prompt_ui = HBoxContainer.new()
+	enter_prompt_ui.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	enter_prompt_ui.add_theme_constant_override("separation", 12)
+	enter_prompt_ui.resized.connect(func():
+		if enter_prompt_ui != null:
+			enter_prompt_ui.pivot_offset = enter_prompt_ui.size / 2.0)
+	stack.add_child(enter_prompt_ui)
+	# Key cap
+	var key := PanelContainer.new()
+	key.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = Color(0.09, 0.09, 0.11, 0.92)
+	sb.border_color = Color(1.0, 0.78, 0.15)
+	sb.set_border_width_all(3)
+	sb.set_corner_radius_all(8)
+	sb.content_margin_left = 14.0
+	sb.content_margin_right = 14.0
+	sb.content_margin_top = 4.0
+	sb.content_margin_bottom = 4.0
+	key.add_theme_stylebox_override("panel", sb)
+	var key_label := Label.new()
+	key_label.text = "F"
+	key_label.add_theme_font_size_override("font_size", 24)
+	key_label.add_theme_color_override("font_color", Color(1.0, 0.78, 0.15))
+	key.add_child(key_label)
+	enter_prompt_ui.add_child(key)
+	# Action text
+	var txt := Label.new()
+	txt.text = "ENTER"
+	txt.add_theme_font_size_override("font_size", 24)
+	txt.add_theme_color_override("font_color", Color(0.97, 0.97, 0.97))
+	txt.add_theme_color_override("font_outline_color", Color(0, 0, 0))
+	txt.add_theme_constant_override("outline_size", 8)
+	enter_prompt_ui.add_child(txt)
+
 # ---------------- Launcher lock indicator ----------------
 ## Acquisition ring around crosshair while locking; solid diamond when locked.
 
 var lock_ui: Control = null
 var lock_ring: Control = null
 var lock_box: Control = null
+
+# ---------------- Tactical HUD chrome (reference match HUD) ----------------
+## Vector-drawn icons + plate styling for the match HUD: stats plate,
+## adrenaline plate, minimap compass frame. No external icon assets needed.
+
+var _tf_font: Font = null
+var _tf_bold: FontVariation = null
+var _skill_fill_go: StyleBoxFlat = null
+var _skill_fill_cd: StyleBoxFlat = null
+
+class TacticalIcon extends Control:
+	var kind := "plus"
+	var tint := Color.WHITE
+
+	func _init(k: String = "plus", c: Color = Color.WHITE) -> void:
+		kind = k
+		tint = c
+		custom_minimum_size = Vector2(20, 20)
+		mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+	func _draw() -> void:
+		var s := size
+		match kind:
+			"plus":
+				var t := maxf(4.0, s.x * 0.26)
+				draw_rect(Rect2((s.x - t) * 0.5, 1.0, t, s.y - 2.0), tint)
+				draw_rect(Rect2(1.0, (s.y - t) * 0.5, s.x - 2.0, t), tint)
+			"shield":
+				var pts := PackedVector2Array([
+					Vector2(2, 2), Vector2(s.x - 2, 2), Vector2(s.x - 2, s.y * 0.45),
+					Vector2(s.x * 0.5, s.y - 1), Vector2(2, s.y * 0.45)])
+				draw_colored_polygon(pts, tint)
+			"bolt":
+				var pts := PackedVector2Array([
+					Vector2(s.x * 0.62, 1), Vector2(s.x * 0.2, s.y * 0.55),
+					Vector2(s.x * 0.45, s.y * 0.55), Vector2(s.x * 0.34, s.y - 1),
+					Vector2(s.x * 0.8, s.y * 0.42), Vector2(s.x * 0.54, s.y * 0.42)])
+				draw_colored_polygon(pts, tint)
+			"bullets":
+				for i in 3:
+					var x := 1.0 + i * (s.x - 3.0) / 3.0
+					draw_rect(Rect2(x, s.y * 0.28, 3.4, s.y * 0.66), tint) # casing
+					draw_rect(Rect2(x, 2.0, 3.4, s.y * 0.22), tint) # tip
+			"rifle":
+				draw_rect(Rect2(0, s.y * 0.42, s.x * 0.72, 3.0), tint) # barrel+body
+				draw_rect(Rect2(s.x * 0.3, s.y * 0.55, 4.0, s.y * 0.4), tint) # grip
+				draw_rect(Rect2(s.x * 0.44, s.y * 0.52, 4.0, s.y * 0.34), tint) # mag
+				draw_rect(Rect2(s.x * 0.72, s.y * 0.34, s.x * 0.28, 5.0), tint) # stock
+			"pistol":
+				draw_rect(Rect2(1, s.y * 0.3, s.x - 2, 4.0), tint) # slide
+				draw_rect(Rect2(s.x * 0.22, s.y * 0.3 + 4.0, 4.0, s.y * 0.5), tint) # grip
+			"knife":
+				draw_colored_polygon(PackedVector2Array([
+					Vector2(1, s.y * 0.5), Vector2(s.x * 0.62, s.y * 0.28),
+					Vector2(s.x * 0.62, s.y * 0.72)]), tint) # blade
+				draw_rect(Rect2(s.x * 0.62, s.y * 0.42, s.x * 0.3, 3.0), tint) # handle
+			"grenade":
+				draw_circle(Vector2(s.x * 0.5, s.y * 0.62), s.x * 0.32, tint)
+				draw_rect(Rect2(s.x * 0.38, 2.0, s.x * 0.24, s.y * 0.24), tint) # cap
+			"rocket":
+				draw_rect(Rect2(0, s.y * 0.42, s.x * 0.8, 4.0), tint) # tube
+				draw_colored_polygon(PackedVector2Array([
+					Vector2(s.x * 0.8, s.y * 0.3), Vector2(s.x - 1, s.y * 0.5),
+					Vector2(s.x * 0.8, s.y * 0.7)]), tint) # warhead
+
+func _style_tactical_hud() -> void:
+	_tf_font = load("res://addons/GD-Sync/UI/Fonts/Outfit-Regular.ttf")
+	if _tf_font != null:
+		_tf_bold = FontVariation.new()
+		_tf_bold.base_font = _tf_font
+		_tf_bold.variation_embolden = 0.7
+	_style_stats_plates()
+	_style_skill_plate()
+	_style_minimap_frame()
+	# Retro-apply Outfit to the ammo labels built by _style_ammo_counter()
+	if _tf_bold != null and ammo_mag_label != null:
+		ammo_mag_label.add_theme_font_override("font", _tf_bold)
+		ammo_reserve_label.add_theme_font_override("font", _tf_bold)
+
+func _style_stats_plates() -> void:
+	var panel: PanelContainer = $StatsMargin/StatsPanel
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = Color(0.08, 0.09, 0.11, 0.88)
+	sb.border_color = Color(0.28, 0.32, 0.38, 0.6)
+	sb.set_border_width_all(2)
+	sb.set_corner_radius_all(6)
+	sb.content_margin_left = 16.0
+	sb.content_margin_right = 16.0
+	sb.content_margin_top = 8.0
+	sb.content_margin_bottom = 10.0
+	panel.add_theme_stylebox_override("panel", sb)
+
+	# Health: white plus icon + big white number, red bar
+	$StatsMargin/StatsPanel/StatsRow/HealthSection/HealthTop/HealthIcon.hide()
+	var hp_icon := TacticalIcon.new("plus", Color.WHITE)
+	hp_icon.custom_minimum_size = Vector2(20, 20)
+	$StatsMargin/StatsPanel/StatsRow/HealthSection/HealthTop.add_child(hp_icon)
+	$StatsMargin/StatsPanel/StatsRow/HealthSection/HealthTop.move_child(hp_icon, 0)
+	if _tf_bold != null:
+		hp_label.add_theme_font_override("font", _tf_bold)
+	hp_label.add_theme_font_size_override("font_size", 28)
+	_style_progress_bar(health_bar, Color(0.88, 0.22, 0.22), Color(0.2, 0.05, 0.05, 0.7))
+	health_bar.custom_minimum_size = Vector2(150, 7)
+
+	# Armor: blue shield icon + big blue number, blue bar
+	$StatsMargin/StatsPanel/StatsRow/ArmorSection/ArmorTop/ArmorIcon.hide()
+	var armor_icon := TacticalIcon.new("shield", Color(0.35, 0.65, 0.95))
+	armor_icon.custom_minimum_size = Vector2(20, 20)
+	$StatsMargin/StatsPanel/StatsRow/ArmorSection/ArmorTop.add_child(armor_icon)
+	$StatsMargin/StatsPanel/StatsRow/ArmorSection/ArmorTop.move_child(armor_icon, 0)
+	if _tf_bold != null:
+		armor_label.add_theme_font_override("font", _tf_bold)
+	armor_label.add_theme_font_size_override("font_size", 28)
+	armor_label.add_theme_color_override("font_color", Color(0.35, 0.65, 0.95))
+	_style_progress_bar(armor_bar, Color(0.35, 0.65, 0.95), Color(0.05, 0.12, 0.22, 0.7))
+	armor_bar.custom_minimum_size = Vector2(110, 7)
+
+	# Stamina strip blends into the plate style
+	_style_progress_bar(stamina_bar, Color(0.55, 0.75, 0.35), Color(0.05, 0.06, 0.08, 0.7))
+	stamina_bar.custom_minimum_size = Vector2(260, 6)
+
+func _style_progress_bar(bar: ProgressBar, fill: Color, bg: Color) -> void:
+	var f := StyleBoxFlat.new()
+	f.bg_color = fill
+	f.set_corner_radius_all(3)
+	var b := StyleBoxFlat.new()
+	b.bg_color = bg
+	b.set_corner_radius_all(3)
+	bar.add_theme_stylebox_override("fill", f)
+	bar.add_theme_stylebox_override("background", b)
+
+func _style_skill_plate() -> void:
+	var vbox: VBoxContainer = $SkillMargin/VBox
+
+	# Rebuild: plate > [bolt icon + label] + bar
+	vbox.remove_child(skill_label)
+	vbox.remove_child(skill_bar)
+	var plate := PanelContainer.new()
+	plate.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = Color(0.08, 0.09, 0.11, 0.88)
+	sb.border_color = Color(0.28, 0.32, 0.38, 0.6)
+	sb.set_border_width_all(2)
+	sb.set_corner_radius_all(6)
+	sb.content_margin_left = 18.0
+	sb.content_margin_right = 18.0
+	sb.content_margin_top = 6.0
+	sb.content_margin_bottom = 8.0
+	plate.add_theme_stylebox_override("panel", sb)
+	vbox.add_child(plate)
+
+	var inner := VBoxContainer.new()
+	inner.add_theme_constant_override("separation", 5)
+	plate.add_child(inner)
+
+	var row := HBoxContainer.new()
+	row.alignment = BoxContainer.ALIGNMENT_CENTER
+	row.add_theme_constant_override("separation", 8)
+	inner.add_child(row)
+	row.add_child(TacticalIcon.new("bolt", Color(0.45, 0.92, 0.3)))
+	row.add_child(skill_label)
+
+	inner.add_child(skill_bar)
+
+	if _tf_bold != null:
+		skill_label.add_theme_font_override("font", _tf_bold)
+	skill_label.add_theme_font_size_override("font_size", 18)
+	skill_label.add_theme_color_override("font_color", Color(0.45, 0.92, 0.3))
+	skill_bar.custom_minimum_size = Vector2(220, 5)
+	_skill_fill_go = StyleBoxFlat.new()
+	_skill_fill_go.bg_color = Color(0.45, 0.92, 0.3)
+	_skill_fill_go.set_corner_radius_all(2)
+	_skill_fill_cd = StyleBoxFlat.new()
+	_skill_fill_cd.bg_color = Color(1.0, 0.62, 0.15)
+	_skill_fill_cd.set_corner_radius_all(2)
+	_style_progress_bar(skill_bar, Color(0.45, 0.92, 0.3), Color(0.05, 0.06, 0.08, 0.8))
+	# Widen + raise the plate so the label never clips
+	var margin: MarginContainer = $SkillMargin
+	margin.offset_left = -150.0
+	margin.offset_right = 150.0
+	margin.offset_top = -104.0
+
+func _style_minimap_frame() -> void:
+	var mm: MarginContainer = $MinimapMargin
+	# Notch-style frame drawn on top of the map square
+	var frame := Panel.new()
+	frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var fsb := StyleBoxFlat.new()
+	fsb.bg_color = Color(0, 0, 0, 0)
+	fsb.border_color = Color(0.75, 0.78, 0.84, 0.6)
+	fsb.set_border_width_all(2)
+	fsb.set_corner_radius_all(10)
+	frame.add_theme_stylebox_override("panel", fsb)
+	mm.add_child(frame) # MarginContainer children all fill — last child draws on top
+
+	# Compass letters pinned to the frame edges
+	var bg: ColorRect = $MinimapMargin/MinimapBG
+	_mk_compass_label("N", Control.PRESET_CENTER_TOP, bg)
+	_mk_compass_label("S", Control.PRESET_CENTER_BOTTOM, bg)
+	_mk_compass_label("W", Control.PRESET_CENTER_LEFT, bg)
+	_mk_compass_label("E", Control.PRESET_CENTER_RIGHT, bg)
+	# Player dot: reference-green
+	$MinimapMargin/MinimapBG/PlayerDot.color = Color(0.45, 0.9, 0.3)
+
+func _mk_compass_label(letter: String, preset: int, parent: Control) -> void:
+	var l := Label.new()
+	l.text = letter
+	l.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	if _tf_bold != null:
+		l.add_theme_font_override("font", _tf_bold)
+	l.add_theme_font_size_override("font_size", 13)
+	l.add_theme_color_override("font_color", Color(0.92, 0.94, 0.97))
+	l.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.9))
+	l.add_theme_constant_override("outline_size", 4)
+	parent.add_child(l)
+	l.set_anchors_preset(preset)
+	match preset:
+		Control.PRESET_CENTER_TOP:
+			l.offset_left = -40; l.offset_right = 40; l.offset_top = 0; l.offset_bottom = 18
+		Control.PRESET_CENTER_BOTTOM:
+			l.offset_left = -40; l.offset_right = 40; l.offset_top = -18; l.offset_bottom = 0
+		Control.PRESET_CENTER_LEFT:
+			l.offset_left = 0; l.offset_right = 18; l.offset_top = -10; l.offset_bottom = 10
+		Control.PRESET_CENTER_RIGHT:
+			l.offset_left = -18; l.offset_right = 0; l.offset_top = -10; l.offset_bottom = 10
+	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	l.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 
 func _build_launcher_lock_ui() -> void:
 	lock_ui = Control.new()
@@ -269,36 +580,97 @@ func toggle_aircraft_hud(show_aircraft: bool) -> void:
 	if not show_aircraft:
 		heat_bar.hide()
 		overheat_label.hide()
+		altitude_label.hide()
 		heli_guide.hide()
+		if seat_grid_panel != null:
+			seat_grid_panel.hide()
 
 func update_aircraft_hud(d: Dictionary) -> void:
 	if d.get("kind", "aircraft") == "helicopter":
-		heat_bar.hide()
-		overheat_label.visible = false
-		var climb_txt := ("CLIMB" if d.climb >= 0.0 else "DESC")
-		var exit_txt := ("LANDED - F TO WALK OUT" if d.get("can_walk_out", false) else "AIRBORNE - F TO BAIL OUT")
+		altitude_label.visible = false # heli guide panel already shows ALT
+		var climb_txt := ("CLIMB +" if d.climb >= 0.0 else "DESC  ")
+		var exit_txt := ("[F] WALK OUT" if d.get("can_walk_out", false) else "[F] BAIL OUT")
+		var role := str(d.get("seat_role", "PASSENGER"))
+		var is_heli_gunner: bool = role.begins_with("DOOR GUNNER")
 		var heli_lines := [
-			"%s  HULL %d/%d" % [str(d.get("name", "Heli")), int(d.hp), int(d.max_hp)],
-			"ALT %5.1f m   SPD %3.0f km/h" % [d.get("alt", 0.0), d.speed],
-			"%s %+.1f m/s   COLL %3.0f%%  ENG %3.0f%%" % [climb_txt, d.climb, d.get("throttle", 0.0) * 100.0, d.get("engine", 0.0) * 100.0],
-			"SEATS %d/%d occupied" % [d.get("seats_total", 6) - d.get("seats_free", 6), d.get("seats_total", 6)],
-			exit_txt
+			"%s   HULL %d/%d" % [str(d.get("name", "HELICOPTER")).to_upper(), int(d.hp), int(d.max_hp)],
+			"ROLE: %s" % role,
+			"ALT %4.0f m    SPD %3.0f km/h" % [d.get("alt", 0.0), d.speed],
+			"%s %+.1f m/s" % [climb_txt, d.climb],
+			"COLL %3.0f%%   ENG %3.0f%%" % [d.get("throttle", 0.0) * 100.0, d.get("engine", 0.0) * 100.0],
+			"",
+			"SEATS %d/%d OCCUPIED" % [d.get("seats_total", 6) - d.get("seats_free", 6), d.get("seats_total", 6)],
+			"[CTRL+1-%d] Change Seat" % int(d.get("seats_total", 6)),
 		]
+		var h_val := float(d.get("heat", 0.0))
+		var is_oh := bool(d.get("overheated", false))
+		heat_bar.visible = is_heli_gunner
+		overheat_label.visible = is_heli_gunner and is_oh
+		if is_heli_gunner:
+			heat_bar.value = h_val
+			_update_heat_gauge(h_val, is_oh)
+			heli_lines.append("DOOR MG: %s" % ("OVERHEATED" if is_oh else "HEAT %d%%" % roundi(h_val)))
+			heli_lines.append("[HOLD LMB] Fire Door MG")
+			heli_lines.append("[F] Exit Seat")
+		else:
+			heat_bar.hide()
+			overheat_label.visible = false
+			heli_lines.append(exit_txt)
 		loadout_label.text = "\n".join(heli_lines)
 		heli_guide.visible = true
-		heli_guide_title.text = "HELICOPTER — %s" % ("PILOT" if bool(d.get("is_pilot", false)) else "PASSENGER")
+		heli_guide_title.text = "HELICOPTER — %s" % role
+		_update_seat_grid_box(d.get("seats_map", []), int(d.get("my_seat", -1)))
 		return
 	heli_guide.visible = false
 	if d.get("kind", "aircraft") == "humvee":
 		heat_bar.hide()
 		overheat_label.visible = false
+		altitude_label.visible = false
 		var humvee_lines := [
-			"%s   SPD %3.0f km/h   HULL %d/%d" % [str(d.get("name", "Vehicle")), d.speed, int(d.hp), int(d.max_hp)],
-			"SEATS %d/%d occupied" % [d.get("seats_total", 4) - d.get("seats_free", 4), d.get("seats_total", 4)],
-			"[W/S] Drive/Reverse   [A/D] Steer   [SPACE] Handbrake",
-			"[F] Exit Vehicle"
+			"%s   HULL %d/%d" % [str(d.get("name", "HUMVEE")).to_upper(), int(d.hp), int(d.max_hp)],
+			"SPD %3.0f km/h" % d.speed,
+			"SEATS %d/%d OCCUPIED" % [d.get("seats_total", 4) - d.get("seats_free", 4), d.get("seats_total", 4)],
+			"",
+			"[W/S] Drive    [A/D] Steer",
+			"[SPACE] Brake    [F] Exit",
+			"[CTRL+1-%d] Change Seat" % int(d.get("seats_total", 4)),
 		]
 		loadout_label.text = "\n".join(humvee_lines)
+		_update_seat_grid_box(d.get("seats_map", []), int(d.get("my_seat", -1)))
+		return
+	if d.get("kind", "aircraft") == "tank":
+		heat_bar.hide()
+		overheat_label.visible = false
+		altitude_label.visible = false
+		var reload_sec: float = float(d.get("reload", 0.0))
+		var status := "READY" if reload_sec <= 0.0 else "RELOAD %4.1fs" % reload_sec
+		var is_gunner: bool = str(d.get("seat_role", "")) == "TURRET GUNNER"
+		var tank_lines: Array = [
+			"%s   HULL %d/%d" % [str(d.get("name", "M1 ABRAMS")).to_upper(), int(d.hp), int(d.max_hp)],
+			"ROLE: %s" % str(d.get("seat_role", "CREW")),
+			"SPD %3.0f km/h" % d.speed,
+			"",
+		]
+		if is_gunner:
+			var h_val := float(d.get("heat", 0.0))
+			var is_oh := bool(d.get("overheated", false))
+			heat_bar.visible = true
+			heat_bar.value = h_val
+			_update_heat_gauge(h_val, is_oh)
+			overheat_label.visible = is_oh
+			var mg_status := "OVERHEATED" if is_oh else "HEAT %d%%" % roundi(h_val)
+			tank_lines.append("M2 BROWNING: %s" % mg_status)
+			tank_lines.append("[HOLD LMB] Fire Cupola")
+			tank_lines.append("[F] Exit Tank")
+			tank_lines.append("[CTRL+1-%d] Change Seat" % int(d.get("seats_total", 2)))
+		else:
+			tank_lines.append("120mm CANNON: %s" % status)
+			tank_lines.append("[LMB] Fire Cannon")
+			tank_lines.append("[W/S] Drive   [A/D] Pivot")
+			tank_lines.append("[F] Exit Tank")
+			tank_lines.append("[CTRL+1-%d] Change Seat" % int(d.get("seats_total", 2)))
+		loadout_label.text = "\n".join(tank_lines)
+		_update_seat_grid_box(d.get("seats_map", []), int(d.get("my_seat", -1)))
 		return
 	# Gatling heat: vertical bar beside the crosshair — only while GAU-8 selected
 	var gatling_selected: bool = d.get("slot", -1) == 0
@@ -306,18 +678,126 @@ func update_aircraft_hud(d: Dictionary) -> void:
 	overheat_label.visible = gatling_selected and d.overheated
 	if gatling_selected:
 		heat_bar.value = d.heat
-		heat_bar.modulate = _heat_color(float(d.heat))
-	var missile_l := "READY" if d.missile_l <= 0.0 else "%.1fs" % d.missile_l
-	var missile_r := "READY" if d.missile_r <= 0.0 else "%.1fs" % d.missile_r
+		_update_heat_gauge(float(d.heat), bool(d.get("overheated", false)))
+	# Altitude meter: left of the crosshair (AGL — height above ground/rooftops)
+	var alt: float = float(d.get("alt", 0.0))
+	altitude_label.visible = true
+	altitude_label.text = "ALT %d m" % roundi(alt)
+	altitude_label.add_theme_color_override("font_color",
+		Color(1, 0.3, 0.25) if alt < 30.0 else Color(0.55, 1, 0.65)) # low-alt pull-up warning
+	var missile_l := "RDY" if d.missile_l <= 0.0 else "%.1fs" % d.missile_l
+	var missile_r := "RDY" if d.missile_r <= 0.0 else "%.1fs" % d.missile_r
 	var gat := "OVERHEAT" if d.overheated else ("HEAT %d%%" % int(d.heat))
 	var lines := [
-		"SPD %3.0f   THR %3d%%   HULL %d/%d" % [d.speed, roundi(d.throttle * 100.0), int(d.hp), int(d.max_hp)],
-		("%s[1] GAU-8  %s  " % [">" if d.slot == 0 else " ", gat]),
-		("%s[2] AGM-65  LMB(L):%s   RMB(R):%s" % [">" if d.slot == 1 else " ", missile_l, missile_r]),
-		("%s[3] MK-82  x%d" % [">" if d.slot == 2 else " ", d.bombs]),
-		("%s[4] FLARE  x%d  (press 4)" % [">" if d.slot == 3 else " ", d.flares]),
+		"SPD %3.0f km/h    THR %3d%%" % [d.speed, roundi(d.throttle * 100.0)],
+		"HULL %d/%d" % [int(d.hp), int(d.max_hp)],
+		"",
+		("%s [1] GAU-8 30mm   %s" % [">" if d.slot == 0 else " ", gat]),
+		("%s [2] AGM-65       L:%s  R:%s" % [">" if d.slot == 1 else " ", missile_l, missile_r]),
+		("%s [3] MK-82 Bomb   x%d" % [">" if d.slot == 2 else " ", d.bombs]),
+		("%s [4] Flare        x%d" % [">" if d.slot == 3 else " ", d.flares]),
+		"",
+		"[V] Rear View    [F] Bail"
 	]
 	loadout_label.text = "\n".join(lines)
+	_update_seat_grid_box(d.get("seats_map", []), int(d.get("my_seat", -1)))
+
+func _update_seat_grid_box(seats_map: Array, my_seat: int) -> void:
+	var total := seats_map.size()
+	if total < 2:
+		if seat_grid_panel != null:
+			seat_grid_panel.hide()
+		return
+	if seat_grid_panel == null:
+		_build_seat_grid_box(total)
+	seat_grid_panel.show()
+	if _seat_boxes.size() != total:
+		for b in _seat_boxes:
+			b.queue_free()
+		_seat_boxes.clear()
+		_seat_labels.clear()
+		seat_grid_container.columns = mini(total, 2)
+		for i in total:
+			var box := PanelContainer.new()
+			box.custom_minimum_size = Vector2(36, 36)
+			box.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			var lbl := Label.new()
+			lbl.text = str(i + 1)
+			lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+			lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+			lbl.add_theme_font_size_override("font_size", 15)
+			lbl.add_theme_color_override("font_color", Color(1, 1, 1, 0.95))
+			lbl.add_theme_color_override("font_outline_color", Color(0, 0, 0, 1))
+			lbl.add_theme_constant_override("outline_size", 3)
+			lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			box.add_child(lbl)
+			seat_grid_container.add_child(box)
+			_seat_boxes.append(box)
+			_seat_labels.append(lbl)
+		seat_grid_hint.text = "[CTRL+1-%d] SEAT" % total
+	for i in total:
+		var sb := StyleBoxFlat.new()
+		sb.set_corner_radius_all(3)
+		var occupied: bool = i < seats_map.size() and bool(seats_map[i])
+		if occupied:
+			sb.bg_color = Color(0.15, 0.78, 0.25, 0.78) # green = filled
+		else:
+			sb.bg_color = Color(0.5, 0.5, 0.5, 0.2)     # transparent gray = empty
+		if i == my_seat:
+			sb.set_border_width_all(2)
+			sb.border_color = Color(1.0, 1.0, 0.3, 0.95) # yellow/white border = current seat
+		else:
+			sb.set_border_width_all(1)
+			sb.border_color = Color(0.3, 0.3, 0.3, 0.45) if not occupied else Color(0.2, 0.9, 0.3, 0.6)
+		_seat_boxes[i].add_theme_stylebox_override("panel", sb)
+		_seat_labels[i].modulate = Color(1, 1, 1, 1.0) if occupied else Color(1, 1, 1, 0.45)
+
+func _build_seat_grid_box(total: int) -> void:
+	seat_grid_panel = PanelContainer.new()
+	seat_grid_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	seat_grid_panel.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
+	seat_grid_panel.grow_horizontal = Control.GROW_DIRECTION_BEGIN
+	seat_grid_panel.grow_vertical = Control.GROW_DIRECTION_BEGIN
+	seat_grid_panel.offset_left = -210.0
+	seat_grid_panel.offset_top = -170.0
+	seat_grid_panel.offset_right = -20.0
+	seat_grid_panel.offset_bottom = -20.0
+	var panel_bg := StyleBoxFlat.new()
+	panel_bg.bg_color = Color(0.04, 0.04, 0.04, 0.45)
+	panel_bg.set_corner_radius_all(4)
+	panel_bg.content_margin_left = 8.0
+	panel_bg.content_margin_right = 8.0
+	panel_bg.content_margin_top = 6.0
+	panel_bg.content_margin_bottom = 6.0
+	seat_grid_panel.add_theme_stylebox_override("panel", panel_bg)
+	var vb := VBoxContainer.new()
+	vb.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	vb.alignment = BoxContainer.ALIGNMENT_CENTER
+	seat_grid_panel.add_child(vb)
+	var title_lbl := Label.new()
+	title_lbl.text = "SEATS"
+	title_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title_lbl.add_theme_font_size_override("font_size", 11)
+	title_lbl.add_theme_color_override("font_color", Color(0.85, 0.85, 0.9, 0.85))
+	title_lbl.add_theme_color_override("font_outline_color", Color(0, 0, 0, 1))
+	title_lbl.add_theme_constant_override("outline_size", 2)
+	title_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	vb.add_child(title_lbl)
+	seat_grid_container = GridContainer.new()
+	seat_grid_container.columns = mini(total, 2)
+	seat_grid_container.add_theme_constant_override("h_separation", 6)
+	seat_grid_container.add_theme_constant_override("v_separation", 6)
+	seat_grid_container.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	vb.add_child(seat_grid_container)
+	seat_grid_hint = Label.new()
+	seat_grid_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	seat_grid_hint.add_theme_font_size_override("font_size", 10)
+	seat_grid_hint.add_theme_color_override("font_color", Color(0.8, 0.8, 0.85, 0.75))
+	seat_grid_hint.add_theme_color_override("font_outline_color", Color(0, 0, 0, 1))
+	seat_grid_hint.add_theme_constant_override("outline_size", 2)
+	seat_grid_hint.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	vb.add_child(seat_grid_hint)
+	add_child(seat_grid_panel)
 
 func _heat_color(heat_val: float) -> Color:
 	# Gradation: 0-40% White->Yellow, 40-80% Yellow->Red, >=80% solid/pulsing Red
@@ -327,6 +807,87 @@ func _heat_color(heat_val: float) -> Color:
 	elif h < 80.0:
 		return Color(1.0, 0.9, 0.1).lerp(Color(1.0, 0.15, 0.1), (h - 40.0) / 40.0)
 	return Color(1.0, 0.15, 0.1)
+
+# ---------------- Heat gauge (thermometer chrome) ----------------
+## Decorative frame drawn around heat_bar: bracket end caps + graduation ticks
+## + HEAT caption, styled after the reference gauge. Shared by the jet gatling,
+## tank cupola MG and heli door MGs — all drive the same heat_bar column.
+
+var heat_gauge_chrome: HeatGaugeChrome = null
+
+func _style_heat_bar() -> void:
+	heat_bar.offset_left = 36.0 # 12px column inset inside the 18px chrome frame, nudged right of crosshair
+	heat_bar.offset_right = 48.0
+	heat_bar.offset_top = -44.0
+	heat_bar.offset_bottom = 44.0
+	var bg := StyleBoxFlat.new()
+	bg.bg_color = Color(0.05, 0.06, 0.08, 0.62)
+	heat_bar.add_theme_stylebox_override("background", bg)
+	var fill := StyleBoxFlat.new()
+	fill.bg_color = Color.WHITE
+	heat_bar.add_theme_stylebox_override("fill", fill)
+	heat_gauge_chrome = HeatGaugeChrome.new()
+	heat_gauge_chrome.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	heat_bar.get_parent().add_child(heat_gauge_chrome)
+	heat_bar.get_parent().move_child(heat_gauge_chrome, 0) # draw behind the fill column
+	heat_gauge_chrome.set_anchors_preset(Control.PRESET_CENTER)
+	heat_gauge_chrome.offset_left = 14.0
+	heat_gauge_chrome.offset_top = -64.0
+	heat_gauge_chrome.offset_right = 70.0
+	heat_gauge_chrome.offset_bottom = 76.0
+	heat_gauge_chrome.visible = heat_bar.visible
+	heat_bar.visibility_changed.connect(func() -> void:
+		if heat_gauge_chrome != null:
+			heat_gauge_chrome.visible = heat_bar.visible)
+	# HEAT caption under the bottom cap
+	var cap := Label.new()
+	cap.text = "HEAT"
+	cap.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	cap.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	cap.add_theme_font_size_override("font_size", 10)
+	cap.add_theme_color_override("font_color", Color(0.93, 0.95, 0.97))
+	cap.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.9))
+	cap.add_theme_constant_override("outline_size", 3)
+	cap.position = Vector2(0, 122)
+	cap.size = Vector2(56, 14)
+	heat_gauge_chrome.add_child(cap)
+	# keep OVERHEATED text clear of the gauge
+	overheat_label.offset_left = 78.0
+	overheat_label.offset_right = 188.0
+
+func _update_heat_gauge(heat_val: float, is_overheated: bool) -> void:
+	heat_bar.modulate = _heat_color(heat_val)
+	if heat_gauge_chrome != null:
+		heat_gauge_chrome.overheated = is_overheated
+
+class HeatGaugeChrome extends Control:
+	var overheated := false:
+		set(v):
+			if overheated != v:
+				overheated = v
+				queue_redraw()
+
+	func _draw() -> void:
+		var cx: float = size.x * 0.5
+		var accent: Color = Color(1.0, 0.38, 0.32) if overheated else Color(0.93, 0.95, 0.97)
+		var ink: Color = Color(0.04, 0.05, 0.07, 0.95)
+		var col := Rect2(cx - 9.0, 20.0, 18.0, 88.0) # frames the 12px fill column cleanly with 3px interior margin
+		# column border
+		draw_rect(col, ink, false, 2.0)
+		# bracket end caps (trapezoid + center tab), scaled down
+		var top_pts := PackedVector2Array([
+			Vector2(cx - 15.0, 20.0), Vector2(cx - 6.0, 10.0), Vector2(cx - 3.0, 10.0),
+			Vector2(cx - 3.0, 6.0), Vector2(cx + 3.0, 6.0), Vector2(cx + 3.0, 10.0),
+			Vector2(cx + 6.0, 10.0), Vector2(cx + 15.0, 20.0)])
+		var bot_pts := PackedVector2Array([
+			Vector2(cx - 15.0, 108.0), Vector2(cx - 6.0, 118.0), Vector2(cx - 3.0, 118.0),
+			Vector2(cx - 3.0, 122.0), Vector2(cx + 3.0, 122.0), Vector2(cx + 3.0, 118.0),
+			Vector2(cx + 6.0, 118.0), Vector2(cx + 15.0, 108.0)])
+		for pts in [top_pts, bot_pts]:
+			var outline: PackedVector2Array = pts.duplicate()
+			outline.append(pts[0])
+			draw_colored_polygon(pts, accent)
+			draw_polyline(outline, ink, 2.0)
 
 func show_boundary_warning(seconds_left: float) -> void:
 	boundary_warning.show()
@@ -350,15 +911,52 @@ func set_weapon_names(names: Array) -> void:
 		update_weapon_slot(-1) # redraw names, no active slot change info
 	# Re-mark the active slot if the player script tells us (cheap: next switch fixes it)
 
+# ---------------- Loadout slot cards ----------------
+## Reference-style weapon list: dark plates, olive-green highlight for the
+## equipped slot plus a right chevron; each row gets a small vector weapon icon.
+
+var _slot_sb_sel: StyleBoxFlat = null
+var _slot_sb_idle: StyleBoxFlat = null
+const SLOT_ICON_KINDS: Array[String] = ["rifle", "pistol", "knife", "grenade", "rocket"]
+
+func _style_weapon_slots() -> void:
+	var vbox := $WeaponMargin/VBoxContainer as VBoxContainer
+	if vbox != null:
+		vbox.add_theme_constant_override("separation", 4)
+	_slot_sb_sel = _make_slot_sb(Color(0.1, 0.13, 0.06, 0.9), Color(0.48, 0.78, 0.25))
+	_slot_sb_idle = _make_slot_sb(Color(0.05, 0.06, 0.08, 0.72), Color(0.32, 0.36, 0.32, 0.55))
+	for i in slots.size():
+		var s = slots[i]
+		s.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.9))
+		s.add_theme_constant_override("outline_size", 4)
+		# Vector weapon icon docked left of the text (text clears it via margin)
+		var icon := TacticalIcon.new(SLOT_ICON_KINDS[i] if i < SLOT_ICON_KINDS.size() else "rifle", Color(0.85, 0.88, 0.92, 0.9))
+		icon.position = Vector2(10, 7)
+		s.add_child(icon)
+	update_weapon_slot(-1)
+
+func _make_slot_sb(bg: Color, accent: Color) -> StyleBoxFlat:
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = bg
+	sb.border_color = accent
+	sb.border_width_left = 3
+	sb.set_corner_radius_all(5)
+	sb.content_margin_left = 36.0
+	sb.content_margin_right = 12.0
+	sb.content_margin_top = 4.0
+	sb.content_margin_bottom = 4.0
+	return sb
+
 func update_weapon_slot(active_index: int) -> void:
 	for i in range(slots.size()):
 		var label := "%d. %s" % [i + 1, weapon_slot_names[i]]
-		if i == active_index:
-			slots[i].modulate = Color(1, 1, 0, 1)
-			slots[i].text = "> " + label + " <"
-		else:
-			slots[i].modulate = Color(1, 1, 1, 0.5)
-			slots[i].text = "  " + label + "  "
+		var is_sel := i == active_index
+		slots[i].modulate = Color.WHITE
+		slots[i].text = (label + "   ›") if is_sel else ("  " + label)
+		if _slot_sb_sel != null:
+			slots[i].add_theme_stylebox_override("normal", _slot_sb_sel if is_sel else _slot_sb_idle)
+			slots[i].add_theme_color_override("font_color",
+				Color(0.62, 0.88, 0.34) if is_sel else Color(0.85, 0.88, 0.93, 0.75))
 
 func update_stats(hp: int, max_hp: int, armor: int, max_armor: int, stamina: float, max_stamina: float) -> void:
 	hp_label.text = "%d" % hp
@@ -377,7 +975,66 @@ func update_stats(hp: int, max_hp: int, armor: int, max_armor: int, stamina: flo
 
 
 func update_ammo(mag: int, reserve: int):
-	ammo_label.text = "%d / %d" % [mag, reserve]
+	ammo_label.text = "%d / %d" % [mag, reserve] # legacy fallback
+	if ammo_mag_label != null:
+		ammo_mag_label.text = str(mag)
+	if ammo_reserve_label != null:
+		ammo_reserve_label.text = str(reserve)
+
+# ---------------- Ammo counter ----------------
+## Big mag number, thin slash, smaller reserve — baseline-aligned on a dark
+## strip, bottom-right. Styled after the reference counter.
+
+var ammo_mag_label: Label = null
+var ammo_reserve_label: Label = null
+
+func _style_ammo_counter() -> void:
+	ammo_label.hide()
+	var panel := PanelContainer.new()
+	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = Color(0.08, 0.09, 0.11, 0.88)
+	sb.border_color = Color(0.25, 0.28, 0.32, 0.6)
+	sb.set_border_width_all(2)
+	sb.set_corner_radius_all(6)
+	sb.content_margin_left = 14.0
+	sb.content_margin_right = 16.0
+	sb.content_margin_top = 4.0
+	sb.content_margin_bottom = 6.0
+	panel.add_theme_stylebox_override("panel", sb)
+	panel.size_flags_horizontal = Control.SIZE_SHRINK_END # hug content, right-aligned
+	var hb := HBoxContainer.new()
+	hb.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	hb.add_theme_constant_override("separation", 8)
+	panel.add_child(hb)
+
+	# 3 vertical bullets icon on the left
+	var bullet_icon := TacticalIcon.new("bullets", Color(0.85, 0.88, 0.92, 0.85))
+	bullet_icon.custom_minimum_size = Vector2(16, 26)
+	hb.add_child(bullet_icon)
+
+	ammo_mag_label = _make_ammo_label(40, Color.WHITE)
+	hb.add_child(ammo_mag_label)
+	var slash := _make_ammo_label(22, Color(0.55, 0.58, 0.62, 0.75))
+	slash.text = "/"
+	hb.add_child(slash)
+	ammo_reserve_label = _make_ammo_label(24, Color(0.65, 0.68, 0.72, 0.92))
+	hb.add_child(ammo_reserve_label)
+	$AmmoMargin.add_child(panel)
+
+func _make_ammo_label(size_px: int, color: Color) -> Label:
+	var l := Label.new()
+	l.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	l.vertical_alignment = VERTICAL_ALIGNMENT_BOTTOM
+	l.size_flags_vertical = Control.SIZE_SHRINK_END # baseline-align across font sizes
+	l.add_theme_font_size_override("font_size", size_px)
+	l.add_theme_color_override("font_color", color)
+	l.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.7))
+	l.add_theme_constant_override("outline_size", 3)
+	l.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.55))
+	l.add_theme_constant_override("shadow_offset_x", 2)
+	l.add_theme_constant_override("shadow_offset_y", 2)
+	return l
 
 func update_reload(progress: float):
 	if progress < 0.0:
@@ -385,6 +1042,60 @@ func update_reload(progress: float):
 	else:
 		reload_bar.show()
 		reload_bar.value = progress * 100.0
+
+## Center-screen floating hint that rises and fades (e.g. "Need to be closer")
+func show_center_hint(hint_text: String, col: Color = Color(1.0, 0.55, 0.15)) -> void:
+	var hint := Label.new()
+	hint.text = hint_text
+	hint.add_theme_color_override("font_color", col)
+	hint.add_theme_color_override("font_outline_color", Color(0, 0, 0, 1))
+	hint.add_theme_constant_override("outline_size", 5)
+	hint.add_theme_font_size_override("font_size", 20)
+	hint.custom_minimum_size = Vector2(500, 0)
+	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	$DamageTextSpawn.add_child(hint)
+	hint.position = Vector2(-250, -70)
+	var tween := create_tween().set_parallel(true)
+	tween.tween_property(hint, "position:y", -110.0, 0.8).as_relative()
+	tween.tween_property(hint, "modulate:a", 0.0, 0.8)
+	tween.chain().tween_callback(hint.queue_free)
+
+## Incoming homing missile (AT4 / AGM-65) warning for aircraft + helicopters.
+## Flashing red banner + fast beeps while anything is locked onto the vehicle.
+var _missile_warn_label: Label = null
+var _missile_warn_until: float = 0.0
+
+func set_missile_warning(active: bool) -> void:
+	if active:
+		if _missile_warn_label == null:
+			_missile_warn_label = Label.new()
+			_missile_warn_label.text = "▲▼ MISSILE DETECTED — DEPLOY FLARES [F] ▼▲"
+			_missile_warn_label.add_theme_color_override("font_color", Color(1.0, 0.25, 0.2))
+			_missile_warn_label.add_theme_color_override("font_outline_color", Color(0, 0, 0, 1))
+			_missile_warn_label.add_theme_constant_override("outline_size", 6)
+			_missile_warn_label.add_theme_font_size_override("font_size", 26)
+			_missile_warn_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+			_missile_warn_label.set_anchors_preset(Control.PRESET_CENTER_TOP)
+			_missile_warn_label.offset_left = -300
+			_missile_warn_label.offset_right = 300
+			_missile_warn_label.offset_top = 70
+			_missile_warn_label.offset_bottom = 106
+			_missile_warn_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			add_child(_missile_warn_label)
+		_missile_warn_until = Time.get_ticks_msec() / 1000.0 + 0.4
+		if not _missile_warn_label.visible:
+			_missile_warn_label.visible = true
+			_missile_warn_label.modulate.a = 1.0
+			Sfx.oneshot2d("beep") # lock tone; re-fires while the threat persists
+
+func _process(_delta: float) -> void:
+	# Blink + auto-hide shortly after the last frame the missile was inbound
+	if _missile_warn_label != null and _missile_warn_label.visible:
+		var now := Time.get_ticks_msec() / 1000.0
+		if now >= _missile_warn_until:
+			_missile_warn_label.visible = false
+		else:
+			_missile_warn_label.modulate.a = 0.45 + 0.55 * absf(sin(now * 14.0))
 
 func show_hit_marker(damage_amount: float = 0.0):
 	hit_marker.modulate.a = 1.0
@@ -759,12 +1470,16 @@ func update_skill_duration(duration: float):
 func update_skill_ui(skill_name: String, cooldown: float, max_cooldown: float):
 	if cooldown <= 0:
 		skill_label.text = "[X] " + skill_name + " READY"
-		skill_label.modulate = Color(0.4, 1.0, 0.4)
+		skill_label.modulate = Color(0.55, 1.0, 0.45)
 		skill_bar.value = 1.0
+		if _skill_fill_go != null:
+			skill_bar.add_theme_stylebox_override("fill", _skill_fill_go)
 	else:
 		skill_label.text = "[X] " + skill_name + " (" + str(round(cooldown)) + "s)"
-		skill_label.modulate = Color(1.0, 0.4, 0.4)
+		skill_label.modulate = Color(1.0, 0.55, 0.35)
 		skill_bar.value = 1.0 - (cooldown / max_cooldown)
+		if _skill_fill_cd != null:
+			skill_bar.add_theme_stylebox_override("fill", _skill_fill_cd)
 
 func update_bow_ui(is_active: bool, charge_level: float = 0.0, bounces: int = 0):
 	bow_ui.visible = is_active

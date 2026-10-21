@@ -23,6 +23,9 @@ var _exploded: bool = false
 func _ready() -> void:
 	if direction == Vector3.ZERO:
 		direction = -global_transform.basis.z.normalized()
+	# Incoming-missile warning: vehicles poll this group
+	if target_vehicle != null:
+		add_to_group("homing_missile")
 
 func _physics_process(delta: float) -> void:
 	if _exploded:
@@ -33,7 +36,7 @@ func _physics_process(delta: float) -> void:
 		return
 
 	# Homing steering toward locked vehicle
-	if target_vehicle and is_instance_valid(target_vehicle):
+	if target_vehicle and is_instance_valid(target_vehicle) and target_vehicle.is_inside_tree():
 		var target_pos: Vector3 = target_vehicle.global_position
 		# Aim at vehicle center (not ground wheels)
 		target_pos.y += 0.8

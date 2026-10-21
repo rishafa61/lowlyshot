@@ -13,6 +13,7 @@ signal steam_initialized_status(success: bool)
 signal party_member_joined(steam_id: int, member_name: String)
 signal party_member_left(steam_id: int)
 signal lobby_joined(lobby_id: int)
+signal lobby_left
 signal match_started()
 signal match_joined()
 signal lobbies_refreshed(lobbies: Array)
@@ -207,6 +208,21 @@ func join_lobby_by_id(lobby_id: int) -> bool:
 	_log("joinLobby(%d)" % lobby_id)
 	steam.joinLobby(lobby_id)
 	return true
+
+## Leave the current lobby and return to a solo party
+func leave_lobby() -> void:
+	var steam = _get_steam()
+	if current_lobby_id != 0 and steam != null and is_steam_running:
+		_log("leaveLobby(%d)" % current_lobby_id)
+		steam.leaveLobby(current_lobby_id)
+	current_lobby_id = 0
+	party_members.clear()
+	if steam and is_steam_running:
+		steam.setRichPresence("connect", "")
+		steam.setRichPresence("status", "In main menu")
+	# Re-create our own empty lobby so friends can still join us later
+	ensure_lobby()
+	lobby_left.emit()
 
 ## Direct lobby invite without overlay: works in non-Steam exports
 func invite_friend_to_lobby(friend_id: int) -> bool:

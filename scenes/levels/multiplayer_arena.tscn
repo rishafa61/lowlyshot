@@ -6,12 +6,6 @@
 [ext_resource type="Script" uid="uid://di4y2763f8jkg" path="res://scripts/multiplayer/spawn_point.gd" id="4_sp"]
 [ext_resource type="PackedScene" uid="uid://c8usao40qdgdd" path="res://scenes/levels/arena_template.tscn" id="5_arena"]
 
-[sub_resource type="Environment" id="env_arena"]
-background_mode = 1
-background_color = Color(0.05, 0.05, 0.08, 1)
-ambient_light_source = 2
-ambient_light_color = Color(0.4, 0.4, 0.4, 1)
-
 [node name="MultiplayerArena" type="Node3D" unique_id=1880379019]
 script = ExtResource("1_mgr")
 
@@ -20,22 +14,15 @@ script = ExtResource("3_spawner")
 
 [node name="Timer" type="Timer" parent="." unique_id=91271248]
 
-[node name="Light" type="DirectionalLight3D" parent="." unique_id=967131064]
-transform = Transform3D(0.866, -0.433, 0.25, 0, 0.5, 0.866, -0.5, -0.75, 0.433, 0, 15, 0)
-shadow_enabled = true
-
-[node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=278238472]
-environment = SubResource("env_arena")
-
 [node name="ArenaTemplate" parent="." unique_id=271093004 instance=ExtResource("5_arena")]
 
 [node name="AttackersSpawn" type="Marker3D" parent="." unique_id=342047703]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -66.27745, 6.2646084, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -60, 1.2, 0)
 script = ExtResource("4_sp")
 team = "attackers"
 
 [node name="DefendersSpawn" type="Marker3D" parent="." unique_id=1712310555]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 65.40154, 7.4767637, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 60, 1.2, 0)
 script = ExtResource("4_sp")
 team = "defenders"
 

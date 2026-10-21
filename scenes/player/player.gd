@@ -21,7 +21,7 @@ const LEAN_ROT: float = deg_to_rad(15.0)
 const LEAN_SPEED: float = 8.0
 
 const BOB_FREQ: float = 2.4
-const BOB_AMP: float = 0.08
+const BOB_AMP: float = 0.12
 var t_bob: float = 0.0
 
 var is_sliding: bool = false
@@ -64,6 +64,14 @@ var _pre_pilot_parent: Node = null
 var _pre_pilot_layer: int = 1
 var _pre_pilot_mask: int = 1
 
+# Warzone-style skydive (freefall high above the ground)
+const SKYDIVE_MIN_HEIGHT: float = 50.0  ## min height above ground to enter freefall
+const SKYDIVE_FALL_GLIDE: float = 14.0  ## m/s descent while gliding (neutral)
+const SKYDIVE_FALL_DIVE: float = 38.0   ## m/s descent while dive (Shift + move)
+const SKYDIVE_MOVE_SPEED: float = 15.0  ## horizontal glide speed
+const SKYDIVE_DIVE_SPEED: float = 28.0  ## horizontal speed while dive-diving
+var is_skydiving: bool = false
+
 # Weapon Loadout State
 enum Slot { RIFLE, PISTOL, MELEE, THROWABLE, HEAVY }
 var active_slot = Slot.PISTOL
@@ -78,18 +86,29 @@ var grenade_projectile = load("res://scenes/weapons/utilities/grenade_projectile
 
 var is_reloading: bool = false
 var reload_timer: float = 0.0
+var _reload_abort_requested: bool = false
 const RELOAD_TIME: float = 1.5
 
 const WEAPON_POS_HIP = Vector3(0.3, -0.3, -0.5)
 const WEAPON_POS_ADS = Vector3(0.0, -0.22, -0.4)
+const PITCH_LIMIT: float = deg_to_rad(87.0)  # keep off the ±90° euler pole (flip bug)
+const WPN_SWAY_ROT: float = 0.0012  # rad per mouse pixel
+const WPN_TILT_ROT: float = 0.035   # strafe tilt rad
+const WPN_MOVE_POS: float = 0.035   # movement lag offset (m)
+const WPN_BOB_AMT: float = 0.008    # viewmodel bob amplitude
 const FOV_NORMAL = 75.0
 const FOV_ADS = 55.0
 var current_recoil := Vector3.ZERO
 var camera_recoil := 0.0
+var camera_yaw_recoil := 0.0
+var mouse_input: Vector2 = Vector2.ZERO
 var recoil_spread := 0.0
+var _empty_click_cd := 0.0
 var is_aiming := false
 var melee_tween: Tween = null
+var reload_tween: Tween = null
 var melee_swing_offset := Vector3.ZERO
+static var _tick_streams := {}
 
 @onready var head: Node3D = $Head
 @onready var flashlight = $Head/Flashlight
@@ -100,6 +119,16 @@ var melee_swing_offset := Vector3.ZERO
 @onready var weapon_holder: Node3D = $Head/Camera3D/WeaponHolder
 @onready var collision_shape: CollisionShape3D = $CollisionShape3D
 @onready var hud = $HUD
+@onready var pause_menu = get_node_or_null("PauseMenu")
+
+## True while pause menu / in-game settings overlay is up — game input must not leak.
+func _menu_open() -> bool:
+	if pause_menu != null and pause_menu.visible:
+		return true
+	var mp_hud = get_tree().root.find_child("MultiplayerHUD", true, false)
+	if mp_hud != null and mp_hud.get("side_picker") != null and mp_hud.side_picker.visible:
+		return true
+	return false
 
 @onready var sniper_scope_ui = $SniperScope
 
@@ -199,7 +228,7 @@ func _on_health_damaged(_raw_amount: float, _absorbed: float) -> void:
 		hud.update_stats(hp, max_hp, armor, max_armor, stamina, max_stamina)
 		hud.update_minimap(global_position, head.rotation.y)
 		hud.show_damage_vignette()
-	camera_recoil += 0.35 # punchy feedback: you KNOW you got hit
+	camera_recoil += 0.06 # small flinch so getting shot stays fightable (was 0.35)
 
 var last_attacker: String = ""
 var last_weapon: String = ""
@@ -239,6 +268,8 @@ func exit_spectator_mode() -> void:
 	head.position.y = 1.8
 	head.rotation = Vector3.ZERO
 	camera.rotation = Vector3.ZERO
+	camera_recoil = 0.0
+	camera_yaw_recoil = 0.0
 	camera.fov = FOV_NORMAL
 	weapon_holder.visible = true
 	if is_dead:
@@ -401,16 +432,23 @@ func net_play_death() -> void:
 
 ## Called by the MultiplayerManager with the owner's latest transform
 func net_set_target(pos: Vector3, yaw: float, pitch: float) -> void:
+	if not pos.is_finite() or not is_finite(yaw) or not is_finite(pitch):
+		return
 	_net_target_pos = pos
 	_net_target_yaw = yaw
 	_net_target_pitch = pitch
 
 func _puppet_physics(delta: float) -> void:
 	var t: float = min(1.0, delta * 15.0)
-	global_position = global_position.lerp(_net_target_pos, t)
+	var prev_pos := global_position
+	if _net_target_pos.is_finite():
+		global_position = global_position.lerp(_net_target_pos, t)
 	rotation.y = lerp_angle(rotation.y, _net_target_yaw, t)
 	if head:
 		head.rotation.x = lerp_angle(head.rotation.x, _net_target_pitch, t)
+	if is_instance_valid(_puppet_body) and _puppet_body.has_method("sync_movement"):
+		var moved: bool = (Vector2(global_position.x - prev_pos.x, global_position.z - prev_pos.z).length() / maxf(delta, 0.001)) > 0.5
+		_puppet_body.sync_movement(moved, false, false, not is_on_floor())
 
 func _net_send_state() -> void:
 	_net_tick += 1
@@ -435,6 +473,30 @@ func _net_apply_damage(amount: float, attacker_name: String, weapon_name: String
 		return # no friendly fire
 	take_damage(amount, attacker_name, weapon_name, attacker_faction, attacker_pos)
 
+## Warzone-style freefall: above SKYDIVE_MIN_HEIGHT the fall speed is capped
+## (gentle glide) and air steering is enabled; Shift + move dives faster.
+func _apply_fall_physics(delta: float) -> void:
+	if not _is_high_above_ground():
+		is_skydiving = false
+		velocity.y -= gravity * delta
+		return
+	is_skydiving = true
+	var wants_dive := Input.is_action_pressed("sprint") and \
+		Input.get_vector("move_left", "move_right", "move_forward", "move_backward").length() > 0.1
+	var target_fall := -SKYDIVE_FALL_DIVE if wants_dive else -SKYDIVE_FALL_GLIDE
+	# Accelerate toward the cap at 2x gravity for a weighty but controlled entry
+	velocity.y = move_toward(velocity.y, target_fall, gravity * 2.0 * delta)
+
+func _is_high_above_ground() -> bool:
+	# Perf: terrain across maps is y < 20 m; under 50 m absolute altitude player can never be 50 m above ground
+	if global_position.y < SKYDIVE_MIN_HEIGHT:
+		return false
+	var space := get_world_3d().direct_space_state
+	var query := PhysicsRayQueryParameters3D.create(
+		global_position, global_position + Vector3.DOWN * SKYDIVE_MIN_HEIGHT,
+		collision_mask, [get_rid()])
+	return space.intersect_ray(query).is_empty() # nothing within 50m below = high freefall
+
 func take_damage(amount: float, attacker_name: String = "", weapon_name: String = "", attacker_faction: String = "", attacker_pos: Vector3 = Vector3.INF) -> float:
 	if is_puppet:
 		# Remote copy: the owning peer applies the damage to the real player
@@ -458,8 +520,24 @@ func take_damage(amount: float, attacker_name: String = "", weapon_name: String 
 			hud.show_damage_direction(atan2(local.x, -local.z))
 	return final
 
+func _die():
+	die()
+
 func die():
-	is_dead = true
+	# Drop carried bomb if this player is the S&D carrier
+	var mgr_scene = get_tree().current_scene
+	if mgr_scene and mgr_scene.has_method("drop_bomb") and mgr_scene.get("bomb_carrier_peer") != null:
+		var my_pid := multiplayer.get_unique_id() if GlobalData.is_networked() else 1
+		if int(mgr_scene.get("bomb_carrier_peer")) == my_pid:
+			if multiplayer.is_server() or not GlobalData.is_networked():
+				mgr_scene.drop_bomb(global_position)
+			elif mgr_scene.has_method("request_drop_bomb"):
+				mgr_scene.request_drop_bomb.rpc_id(1, global_position)
+	# Cancel any in-progress reload anim
+	if reload_tween and reload_tween.is_valid():
+		reload_tween.kill()
+	if is_instance_valid(current_weapon_instance):
+		current_weapon_instance.rotation = Vector3.ZERO
 	Sfx.stop_loop(_sfx_move)
 	_sfx_move = null
 	_sfx_move_state = ""
@@ -528,6 +606,7 @@ func respawn():
 func _unhandled_input(event: InputEvent) -> void:
 	if is_puppet: return
 	if hud and hud.console_visible: return
+	if _menu_open(): return
 	if is_spectating:
 		if event is InputEventMouseMotion and not spectate_first_person:
 			spectate_yaw -= event.relative.x * MOUSE_SENSITIVITY
@@ -544,7 +623,7 @@ func _unhandled_input(event: InputEvent) -> void:
 				spectate_dist = clampf(spectate_dist + 0.4, 1.5, 7.0)
 				get_viewport().set_input_as_handled()
 				return
-		if event.is_action_pressed("interact") or (event is InputEventKey and event.keycode == KEY_E and event.pressed and not event.echo):
+		if event.is_action_pressed("interact"):
 			toggle_spectate_mode()
 			get_viewport().set_input_as_handled()
 			return
@@ -565,8 +644,11 @@ func _unhandled_input(event: InputEvent) -> void:
 				current_sens *= 0.3
 		
 		rotate_y(-event.relative.x * current_sens)
-		head.rotate_x(-event.relative.y * current_sens)
-		head.rotation.x = clamp(head.rotation.x, -PI/2.0, PI/2.0)
+		# Direct euler write: rotate_x() basis-multiply near the pitch pole flips
+		# yaw 180° once lean roll (head.rotation.z) is active — repro'd headless.
+		# Clamping raw pitch below 90° removes the flip entirely.
+		head.rotation.x = clampf(head.rotation.x - event.relative.y * current_sens, -PITCH_LIMIT, PITCH_LIMIT)
+		mouse_input = event.relative
 		
 	if event.is_action_pressed("weapon_1"): switch_weapon(Slot.RIFLE)
 	if event.is_action_pressed("weapon_2"): switch_weapon(Slot.PISTOL)
@@ -629,11 +711,15 @@ func switch_weapon(slot: Slot) -> void:
 	# Animation cancel: Abort reload if switching
 	if is_reloading:
 		is_reloading = false
+		if reload_tween and reload_tween.is_valid():
+			reload_tween.kill()
 		hud.update_reload(-1.0)
 		
 	if melee_tween and melee_tween.is_valid():
 		melee_tween.kill()
 	melee_swing_offset = Vector3.ZERO
+	if reload_tween and reload_tween.is_valid():
+		reload_tween.kill()
 	if is_instance_valid(current_weapon_instance):
 		current_weapon_instance.rotation = Vector3.ZERO
 	
@@ -674,18 +760,133 @@ func _push_hud_slot_names() -> void:
 
 
 
+func get_active_reload_duration() -> float:
+	var w = weapons[active_slot] if weapons.size() > active_slot else null
+	if not w: return RELOAD_TIME
+	var rt = float(w.get("reload_time", 0.0))
+	return rt if rt > 0.0 else RELOAD_TIME
+
+static var _click_stream: AudioStreamWAV = null
+
+func _play_synth_tick(freq: float, dur: float, vol_db: float) -> void:
+	# ponytail: synthesized mechanical tick (pump cycle / shell insert) — swap for real foley wavs when recorded
+	var key := str(int(freq))
+	if not _tick_streams.has(key):
+		var n := maxi(int(22050.0 * dur), 2)
+		var half := maxi(int(11025.0 / freq), 1)
+		var b := PackedByteArray()
+		b.resize(n)
+		for i in n:
+			var env: float = 1.0 - (float(i) / float(n))
+			var hi: bool = (i % (half * 2)) < half
+			b[i] = clampi(128 + int(70.0 * env * (1.0 if hi else -1.0)), 0, 255)
+		var s := AudioStreamWAV.new()
+		s.format = AudioStreamWAV.FORMAT_8_BITS
+		s.mix_rate = 22050
+		s.data = b
+		_tick_streams[key] = s
+	var p := AudioStreamPlayer.new()
+	p.stream = _tick_streams[key]
+	p.bus = "SFX"
+	p.volume_db = vol_db
+	add_child(p)
+	p.finished.connect(p.queue_free)
+	p.play()
+
+func _play_empty_click() -> void:
+	if _empty_click_cd > 0.0:
+		return
+	_empty_click_cd = 0.25
+	fire_cooldown = 0.2
+	if _click_stream == null:
+		_click_stream = AudioStreamWAV.new()
+		_click_stream.format = AudioStreamWAV.FORMAT_8_BITS
+		_click_stream.mix_rate = 22050
+		var b := PackedByteArray()
+		b.resize(180)
+		for i in 180:
+			var env: float = 1.0 - (float(i) / 180.0)
+			var sig: int = int(55.0 * env * (1.0 if (i % 8) < 4 else -1.0))
+			b[i] = clampi(128 + sig, 0, 255)
+		_click_stream.data = b
+	var p := AudioStreamPlayer.new()
+	p.stream = _click_stream
+	p.bus = "SFX"
+	p.volume_db = -4.0
+	add_child(p)
+	p.finished.connect(p.queue_free)
+	p.play()
+
+func _kill_reload_anim() -> void:
+	if reload_tween and reload_tween.is_valid():
+		reload_tween.kill()
+	if is_instance_valid(current_weapon_instance):
+		current_weapon_instance.rotation = Vector3.ZERO
+		current_weapon_instance.position = Vector3.ZERO
+
+func _start_reload_dip(dur: float, looping: bool) -> void:
+	if not is_instance_valid(current_weapon_instance):
+		return
+	if reload_tween and reload_tween.is_valid():
+		reload_tween.kill()
+	current_weapon_instance.rotation = Vector3.ZERO
+	current_weapon_instance.position = Vector3.ZERO
+	reload_tween = create_tween()
+	if looping:
+		reload_tween.set_loops()
+	reload_tween.tween_property(current_weapon_instance, "rotation:x", deg_to_rad(45), dur * 0.35).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	reload_tween.parallel().tween_property(current_weapon_instance, "position:y", -0.15, dur * 0.35).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	if not looping:
+		reload_tween.tween_interval(dur * 0.2)
+	reload_tween.tween_property(current_weapon_instance, "rotation:x", 0.0, dur * 0.35).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	reload_tween.parallel().tween_property(current_weapon_instance, "position:y", 0.0, dur * 0.35).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+
 func start_reload():
 	is_reloading = true
 	reload_timer = 0.0
-	# Reload sound only for weapons with the rifle asset
-	var wid := str(weapons[active_slot].get("id", ""))
-	if wid in ["ak47", "m4a4"]:
+	_reload_abort_requested = false
+	var w = weapons[active_slot]
+	# Shotgun: per-shell dip; each finish_reload inserts 1 and chains next
+	if w.get("is_shotgun", false):
+		var per := float(w.get("reload_time", 0.52))
+		_start_reload_dip(per, true)
+		return
+	# Reload sound for rifles/smgs
+	var wid := str(w.get("id", ""))
+	if wid in ["ak47", "m4a4", "mp5", "steyr_aug", "rpd"]:
 		Sfx.oneshot3d("rifle_reload", self, 6.0, 40.0, 0.0)
+	_start_reload_dip(get_active_reload_duration(), false)
 
 func finish_reload():
-	is_reloading = false
-	hud.update_reload(-1.0)
 	var w = weapons[active_slot]
+	# Shell-by-shell for shotguns
+	if w.get("is_shotgun", false):
+		if _reload_abort_requested:
+			_reload_abort_requested = false
+			is_reloading = false
+			_kill_reload_anim()
+			hud.update_reload(-1.0)
+			return
+		if w["mag"] < w.get("max_mag", 0) and w["res"] > 0:
+			w["mag"] += 1
+			w["res"] -= 1
+			_play_synth_tick(150.0, 0.05, -10.0)
+			hud.update_ammo(w["mag"], w["res"])
+			if w["mag"] >= w.get("max_mag", 0) or w["res"] <= 0:
+				is_reloading = false
+				_kill_reload_anim()
+				hud.update_reload(-1.0)
+			else:
+				# Next shell
+				reload_timer = 0.0
+		else:
+			is_reloading = false
+			_kill_reload_anim()
+			hud.update_reload(-1.0)
+		return
+	is_reloading = false
+	_kill_reload_anim()
+	hud.update_reload(-1.0)
 	var max_m = w.get("max_mag", 0)
 	var needed = max_m - w["mag"]
 	if w["res"] >= needed:
@@ -707,7 +908,13 @@ func shoot_gun() -> void:
 		current_recoil = Vector3(0, 0, 0.35)
 		camera_recoil += 0.12
 	else:
-		camera_recoil += 0.05
+		# Per-weapon recoil: vertical punch + horizontal wander + viewmodel kick
+		var rv := float(w.get("recoil_v", 0.05))
+		var rh := float(w.get("recoil_h", 0.0))
+		var kv := float(w.get("kick_vm", 0.15))
+		current_recoil = Vector3(randf_range(-rh, rh), 0, kv)
+		camera_recoil += rv
+		camera_yaw_recoil += randf_range(-rh, rh)
 	
 	var speed = Vector2(velocity.x, velocity.z).length()
 	var current_spread = 0.0
@@ -723,55 +930,179 @@ func shoot_gun() -> void:
 		if w.get("id", "") == "desert_hawk":
 			recoil_spread += 0.08
 		else:
-			recoil_spread += 0.02
+			recoil_spread += float(w.get("spread_per_shot", 0.02))
 	
 	var forward = -camera.global_transform.basis.z
 	var right = camera.global_transform.basis.x
 	var up = camera.global_transform.basis.y
-	var shoot_dir = (forward + right * randf_range(-current_spread, current_spread) + up * randf_range(-current_spread, current_spread)).normalized()
-	
+
 	var ray_start = camera.global_position
-	var end_pos = ray_start + (shoot_dir * 100.0)
-	
 	var space_state = get_world_3d().direct_space_state
-	var query = PhysicsRayQueryParameters3D.create(ray_start, end_pos)
-	query.collide_with_areas = true
-	query.exclude = [get_rid()] # EXCLUDE THE PLAYER FROM THEIR OWN BULLETS
-	var result = space_state.intersect_ray(query)
-	
-	var visual_end = end_pos
+
+	# Hitscan: 1 ray for rifles, N pellets in a cone for shotguns. Each pellet
+	# raycasts independently so solid walls stop pellets (no through-cover hits).
+	var pellet_count := maxi(int(w.get("pellets", 1)), 1)
+	var pellet_cone := float(w.get("spread_base", 0.0))
+	var w_name = str(w.get("id", w.get("name", "Gun")))
+	var p_faction = "Ally" if team == "attackers" else ("Enemy" if team == "defenders" else "Player")
+	var visual_end = ray_start + (forward * 100.0)
 	var hit_body := false
-	if result:
-		visual_end = result.position
-		var target = result.collider
-		if target.has_method("take_damage"):
-			hit_body = true
-			var w_name = str(w.get("id", w.get("name", "Gun")))
-			var p_faction = "Ally" if team == "attackers" else ("Enemy" if team == "defenders" else "Player")
-			var final_dmg = target.take_damage(w["dmg"], player_name, w_name, p_faction, global_position)
-			if final_dmg == null: final_dmg = w["dmg"]
-			if hud and final_dmg > 0.0: hud.show_hit_marker(final_dmg)
-			# Victim identity for console log
-			var victim_entity = target
-			if not ("bot_name" in victim_entity) and victim_entity.get_parent():
-				victim_entity = victim_entity.get_parent()
-				if not ("bot_name" in victim_entity) and victim_entity.get_parent():
-					victim_entity = victim_entity.get_parent()
-			var victim_name = str(victim_entity.get("bot_name")) if victim_entity.get("bot_name") != null and victim_entity.get("bot_name") != "" else "Enemy"
-			GlobalData.log_combat("You hit %s for %d (%s)" % [victim_name, int(final_dmg), w_name])
+	var logged_victim := false
+	for pi in pellet_count:
+		var spread_i: float = current_spread + (pellet_cone if pellet_count > 1 else 0.0)
+		var shoot_dir = (forward + right * randf_range(-spread_i, spread_i) + up * randf_range(-spread_i, spread_i)).normalized()
+		var end_pos = ray_start + (shoot_dir * 100.0)
+		var query = PhysicsRayQueryParameters3D.create(ray_start, end_pos)
+		query.collide_with_areas = true
+		query.exclude = [get_rid()] # EXCLUDE THE PLAYER FROM THEIR OWN BULLETS
+		var result = space_state.intersect_ray(query)
+
+		if result:
+			visual_end = result.position
+			var target = result.collider
+			if target.has_method("take_damage"):
+				hit_body = true
+				var final_dmg = target.take_damage(w["dmg"], player_name, w_name, p_faction, global_position)
+				if final_dmg == null: final_dmg = w["dmg"]
+				if hud and final_dmg > 0.0 and not logged_victim:
+					hud.show_hit_marker(final_dmg)
+				# Victim identity for console log (once per trigger pull)
+				if not logged_victim:
+					logged_victim = true
+					var victim_entity = target
+					if not ("bot_name" in victim_entity) and victim_entity.get_parent():
+						victim_entity = victim_entity.get_parent()
+						if not ("bot_name" in victim_entity) and victim_entity.get_parent():
+							victim_entity = victim_entity.get_parent()
+					var victim_name = str(victim_entity.get("bot_name")) if victim_entity.get("bot_name") != null and victim_entity.get("bot_name") != "" else "Enemy"
+					GlobalData.log_combat("You hit %s for %d (%s)" % [victim_name, int(final_dmg), w_name])
+			else:
+				if pi == 0 or pellet_count == 1:
+					_spawn_impact_puff(visual_end)
+		# One thin tracer per pellet, thicker for the first
+		var muzzle_pos0 = get_current_muzzle_position()
+		create_tracer(muzzle_pos0, visual_end, 0.04 if pi == 0 else 0.014)
 	
 	var muzzle_pos = get_current_muzzle_position()
-	create_tracer(muzzle_pos, visual_end)
+	_spawn_muzzle_effects(muzzle_pos)
 	# Fire sound: one single-shot per bullet — holding trigger just repeats fast
 	var wid := str(w.get("id", ""))
 	if wid == "m700":
 		Sfx.oneshot3d("sniper_shot", self, 18.0, 160.0, 2.0)
+		# Bolt-action cycle: sound + viewmodel animation, timed after the report
+		get_tree().create_timer(0.45).timeout.connect(_play_sniper_bolt_cycle)
+	elif w.get("is_shotgun", false):
+		# ponytail: no shotgun wav yet — heavier rifle report + synth pump foley
+		Sfx.oneshot3d("rifle_single", self, 17.0, 150.0, 2.5)
+		_play_pump_cycle()
 	else:
 		# ponytail: glock / desert_hawk have no dedicated assets yet — reuse rifle
 		Sfx.oneshot3d("rifle_single", self, 14.0, 120.0, 1.0)
 	# Every other peer sees the shot: tracer + blood puff on impact
 	if GlobalData.is_networked():
-		net_shot.rpc(muzzle_pos, visual_end, hit_body)
+		var mgr = get_tree().current_scene
+		if mgr and mgr.has_method("send_tracer"):
+			var snd := "sniper_shot" if wid == "m700" else "rifle_single"
+			mgr.send_tracer(muzzle_pos, visual_end, 0.04, hit_body, snd)
+		else:
+			net_shot.rpc(muzzle_pos, visual_end, hit_body)
+
+func _play_pump_cycle() -> void:
+	# Pump-action: fore-end slides back then forward; blocked until done via fire_rate
+	if not is_instance_valid(current_weapon_instance):
+		return
+	var pump := current_weapon_instance.find_child("Pump", true, false) as Node3D
+	if pump == null:
+		return
+	var tz := pump.position.z
+	var tw := create_tween()
+	tw.tween_interval(0.1)
+	tw.tween_property(pump, "position:z", tz + 0.085, 0.16).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	tw.tween_callback(func(): _play_synth_tick(90.0, 0.05, -6.0))
+	tw.tween_interval(0.1)
+	tw.tween_property(pump, "position:z", tz, 0.18).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	tw.tween_callback(func(): _play_synth_tick(120.0, 0.04, -8.0))
+
+func _spawn_muzzle_effects(pos: Vector3) -> void:
+	# Brief muzzle light flash
+	var light := OmniLight3D.new()
+	light.light_color = Color(1.0, 0.85, 0.45)
+	light.light_energy = 2.0
+	light.omni_range = 3.5
+	get_tree().root.add_child(light)
+	light.global_position = pos
+	var t := get_tree().create_timer(0.04)
+	t.timeout.connect(light.queue_free)
+	# Brief smoke wisp drifting up from the muzzle
+	var smoke := CPUParticles3D.new()
+	smoke.emitting = true
+	smoke.one_shot = true
+	smoke.explosiveness = 1.0
+	smoke.amount = 4
+	smoke.lifetime = 0.55
+	smoke.direction = Vector3.UP
+	smoke.spread = 15.0
+	smoke.initial_velocity_min = 0.6
+	smoke.initial_velocity_max = 1.2
+	smoke.gravity = Vector3(0, 0.6, 0) # smoke rises
+	smoke.scale_amount_min = 0.5
+	smoke.scale_amount_max = 1.0
+	var sm := StandardMaterial3D.new()
+	sm.albedo_color = Color(0.65, 0.65, 0.65, 0.35)
+	sm.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	sm.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	var mesh := BoxMesh.new()
+	mesh.size = Vector3(0.05, 0.05, 0.05)
+	mesh.material = sm
+	smoke.mesh = mesh
+	get_tree().root.add_child(smoke)
+	smoke.global_position = pos
+	var t2 := get_tree().create_timer(0.7)
+	t2.timeout.connect(smoke.queue_free)
+
+func _spawn_impact_puff(pos: Vector3) -> void:
+	var p := CPUParticles3D.new()
+	p.emitting = true
+	p.one_shot = true
+	p.explosiveness = 1.0
+	p.amount = 8
+	p.lifetime = 0.3
+	p.direction = Vector3.UP
+	p.spread = 120.0
+	p.initial_velocity_min = 1.0
+	p.initial_velocity_max = 2.5
+	p.gravity = Vector3(0, -9.8, 0)
+	var sm := StandardMaterial3D.new()
+	sm.albedo_color = Color(0.75, 0.7, 0.65)
+	sm.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	var mesh := BoxMesh.new()
+	mesh.size = Vector3(0.04, 0.04, 0.04)
+	mesh.material = sm
+	p.mesh = mesh
+	get_tree().root.add_child(p)
+	p.global_position = pos
+	var t := get_tree().create_timer(0.4)
+	t.timeout.connect(p.queue_free)
+
+func _play_sniper_bolt_cycle() -> void:
+	if not is_instance_valid(self) or is_dead or active_slot != Slot.RIFLE or is_reloading:
+		return
+	var w = weapons[active_slot] if weapons.size() > active_slot else null
+	if not w or w.get("id") != "m700":
+		return
+	Sfx.oneshot3d("sniper_bolt", self, 14.0, 90.0, 1.0)
+	# Animate the bolt handle and knob sliding back and returning on the 3D model
+	if is_instance_valid(weapon_holder):
+		var handle: Node3D = weapon_holder.find_child("BoltHandle", true, false)
+		var knob: Node3D = weapon_holder.find_child("BoltKnob", true, false)
+		if handle and knob:
+			var orig_hz := handle.position.z
+			var orig_kz := knob.position.z
+			var tw := create_tween()
+			tw.tween_property(handle, "position:z", orig_hz + 0.07, 0.22).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+			tw.parallel().tween_property(knob, "position:z", orig_kz + 0.07, 0.22).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+			tw.tween_property(handle, "position:z", orig_hz, 0.24).set_delay(0.18).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+			tw.parallel().tween_property(knob, "position:z", orig_kz, 0.24).set_delay(0.18).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
 
 func get_current_muzzle_position() -> Vector3:
 	if is_instance_valid(weapon_holder):
@@ -898,6 +1229,8 @@ func fire_launcher() -> void:
 		mgr.spawn_utility_net("res://scenes/weapons/heavy/at4_rocket.tscn", spawn_pos, rocket.direction, {
 			"owner_name": player_name,
 			"faction": "Ally" if team == "attackers" else "Enemy",
+			# Re-lock the replica onto the same vehicle (deterministic tree path)
+			"target_path": String(_locked_target.get_path()) if _locked_target != null and is_instance_valid(_locked_target) else "",
 		})
 
 	# Sound & muzzle flash
@@ -1013,11 +1346,23 @@ func throw_grenade():
 @rpc("any_peer", "call_remote", "unreliable")
 func net_shot(start: Vector3, end: Vector3, hit_body: bool) -> void:
 	create_tracer(start, end)
+	_spawn_muzzle_effects(start)
 	if hit_body:
 		_spawn_blood_splatter(end)
+	else:
+		_spawn_impact_puff(end)
 	# Peers hear the remote shooter's gun quietly through 3D attenuation
 	if is_puppet:
-		Sfx.oneshot3d("rifle_single", self, 14.0, 120.0, 0.0)
+		var curr_w = weapons[active_slot] if weapons.size() > active_slot else null
+		var is_snp: bool = curr_w != null and (curr_w.get("id") == "m700" or bool(curr_w.get("is_sniper", false)))
+		if is_snp:
+			Sfx.oneshot3d("sniper_shot", self, 18.0, 160.0, 1.0)
+			get_tree().create_timer(0.45).timeout.connect(func():
+				if is_instance_valid(self) and not is_dead and is_puppet:
+					Sfx.oneshot3d("sniper_bolt", self, 12.0, 80.0, 0.5)
+			)
+		else:
+			Sfx.oneshot3d("rifle_single", self, 14.0, 120.0, 0.0)
 
 func _spawn_blood_splatter(pos: Vector3) -> void:
 	# Visible 3D red blood burst at hit point
@@ -1040,13 +1385,15 @@ func _spawn_blood_splatter(pos: Vector3) -> void:
 	var mesh := BoxMesh.new()
 	mesh.size = Vector3(0.08, 0.08, 0.08)
 	mesh.material = sm
-	p.draw_pass_1 = mesh
+	p.mesh = mesh
 	get_tree().root.add_child(p)
 	p.global_position = pos
 	var t := get_tree().create_timer(0.6)
 	t.timeout.connect(p.queue_free)
 
 func create_tracer(start: Vector3, end: Vector3, radius: float = 0.04):
+	if not start.is_finite() or not end.is_finite() or start.distance_squared_to(end) < 0.04:
+		return
 	var mesh_inst = MeshInstance3D.new()
 	var cyl = CylinderMesh.new()
 	# Thick, bright tracer visible across map
@@ -1132,9 +1479,21 @@ func _physics_process(delta: float) -> void:
 		velocity = Vector3.ZERO
 		_update_spectate_camera()
 		return
-	_check_crosshair_target()
-	# Block all gameplay input while console is open
-	if hud and hud.console_visible:
+	# Perf: hover-name ray at 20 Hz — nametag lag imperceptible
+	if Engine.get_physics_frames() % 3 == 0:
+		_check_crosshair_target()
+	# Block all gameplay input while console or pause/settings menu is open
+	if (hud and hud.console_visible) or _menu_open():
+		if not is_on_floor():
+			velocity.y -= gravity * delta
+		velocity.x = move_toward(velocity.x, 0, speed_normal)
+		velocity.z = move_toward(velocity.z, 0, speed_normal)
+		move_and_slide()
+		return
+
+	# Intermission freeze: spawn-locked until the round countdown ends
+	var mgr_node = get_tree().current_scene
+	if mgr_node and mgr_node.get("players_frozen") == true:
 		if not is_on_floor():
 			velocity.y -= gravity * delta
 		velocity.x = move_toward(velocity.x, 0, speed_normal)
@@ -1150,9 +1509,16 @@ func _physics_process(delta: float) -> void:
 			held_object = null
 
 	if is_dead:
-		respawn_timer -= delta
-		if respawn_timer <= 0.0:
-			respawn()
+		# S&D: no auto-respawn mid-round; drop into spectator after death cam
+		var mgr = get_tree().current_scene
+		if mgr and mgr.get("disable_auto_respawn") == true:
+			respawn_timer = 0.0
+			if not is_spectating:
+				call_deferred("enter_spectator_mode")
+		else:
+			respawn_timer -= delta
+			if respawn_timer <= 0.0:
+				respawn()
 		# Still apply gravity but no input
 		if not is_on_floor():
 			velocity.y -= gravity * delta
@@ -1163,6 +1529,8 @@ func _physics_process(delta: float) -> void:
 		return
 
 	if fire_cooldown > 0: fire_cooldown -= delta
+
+	_snd_process_interactions()
 
 	if active_operator and hud:
 		hud.update_skill_ui(active_operator.skill_name, active_operator.current_cooldown, active_operator.skill_cooldown)
@@ -1181,10 +1549,17 @@ func _physics_process(delta: float) -> void:
 				if Input.is_action_pressed("fire") and fire_cooldown <= 0 and not is_reloading:
 					if w["mag"] > 0: shoot_gun()
 					elif w["res"] > 0: start_reload()
+					else: _play_empty_click()
 			else:
-				if Input.is_action_just_pressed("fire") and fire_cooldown <= 0 and not is_reloading:
-					if w["mag"] > 0: shoot_gun()
-					elif w["res"] > 0: start_reload()
+				if Input.is_action_just_pressed("fire") and fire_cooldown <= 0:
+					# Pump-action: firing interrupts a shell-by-shell reload
+					if is_reloading and w.get("is_shotgun", false):
+						_reload_abort_requested = true
+						finish_reload() # abort pending insertion cleanly
+					if not is_reloading:
+						if w["mag"] > 0: shoot_gun()
+						elif w["res"] > 0: start_reload()
+						else: _play_empty_click()
 		elif w["type"] == "launcher":
 			_update_launcher_lock(delta)
 			# Tube reload: after cooldown, chamber next rocket from reserve
@@ -1205,21 +1580,31 @@ func _physics_process(delta: float) -> void:
 			throw_grenade() # Explodes instantly in hand!
 
 	if not is_on_floor():
-		velocity.y -= gravity * delta
+		_apply_fall_physics(delta)
+	else:
+		is_skydiving = false
 
 	if Input.is_action_just_pressed("jump") and is_on_floor():
 		velocity.y = JUMP_VELOCITY
 		
+	if _empty_click_cd > 0.0: _empty_click_cd -= delta
+
 	if is_reloading:
 		reload_timer += delta
-		hud.update_reload(reload_timer / RELOAD_TIME)
-		if reload_timer >= RELOAD_TIME:
+		var cur_w = weapons[active_slot]
+		var cur_dur := float(cur_w.get("reload_time", 0.52)) if cur_w.get("is_shotgun", false) else get_active_reload_duration()
+		hud.update_reload(reload_timer / cur_dur)
+		if reload_timer >= cur_dur:
 			finish_reload()
 
 	# Handle Scoping (w is declared above, in the weapon logic block)
 	is_aiming = Input.is_action_pressed("aim") and not is_reloading and w["type"] == "gun"
 	if active_operator and active_operator.has_method("override_aim") and active_operator.get("is_holding_bow"):
 		is_aiming = false # Don't ADS while holding bow
+
+	var input_dir := Input.get_vector("move_left", "move_right", "move_forward", "move_backward")
+	# Movement lag: drifts opposite strafe, pulls back on S / pushes on W
+	var move_off := Vector3(input_dir.x * WPN_MOVE_POS, 0.0, input_dir.y * WPN_MOVE_POS) * (0.2 if is_aiming else 1.0)
 
 	if is_aiming:
 		if w.get("is_sniper", false):
@@ -1229,16 +1614,36 @@ func _physics_process(delta: float) -> void:
 			if sniper_scope_ui and camera.fov < 25.0: sniper_scope_ui.show()
 		else:
 			# Standard rifle ADS
-			weapon_holder.position = weapon_holder.position.lerp(WEAPON_POS_ADS, delta * 15.0)
+			weapon_holder.position = weapon_holder.position.lerp(WEAPON_POS_ADS + move_off, delta * 15.0)
 			camera.fov = lerp(camera.fov, FOV_ADS, delta * 15.0)
 	else:
 		# Hipfire
-		weapon_holder.position = weapon_holder.position.lerp(WEAPON_POS_HIP, delta * 10.0)
+		weapon_holder.position = weapon_holder.position.lerp(WEAPON_POS_HIP + move_off, delta * 10.0)
 		camera.fov = lerp(camera.fov, FOV_NORMAL, delta * 10.0)
 		weapon_holder.visible = true
 		if sniper_scope_ui: sniper_scope_ui.hide()
+
+	# Skydive FOV: extra wind-speed sensation; strongest while dive-diving
+	if is_skydiving and not is_aiming:
+		var sky_fov := FOV_NORMAL + (12.0 if Input.is_action_pressed("sprint") else 5.0)
+		camera.fov = lerp(camera.fov, sky_fov, delta * 4.0)
 		
-	weapon_holder.position += current_recoil + melee_swing_offset
+	# --- Weapon sway: mouse look + movement lag (strafe L/R, walk F/B) ---
+	# Melee tween owns holder rotation while a swing is playing.
+	if not (melee_tween and melee_tween.is_valid()):
+		var sway_scale: float = 0.15 if is_aiming else 1.0
+		weapon_holder.rotation.x = lerp(weapon_holder.rotation.x, (mouse_input.y * WPN_SWAY_ROT + input_dir.y * WPN_TILT_ROT * 0.6) * sway_scale, 10.0 * delta)
+		weapon_holder.rotation.y = lerp(weapon_holder.rotation.y, -mouse_input.x * WPN_SWAY_ROT * sway_scale, 10.0 * delta)
+		weapon_holder.rotation.z = lerp(weapon_holder.rotation.z, input_dir.x * WPN_TILT_ROT * sway_scale, 10.0 * delta)
+	mouse_input = mouse_input.lerp(Vector2.ZERO, 10.0 * delta)
+
+	var bob_off := Vector3.ZERO
+	if is_on_floor() and Vector2(velocity.x, velocity.z).length() > 1.0:
+		var bob_amt: float = WPN_BOB_AMT * (0.25 if is_aiming else 1.0)
+		var t_ms := float(Time.get_ticks_msec())
+		bob_off = Vector3(sin(t_ms * 0.005) * bob_amt, sin(t_ms * 0.01) * bob_amt, 0.0)
+
+	weapon_holder.position += current_recoil + melee_swing_offset + bob_off
 	current_recoil = current_recoil.lerp(Vector3.ZERO, delta * 15.0)
 
 	var target_lean_pos := 0.0
@@ -1252,7 +1657,6 @@ func _physics_process(delta: float) -> void:
 	head.position.x = lerp(head.position.x, target_lean_pos, delta * LEAN_SPEED)
 	head.rotation.z = lerp(head.rotation.z, target_lean_rot, delta * LEAN_SPEED)
 
-	var input_dir := Input.get_vector("move_left", "move_right", "move_forward", "move_backward")
 	var holding_sprint_key = Input.is_action_pressed("sprint") and not is_exhausted and input_dir != Vector2.ZERO and not is_aiming and not is_reloading
 	var wants_to_sprint = holding_sprint_key and not Input.is_action_pressed("crouch")
 
@@ -1287,6 +1691,9 @@ func _physics_process(delta: float) -> void:
 	stamina = clamp(stamina, 0.0, max_stamina)
 	if stamina <= 0.0: is_exhausted = true
 	elif stamina >= EXHAUST_RECOVERY: is_exhausted = false
+	# Heavy weapon mobility penalty (e.g. RPD LMG speed_mult 0.85)
+	if weapons.size() > active_slot:
+		current_speed *= float(weapons[active_slot].get("speed_mult", 1.0))
 
 	# Footstep / slide loops: state-based, positional (quieter with distance)
 	var hspeed := Vector2(velocity.x, velocity.z).length()
@@ -1305,22 +1712,39 @@ func _physics_process(delta: float) -> void:
 	if is_on_floor() and not is_sliding:
 		var speed_factor = Vector2(velocity.x, velocity.z).length()
 		if speed_factor > 1.0:
-			var bob_mult_y = 2.8 if is_sprinting else 1.0
-			var bob_mult_x = 1.8 if is_sprinting else 0.5
-			t_bob += delta * speed_factor * (1.2 if is_sprinting else 1.0) * 0.15
-			camera.position.y = lerp(camera.position.y, sin(t_bob * BOB_FREQ) * BOB_AMP * bob_mult_y, delta * 12.0)
-			camera.position.x = lerp(camera.position.x, cos(t_bob * BOB_FREQ * 0.5) * BOB_AMP * bob_mult_x, delta * 12.0)
+			var bob_mult_y: float = 3.0 if is_sprinting else 1.0
+			var bob_mult_x: float = 2.2 if is_sprinting else 0.6
+			t_bob += delta * speed_factor * (1.25 if is_sprinting else 1.0) * 0.15
+			# Deeper figure-8 sway; sprinting layers a fast camera shake.
+			# Shake skipped while ADS so scopes stay steady.
+			var shake: float = 0.0
+			if is_sprinting and not is_aiming:
+				shake = 0.03
+			var target_y := sin(t_bob * BOB_FREQ) * BOB_AMP * bob_mult_y \
+				+ sin(t_bob * BOB_FREQ * 2.7) * shake
+			var target_x := cos(t_bob * BOB_FREQ * 0.5) * BOB_AMP * bob_mult_x \
+				+ sin(t_bob * BOB_FREQ * 3.1 + 1.3) * shake * 0.6
+			camera.position.y = lerp(camera.position.y, target_y, delta * 12.0)
+			camera.position.x = lerp(camera.position.x, target_x, delta * 12.0)
+			# Sway roll: strafe lean + bob wobble (recoil only owns rotation x/y)
+			camera.rotation.z = lerp(camera.rotation.z,
+				-input_dir.x * 0.022 + sin(t_bob * BOB_FREQ * 0.5) * 0.014 * bob_mult_x,
+				delta * 8.0)
 		else:
 			t_bob = 0.0
 			camera.position.y = lerp(camera.position.y, 0.0, delta * 5.0)
 			camera.position.x = lerp(camera.position.x, 0.0, delta * 5.0)
+			camera.rotation.z = lerp(camera.rotation.z, 0.0, delta * 8.0)
 	else:
 		t_bob = 0.0
 		camera.position.y = lerp(camera.position.y, 0.0, delta * 5.0)
 		camera.position.x = lerp(camera.position.x, 0.0, delta * 5.0)
+		camera.rotation.z = lerp(camera.rotation.z, 0.0, delta * 8.0)
 		
 	camera.rotation.x = lerp(camera.rotation.x, camera_recoil, delta * 12.0)
+	camera.rotation.y = lerp(camera.rotation.y, camera_yaw_recoil, delta * 10.0)
 	camera_recoil = lerp(camera_recoil, 0.0, delta * 8.0)
+	camera_yaw_recoil = lerp(camera_yaw_recoil, 0.0, delta * 8.0)
 	recoil_spread = lerp(recoil_spread, 0.0, delta * 5.0)
 
 	if hud:
@@ -1359,15 +1783,26 @@ func _physics_process(delta: float) -> void:
 			velocity.x += accel_speed * direction.x
 			velocity.z += accel_speed * direction.z
 	else:
-		# Apply Air Acceleration (Bunny Hop)
-		# To allow continuous speed gain, we project current velocity onto our input direction
-		var current_air_speed = Vector2(velocity.x, velocity.z).dot(Vector2(direction.x, direction.z))
-		# We cap the air speed gain to MAX_AIR_SPEED, which forces the player to turn their mouse (strafing) to keep gaining speed!
-		var add_speed = MAX_AIR_SPEED - current_air_speed
-		if add_speed > 0:
-			var accel_speed = min(AIR_ACCEL * delta * MAX_AIR_SPEED, add_speed)
-			velocity.x += accel_speed * direction.x
-			velocity.z += accel_speed * direction.z
+		if is_skydiving:
+			# Warzone-style Skydive Air Steering: smooth aerodynamic glide in facing direction
+			var wants_dive := Input.is_action_pressed("sprint") and input_dir.length() > 0.1
+			var target_hspeed := SKYDIVE_DIVE_SPEED if wants_dive else SKYDIVE_MOVE_SPEED
+			var target_hvel: Vector3 = direction * target_hspeed if direction.length() > 0.1 else Vector3.ZERO
+			var blend_rate := 4.5 if wants_dive else 3.0
+			var cur_hvel := Vector3(velocity.x, 0.0, velocity.z)
+			var new_hvel := cur_hvel.lerp(target_hvel, 1.0 - exp(-blend_rate * delta))
+			velocity.x = new_hvel.x
+			velocity.z = new_hvel.z
+		else:
+			# Apply Air Acceleration (Bunny Hop)
+			# To allow continuous speed gain, we project current velocity onto our input direction
+			var current_air_speed = Vector2(velocity.x, velocity.z).dot(Vector2(direction.x, direction.z))
+			# We cap the air speed gain to MAX_AIR_SPEED, which forces the player to turn their mouse (strafing) to keep gaining speed!
+			var add_speed = MAX_AIR_SPEED - current_air_speed
+			if add_speed > 0:
+				var accel_speed = min(AIR_ACCEL * delta * MAX_AIR_SPEED, add_speed)
+				velocity.x += accel_speed * direction.x
+				velocity.z += accel_speed * direction.z
 
 	# Anti-velcro: while moving UP, steep slopes act as walls (slide past them
 	# instead of sticking). Grounded/falling, slides up to ~76° count as floor
@@ -1471,20 +1906,75 @@ func enter_aircraft(seat: Node3D) -> void:
 	_pre_pilot_parent = get_parent()
 	_pre_pilot_layer = collision_layer
 	_pre_pilot_mask = collision_mask
-	reparent(seat, false)
-	transform = Transform3D.IDENTITY
 	collision_layer = 0
 	collision_mask = 0
-	weapon_holder.visible = false
-	flashlight.visible = false
-	camera.current = false
-	if is_instance_valid(_puppet_body):
-		_puppet_body.visible = false # seated inside cockpit — hide floating mannequin
+	var col := get_node_or_null("CollisionShape3D") as CollisionShape3D
+	if col:
+		col.set_deferred("disabled", true)
+	reparent(seat, false)
+	transform = Transform3D.IDENTITY
+	# Local-only nodes are freed on remote puppets — always guard (a crash here
+	# used to abort before _puppet_body was hidden, leaving ghost bodies).
+	if is_instance_valid(weapon_holder):
+		weapon_holder.visible = false
+	if is_instance_valid(flashlight):
+		flashlight.visible = false
+	if is_instance_valid(camera):
+		camera.current = false
+	_apply_seated_pose(seat)
 	if is_instance_valid(_puppet_gun_holder):
 		_puppet_gun_holder.visible = false
 	if hud:
 		hud.hide_hover_name()
 		hud.toggle_aircraft_hud(true)
+
+
+## Seat 3-6 (markers Pass2..Pass5) show the
+## third-person body seated on the bench; cockpit seats keep it hidden
+## (it would clip the glass).
+## Body-local offset from each heli cabin seat marker to the bench cushion
+## (from helicopter.tscn bench meshes; marker row 2 sits behind bench row 2,
+## so the Z shift differs per row). Crouch holds its final frame = seated pose.
+const SEAT_BODY_OFFSETS := {
+	"Pass2": Vector3(-0.8, -0.263, -0.126),
+	"Pass3": Vector3(0.8, -0.263, -0.126),
+	"Pass4": Vector3(-0.8, -0.263, -0.372),
+	"Pass5": Vector3(0.8, -0.263, -0.372),
+}
+
+
+func _apply_seated_pose(seat: Node3D) -> void:
+	var offset: Vector3 = SEAT_BODY_OFFSETS.get(String(seat.name), Vector3.ZERO)
+	if offset == Vector3.ZERO:
+		if is_instance_valid(_puppet_body):
+			_puppet_body.visible = false
+			_puppet_body.position = Vector3.ZERO
+		return
+	if not is_instance_valid(_puppet_body):
+		var body_scene := load("res://scenes/characters/human_body.tscn") as PackedScene
+		if body_scene:
+			_puppet_body = body_scene.instantiate() as Node3D
+			var team_color := Color(0.3, 0.6, 1.0) if team == "attackers" else Color(1.0, 0.35, 0.3)
+			if _puppet_body is HumanBody:
+				(_puppet_body as HumanBody).set_tint(team_color)
+			add_child(_puppet_body)
+	if is_instance_valid(_puppet_body):
+		_puppet_body.visible = true
+		_puppet_body.position = offset
+		_puppet_body.rotation = Vector3.ZERO
+		var hb := _puppet_body as HumanBody
+		if hb:
+			hb.play_anim("Crouch")
+
+
+## Called by a vehicle controller when the occupant moves between seats
+## (CTRL + number). Player stays piloting — only re-parents to the new seat.
+func switch_aircraft_seat(seat: Node3D) -> void:
+	if not is_piloting or is_dead:
+		return
+	reparent(seat, false)
+	transform = Transform3D.IDENTITY
+	_apply_seated_pose(seat)
 
 
 ## Called by the aircraft controller: leave the seat, restore character control.
@@ -1501,14 +1991,128 @@ func exit_aircraft(exit_pos: Vector3, face_dir: Vector3, eject_vel: Vector3 = Ve
 	velocity = eject_vel
 	collision_layer = _pre_pilot_layer
 	collision_mask = _pre_pilot_mask
-	weapon_holder.visible = true
-	camera.current = true
+	var col := get_node_or_null("CollisionShape3D") as CollisionShape3D
+	if col:
+		col.set_deferred("disabled", false)
+	if is_instance_valid(weapon_holder):
+		weapon_holder.visible = true
+	if is_instance_valid(camera):
+		camera.current = true
 	if is_instance_valid(_puppet_body):
-		_puppet_body.visible = true
+		_puppet_body.visible = is_puppet
 		_puppet_body.rotation = Vector3.ZERO
 		_puppet_body.position = Vector3.ZERO
+		var hb := _puppet_body as HumanBody
+		if hb:
+			hb.play_anim("Idle")
 	if is_instance_valid(_puppet_gun_holder):
 		_puppet_gun_holder.visible = true
 	if hud:
 		hud.hide_hover_name()
 		hud.toggle_aircraft_hud(false)
+
+
+# ---------------- Search & Destroy: bomb interactions ----------------
+## Uses the existing "interact" action (F key) / E key as hold-to-act input.
+## Clients only REQUEST the host; all validation + timing is host-side
+## (see SearchAndDestroyManager). Nothing here decides success locally.
+
+var _snd_interact_held: bool = false
+var _snd_active_request: String = "" # "", "PLANT", "DEFUSE", "PICKUP"
+var _snd_site_in_range: String = ""
+
+func _snd_process_interactions() -> void:
+	var mgr = get_tree().current_scene
+	if mgr == null or mgr.get("is_search_and_destroy") != true:
+		return
+
+	# Which interact key is held? "interact" action OR E key.
+	var held := Input.is_action_pressed("interact")
+	var just_released := _snd_interact_held and not held
+	_snd_interact_held = held
+
+	# Find what's in range (bomb state arrives as int enum: 0 CARRIED, 1 DROPPED,
+	# 2 PLANTING, 3 PLANTED, 4 DEFUSING — same pattern as multiplayer_hud _on_time_tick)
+	var bomb_state := int(mgr.get("current_bomb_state") if mgr.get("current_bomb_state") != null else 0)
+	var dropped: bool = bomb_state == 1
+	var planted: bool = bomb_state == 3 or bomb_state == 4
+	var carried_by_me: bool = mgr.get("bomb_carrier_peer") == multiplayer.get_unique_id() \
+		or (multiplayer.is_server() and mgr.get("bomb_carrier_peer") == 1)
+	var in_site: String = _snd_get_site_in_range()
+	_snd_site_in_range = in_site
+
+	var my_team: String = team
+	var prompt := ""
+	var requested := ""
+
+	if not is_dead:
+		# PLANTING (2) must keep the request latched: host sets it locally the
+		# same frame the start lands — strict CARRIED check would cancel-restart
+		# the plant every physics frame and progress would never accumulate.
+		# requested is gated on `held`: entering range alone must NOT trigger.
+		if carried_by_me and in_site != "" and (bomb_state == 0 or bomb_state == 2):
+			prompt = "HOLD [F] TO PLANT BOMB AT SITE %s" % in_site
+			if held:
+				requested = "PLANT"
+		elif my_team == "defenders" and planted:
+			var bpos: Vector3 = mgr.get("bomb_world_position")
+			if global_position.distance_to(bpos) <= 4.0:
+				prompt = "HOLD [F] TO DEFUSE BOMB"
+				if held:
+					requested = "DEFUSE"
+		elif my_team == "attackers" and dropped:
+			var bpos2: Vector3 = mgr.get("bomb_world_position")
+			if global_position.distance_to(bpos2) <= 4.0:
+				prompt = "HOLD [F] TO PICK UP BOMB"
+				if held:
+					requested = "PICKUP"
+
+	# Send request transitions to the host
+	if requested != "" and _snd_active_request != requested:
+		_snd_send_request(requested, true)
+		_snd_active_request = requested
+	elif requested == "" and _snd_active_request != "":
+		_snd_send_request(_snd_active_request, false)
+		_snd_active_request = ""
+	elif just_released and _snd_active_request != "":
+		_snd_send_request(_snd_active_request, false)
+		_snd_active_request = ""
+
+	# HUD prompt
+	if hud:
+		if prompt != "":
+			hud.show_hover_name(prompt)
+		else:
+			hud.hide_hover_name()
+
+func _snd_send_request(action: String, start: bool) -> void:
+	var mgr = get_tree().current_scene
+	if mgr == null: return
+	if GlobalData.is_networked() and not multiplayer.is_server():
+		match action:
+			"PLANT":
+				if start: mgr.request_start_plant.rpc_id(1, _snd_site_in_range)
+				else: mgr.request_stop_plant.rpc_id(1)
+			"DEFUSE":
+				if start: mgr.request_start_defuse.rpc_id(1)
+				else: mgr.request_stop_defuse.rpc_id(1)
+			"PICKUP":
+				if start: mgr.request_pickup_bomb.rpc_id(1)
+	else:
+		match action:
+			"PLANT":
+				if start: mgr.request_start_plant(_snd_site_in_range)
+				else: mgr.request_stop_plant()
+			"DEFUSE":
+				if start: mgr.request_start_defuse()
+				else: mgr.request_stop_defuse()
+			"PICKUP":
+				if start: mgr.request_pickup_bomb()
+			_:
+				pass
+
+func _snd_get_site_in_range() -> String:
+	for site in get_tree().get_nodes_in_group("bombsite"):
+		if site.has_method("is_point_inside") and site.is_point_inside(global_position):
+			return str(site.get("site_id"))
+	return ""

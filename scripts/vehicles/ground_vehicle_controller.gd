@@ -56,10 +56,14 @@ func _notify_release() -> void:
 		mgr.send_vehicle_release(String(get_path()))
 
 func net_set_target(pos: Vector3, rot: Vector3, vel: Vector3, _eng: float = 0.0) -> void:
+	if not pos.is_finite() or not rot.is_finite() or not vel.is_finite():
+		return
 	_net_puppet = true
 	freeze = true
 	_net_target_pos = pos
-	_net_target_quat = Basis.from_euler(rot).get_rotation_quaternion()
+	var b := Basis.from_euler(rot)
+	if b.is_finite():
+		_net_target_quat = b.get_rotation_quaternion().normalized()
 	_net_target_vel = vel
 
 func net_release_puppet() -> void:
@@ -78,6 +82,8 @@ func _enter_tree() -> void:
 func _ready() -> void:
 	if chase_cam != null:
 		chase_cam.current = false
+	if chase_arm != null:
+		chase_arm.add_excluded_object(get_rid())
 	hp = max_hp
 	_setup_seats()
 	if interact_area != null and (interact_area.collision_mask & 1) == 0:
@@ -110,15 +116,31 @@ func _on_body_entered(body: Node3D) -> void:
 	if hud == null:
 		return # remote puppet
 	_prompt_player = body
-	hud.show_hover_name(prompt_text, false)
+	if hud.has_method("show_enter_prompt"):
+		hud.show_enter_prompt()
+	elif hud.has_method("show_hover_name"):
+		hud.show_hover_name(prompt_text, false)
 
 func _on_body_exited(body: Node3D) -> void:
 	if body == _prompt_player:
 		_prompt_player = null
-		if body.get("hud") != null:
-			body.get("hud").hide_hover_name()
+		var hud = body.get("hud")
+		if hud != null:
+			if hud.has_method("hide_enter_prompt"):
+				hud.hide_enter_prompt()
+			if hud.has_method("hide_hover_name"):
+				hud.hide_hover_name()
 
 func _unhandled_input(event: InputEvent) -> void:
+	if event is InputEventKey and event.pressed and not event.echo:
+		var target := -1
+		if (event.ctrl_pressed or Input.is_key_pressed(KEY_CTRL)) and event.keycode >= KEY_1 and event.keycode <= KEY_9:
+			target = event.keycode - KEY_1
+		elif (event.ctrl_pressed or Input.is_key_pressed(KEY_CTRL)) and event.keycode >= KEY_KP_1 and event.keycode <= KEY_KP_9:
+			target = event.keycode - KEY_KP_1
+		if target != -1:
+			_request_seat_switch(target)
+			return
 	if not event.is_action_pressed("vehicle_interact"):
 		return
 	var mgr = get_tree().current_scene
@@ -141,22 +163,71 @@ func _unhandled_input(event: InputEvent) -> void:
 			return
 
 func _input(event: InputEvent) -> void:
-	# Local driver gets free-look camera while piloting
-	var driver = occupants[0] if occupants.size() > 0 else null
-	if driver == null or driver.get("hud") == null:
+	# Any local occupant (driver OR passenger) gets mouse free-look
+	var has_local := false
+	for occ in occupants:
+		if occ != null and occ.get("hud") != null:
+			has_local = true
+			break
+	if not has_local:
 		return
 	if event is InputEventMouseMotion:
 		_cam_yaw -= event.relative.x * mouse_sens
 		_cam_pitch = clampf(_cam_pitch - event.relative.y * mouse_sens, -0.6, 0.45)
+
+func _request_seat_switch(target_idx: int) -> void:
+	if target_idx < 0 or target_idx >= seats.size() or is_destroyed:
+		return
+	var my_idx := -1
+	for i in occupants.size():
+		if occupants[i] != null and occupants[i].get("hud") != null:
+			my_idx = i
+			break
+	if my_idx == -1 or my_idx == target_idx:
+		return
+	if occupants[target_idx] != null:
+		var hud = occupants[my_idx].get("hud")
+		if hud and hud.has_method("show_hover_name"):
+			hud.show_hover_name("Seat %d is occupied!" % (target_idx + 1), false)
+		return
+	var mgr = get_tree().current_scene
+	var net := GlobalData.is_networked() and mgr is MultiplayerManager
+	if net:
+		mgr.request_vehicle_switch_seat.rpc_id(1, String(get_path()), my_idx, target_idx)
+	else:
+		net_sync_switch_seat(occupants[my_idx], my_idx, target_idx)
+
+func net_sync_switch_seat(player_node: Node3D, from_idx: int, to_idx: int) -> void:
+	if from_idx < 0 or from_idx >= occupants.size() or to_idx < 0 or to_idx >= occupants.size():
+		return
+	if occupants[from_idx] != player_node or occupants[to_idx] != null:
+		return
+	occupants[from_idx] = null
+	occupants[to_idx] = player_node
+	if player_node.has_method("switch_aircraft_seat"):
+		player_node.switch_aircraft_seat(seats[to_idx])
+	else:
+		player_node.enter_aircraft(seats[to_idx])
+	if from_idx == 0:
+		_notify_release()
+	var is_local := player_node.get("hud") != null
+	if chase_cam != null and is_local:
+		chase_cam.current = true
+	_update_hud()
 
 func net_sync_enter(player_node: Node3D, seat_idx: int) -> void:
 	if seat_idx < 0 or seat_idx >= occupants.size() or is_destroyed:
 		return
 	occupants[seat_idx] = player_node
 	_prompt_player = null
+	var hud = player_node.get("hud")
+	if hud != null and hud.has_method("hide_enter_prompt"):
+		hud.hide_enter_prompt()
 	player_node.enter_aircraft(seats[seat_idx])
 	var is_local := player_node.get("hud") != null
-	if chase_cam != null and seat_idx == 0 and is_local:
+	# Any LOCAL occupant (driver OR passenger) needs a view: enter_aircraft
+	# turned off their first-person camera.
+	if chase_cam != null and is_local:
 		chase_cam.current = true
 		_cam_yaw = 0.0
 		_cam_pitch = -0.15
@@ -173,7 +244,7 @@ func net_sync_exit(seat_idx: int) -> void:
 	var player: Node3D = occupants[seat_idx]
 	occupants[seat_idx] = null
 	var is_local := player.get("hud") != null
-	if chase_cam != null and seat_idx == 0 and is_local:
+	if chase_cam != null and is_local:
 		chase_cam.current = false
 	var side := 2.4 if seats[seat_idx].position.x >= 0.0 else -2.4
 	var exit_pos := seats[seat_idx].global_position + global_basis * Vector3(side, 0.6, 0.0)
@@ -204,6 +275,8 @@ func _exit(idx: int) -> void:
 		return
 	var player: Node3D = occupants[idx]
 	occupants[idx] = null
+	if chase_cam != null and player.get("hud") != null:
+		chase_cam.current = false
 	var side := 2.4 if seats[idx].position.x >= 0.0 else -2.4
 	var exit_pos := seats[idx].global_position + global_basis * Vector3(side, 0.6, 0.0)
 	var bail_vel := linear_velocity * 0.4
@@ -237,9 +310,17 @@ func _process(delta: float) -> void:
 func _physics_process(delta: float) -> void:
 	if _net_puppet:
 		var t := minf(1.0, delta * 15.0)
-		global_position = global_position.lerp(_net_target_pos, t)
-		var q := global_basis.get_rotation_quaternion().slerp(_net_target_quat, t)
-		global_basis = Basis(q)
+		if _net_target_pos.is_finite():
+			global_position = global_position.lerp(_net_target_pos, t)
+		if _net_target_quat.is_finite() and global_basis.is_finite():
+			var cur_q := global_basis.get_rotation_quaternion()
+			if cur_q.is_finite():
+				var q := cur_q.slerp(_net_target_quat, t)
+				if q.is_finite():
+					global_basis = Basis(q).orthonormalized()
+		if _net_target_vel.is_finite():
+			linear_velocity = _net_target_vel
+		_update_hud()
 		return
 	var driver = occupants[0] if occupants.size() > 0 else null
 	var driving: bool = driver != null and driver.get("is_dead") != true
@@ -291,6 +372,14 @@ func _update_hud() -> void:
 	for o in occupants:
 		if o != null: used += 1
 	var free_seats := occupants.size() - used
+	var seats_map: Array = []
+	for o in occupants:
+		seats_map.append(o != null)
+	var my_seat := -1
+	for i in occupants.size():
+		if occupants[i] != null and occupants[i].get("hud") != null:
+			my_seat = i
+			break
 	for occ in occupants:
 		if occ == null:
 			continue
@@ -305,6 +394,8 @@ func _update_hud() -> void:
 				"max_hp": max_hp,
 				"seats_free": free_seats,
 				"seats_total": occupants.size(),
+				"seats_map": seats_map,
+				"my_seat": my_seat,
 				"heat": 0.0,
 				"overheated": false,
 				"slot": -1,
@@ -364,6 +455,7 @@ func _explode(kill_occupants: bool = true) -> void:
 			occ.take_damage(9999.0, crash_killer, "Vehicle Explosion", crash_fac, global_position)
 	if kill_occupants:
 		_blast_area(global_position, 12.0, 250.0, 60.0, crash_killer, crash_fac)
+	AircraftOrdnance.spawn_blast_visual(global_position, 12.0)
 	destroyed.emit()
 	queue_free()
 

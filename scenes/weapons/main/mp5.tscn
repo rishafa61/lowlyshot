@@ -1,0 +1,216 @@
+[gd_scene format=3 uid="uid://dv12xc6x1dctt"]
+
+[sub_resource type="BoxMesh" id="Box_receiver"]
+size = Vector3(0.055, 0.08, 0.3)
+
+[sub_resource type="StandardMaterial3D" id="Mat_metal"]
+albedo_color = Color(0.16, 0.17, 0.185, 1)
+metallic = 0.85
+roughness = 0.4
+
+[sub_resource type="BoxMesh" id="Box_endcap"]
+size = Vector3(0.062, 0.065, 0.035)
+
+[sub_resource type="StandardMaterial3D" id="Mat_polymer"]
+albedo_color = Color(0.09, 0.09, 0.1, 1)
+metallic = 0.05
+roughness = 0.65
+
+[sub_resource type="BoxMesh" id="Box_lower"]
+size = Vector3(0.05, 0.055, 0.18)
+
+[sub_resource type="CylinderMesh" id="Cyl_tube"]
+top_radius = 0.014
+bottom_radius = 0.014
+height = 0.26
+
+[sub_resource type="BoxMesh" id="Box_charging"]
+size = Vector3(0.045, 0.016, 0.028)
+
+[sub_resource type="BoxMesh" id="Box_handguard"]
+size = Vector3(0.052, 0.062, 0.17)
+
+[sub_resource type="CylinderMesh" id="Cyl_barrel"]
+top_radius = 0.011
+bottom_radius = 0.011
+height = 0.09
+
+[sub_resource type="CylinderMesh" id="Cyl_lug"]
+top_radius = 0.016
+bottom_radius = 0.016
+height = 0.04
+
+[sub_resource type="BoxMesh" id="Box_sightbase"]
+size = Vector3(0.018, 0.032, 0.018)
+
+[sub_resource type="TorusMesh" id="Torus_frontring"]
+inner_radius = 0.016
+outer_radius = 0.026
+
+[sub_resource type="BoxMesh" id="Box_rearbase"]
+size = Vector3(0.03, 0.014, 0.04)
+
+[sub_resource type="CylinderMesh" id="Cyl_reardrum"]
+top_radius = 0.02
+bottom_radius = 0.02
+height = 0.032
+
+[sub_resource type="BoxMesh" id="Box_magseg"]
+size = Vector3(0.034, 0.09, 0.046)
+
+[sub_resource type="StandardMaterial3D" id="Mat_dark"]
+albedo_color = Color(0.055, 0.055, 0.06, 1)
+metallic = 0.2
+roughness = 0.6
+
+[sub_resource type="BoxMesh" id="Box_grip"]
+size = Vector3(0.042, 0.1, 0.052)
+
+[sub_resource type="BoxMesh" id="Box_guardfront"]
+size = Vector3(0.008, 0.03, 0.008)
+
+[sub_resource type="BoxMesh" id="Box_guardbottom"]
+size = Vector3(0.008, 0.006, 0.08)
+
+[sub_resource type="BoxMesh" id="Box_trigger"]
+size = Vector3(0.012, 0.028, 0.008)
+
+[sub_resource type="BoxMesh" id="Box_rail"]
+size = Vector3(0.012, 0.014, 0.17)
+
+[sub_resource type="BoxMesh" id="Box_butt"]
+size = Vector3(0.05, 0.09, 0.022)
+
+[sub_resource type="BoxMesh" id="Box_buttpad"]
+size = Vector3(0.056, 0.096, 0.012)
+
+[sub_resource type="BoxMesh" id="Box_ejectport"]
+size = Vector3(0.006, 0.03, 0.06)
+
+[node name="MP5" type="Node3D" unique_id=1952353632]
+
+[node name="Receiver" type="MeshInstance3D" parent="." unique_id=1457561483]
+transform = Transform3D(1, 0, 0, 0, 0.8952451, 0, 0, 0, 1, 0, 0.1, -0.12)
+mesh = SubResource("Box_receiver")
+surface_material_override/0 = SubResource("Mat_metal")
+
+[node name="EndCap" type="MeshInstance3D" parent="." unique_id=607572097]
+transform = Transform3D(0.7329855, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.1, 0.052605405)
+mesh = SubResource("Box_endcap")
+surface_material_override/0 = SubResource("Mat_polymer")
+
+[node name="LowerReceiver" type="MeshInstance3D" parent="." unique_id=820242749]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.07199479, -0.03558391)
+mesh = SubResource("Box_lower")
+surface_material_override/0 = SubResource("Mat_polymer")
+
+[node name="CockingTube" type="MeshInstance3D" parent="." unique_id=1749689944]
+transform = Transform3D(1, 0, 0, 0, 0, -1, 0, 1.1782309, 0, 0, 0.14074162, -0.17014994)
+mesh = SubResource("Cyl_tube")
+surface_material_override/0 = SubResource("Mat_metal")
+
+[node name="ChargingHandle" type="MeshInstance3D" parent="." unique_id=1666384739]
+transform = Transform3D(1, 0, 0, 0, 0.690611, 0, 0, 0, 0.4572659, -0.032, 0.13977063, -0.28400272)
+mesh = SubResource("Box_charging")
+surface_material_override/0 = SubResource("Mat_metal")
+
+[node name="Handguard" type="MeshInstance3D" parent="." unique_id=974402693]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.098, -0.33)
+mesh = SubResource("Box_handguard")
+surface_material_override/0 = SubResource("Mat_polymer")
+
+[node name="Barrel" type="MeshInstance3D" parent="." unique_id=2118859151]
+transform = Transform3D(1, 0, 0, 0, 0, -1, 0, 1, 0, 0, 0.108, -0.455)
+mesh = SubResource("Cyl_barrel")
+surface_material_override/0 = SubResource("Mat_metal")
+
+[node name="BarrelLug" type="MeshInstance3D" parent="." unique_id=1737108097]
+transform = Transform3D(1, 0, 0, 0, 0, -1, 0, 1, 0, 0, 0.108, -0.515)
+mesh = SubResource("Cyl_lug")
+surface_material_override/0 = SubResource("Mat_metal")
+
+[node name="FrontSightBase" type="MeshInstance3D" parent="." unique_id=717310602]
+transform = Transform3D(0.51350915, 0, 0, 0, 1.6751943, 0, 0, 0, 1, 0, 0.14940722, -0.4)
+mesh = SubResource("Box_sightbase")
+surface_material_override/0 = SubResource("Mat_metal")
+
+[node name="FrontSightRing" type="MeshInstance3D" parent="." unique_id=2029984902]
+transform = Transform3D(1, 0, 0, 0, 0, -1, 0, 1, 0, 0, 0.17640722, -0.4)
+mesh = SubResource("Torus_frontring")
+surface_material_override/0 = SubResource("Mat_metal")
+
+[node name="RearSightBase" type="MeshInstance3D" parent="." unique_id=1168944324]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.1352503, 0)
+mesh = SubResource("Box_rearbase")
+surface_material_override/0 = SubResource("Mat_metal")
+
+[node name="RearSightDrum" type="MeshInstance3D" parent="." unique_id=1441378554]
+transform = Transform3D(1, 0, 0, 0, 0, -1, 0, 1, 0, 0, 0.1562503, 0)
+mesh = SubResource("Cyl_reardrum")
+surface_material_override/0 = SubResource("Mat_polymer")
+
+[node name="MagSeg1" type="MeshInstance3D" parent="." unique_id=516067489]
+transform = Transform3D(1, 0, 0, 0, 0.98384, -0.17903, 0, 0.17903, 0.98384, 0, 0.045865595, -0.20696786)
+mesh = SubResource("Box_magseg")
+surface_material_override/0 = SubResource("Mat_dark")
+
+[node name="MagSeg2" type="MeshInstance3D" parent="." unique_id=987335640]
+transform = Transform3D(1, 0, 0, 0, 0.90045, -0.43497, 0, 0.43497, 0.90045, 0, -0.017316632, -0.22648756)
+mesh = SubResource("Box_magseg")
+surface_material_override/0 = SubResource("Mat_dark")
+
+[node name="MagSeg3" type="MeshInstance3D" parent="." unique_id=406377930]
+transform = Transform3D(1, 0, 0, 0, 0.74517, -0.66687, 0, 0.66687, 0.74517, 0, -0.06373641, -0.26386264)
+mesh = SubResource("Box_magseg")
+surface_material_override/0 = SubResource("Mat_dark")
+
+[node name="Grip" type="MeshInstance3D" parent="." unique_id=2036003213]
+transform = Transform3D(1, 0, 0, 0, 1.3765783, 0.28610784, 0, -0.36619866, 1.0755087, 0, -0.0101611, 0.045)
+mesh = SubResource("Box_grip")
+surface_material_override/0 = SubResource("Mat_polymer")
+
+[node name="TriggerGuardFront" type="MeshInstance3D" parent="." unique_id=1772018820]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.039813794, -0.068620294)
+mesh = SubResource("Box_guardfront")
+surface_material_override/0 = SubResource("Mat_metal")
+
+[node name="TriggerGuardBottom" type="MeshInstance3D" parent="." unique_id=916681319]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.025813796, -0.030620296)
+mesh = SubResource("Box_guardbottom")
+surface_material_override/0 = SubResource("Mat_metal")
+
+[node name="Trigger" type="MeshInstance3D" parent="." unique_id=1241469993]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.045388468, -0.013323326)
+mesh = SubResource("Box_trigger")
+surface_material_override/0 = SubResource("Mat_metal")
+
+[node name="StockRailL" type="MeshInstance3D" parent="." unique_id=1265943042]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.027, 0.1, 0.155)
+mesh = SubResource("Box_rail")
+surface_material_override/0 = SubResource("Mat_metal")
+
+[node name="StockRailR" type="MeshInstance3D" parent="." unique_id=13075051]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.027, 0.1, 0.155)
+mesh = SubResource("Box_rail")
+surface_material_override/0 = SubResource("Mat_metal")
+
+[node name="StockButt" type="MeshInstance3D" parent="." unique_id=840841340]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.1, 0.25)
+mesh = SubResource("Box_butt")
+surface_material_override/0 = SubResource("Mat_polymer")
+
+[node name="StockButtPad" type="MeshInstance3D" parent="." unique_id=1741222910]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.1, 0.268)
+mesh = SubResource("Box_buttpad")
+surface_material_override/0 = SubResource("Mat_dark")
+
+[node name="EjectPort" type="MeshInstance3D" parent="." unique_id=772442709]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.03, 0.115, -0.1)
+mesh = SubResource("Box_ejectport")
+surface_material_override/0 = SubResource("Mat_dark")
+
+[node name="Muzzle" type="Marker3D" parent="." unique_id=1114361956]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.108, -0.545)
+
+[node name="ShellPort" type="Marker3D" parent="." unique_id=1629516615]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.05, 0.115, -0.1)

@@ -6,7 +6,8 @@ extends Node
 const SOUNDS := {
 	"rifle_single": "res://assets/sounds/Rifle - Single Shot.tres",
 	"rifle_reload": "res://assets/sounds/Rifle - Reload.tres",
-	"sniper_shot": "res://assets/sounds/Sniper - Shot.tres",
+	"sniper_shot": "res://assets/sounds/Sniper Shot.tres",
+	"sniper_bolt": "res://assets/sounds/Sniper Bolt Action.tres",
 	"walk": "res://assets/sounds/Player - Walk.tres",
 	"run": "res://assets/sounds/Player - Run.tres",
 	"slide": "res://assets/sounds/Player - Slide.tres",
@@ -15,6 +16,10 @@ const SOUNDS := {
 	"bomb": "res://assets/sounds/Aircraft Dropping Bomb.tres",
 	"heli": "res://assets/sounds/Helicopter Sound.tres",
 	"humvee": "res://assets/sounds/Humvee.tres",
+	# Synthesized at runtime in _synthesize_cues() (no files needed)
+	"bomb_tick": "",
+	"round_win": "",
+	"round_loss": "",
 }
 
 var _streams := {}
@@ -32,7 +37,55 @@ func _ready() -> void:
 			_streams[key] = s.duplicate()
 		else:
 			push_warning("Sfx: missing sound file %s" % SOUNDS[key])
+	# ponytail: synthesized cues instead of recorded WAVs — swap in real
+	# recordings by adding files to SOUNDS; the generated ones yield.
+	_synthesize_cues()
 	apply_volumes()
+
+## Builds the small UI/gameplay cues (bomb beep, round stingers) procedurally.
+## No binary assets to track; regenerating is free.
+func _synthesize_cues() -> void:
+	if not _streams.has("bomb_tick"):
+		_streams["bomb_tick"] = _make_tone(1600.0, 0.09, 0.5, -6.0)
+	if not _streams.has("round_win"):
+		_streams["round_win"] = _make_arpeggio([523.25, 659.25, 783.99, 1046.5], 0.14)
+	if not _streams.has("round_loss"):
+		_streams["round_loss"] = _make_arpeggio([440.0, 349.23, 261.63], 0.22)
+
+const _TONE_RATE := 22050
+
+func _make_tone(freq: float, dur: float, amp: float, _vol := 0.0) -> AudioStreamWAV:
+	var n := int(dur * _TONE_RATE)
+	var data := PackedByteArray()
+	data.resize(n * 2)
+	for i in n:
+		# Exponential decay envelope kills the click at the end
+		var env := exp(-6.0 * float(i) / float(n))
+		var v := int(clampf(sin(TAU * freq * float(i) / _TONE_RATE) * amp * env, -1.0, 1.0) * 32767.0)
+		data.encode_s16(i * 2, v)
+	var wav := AudioStreamWAV.new()
+	wav.format = AudioStreamWAV.FORMAT_16_BITS
+	wav.mix_rate = _TONE_RATE
+	wav.stereo = false
+	wav.data = data
+	return wav
+
+func _make_arpeggio(freqs: Array, note_dur: float) -> AudioStreamWAV:
+	var n := int(note_dur * _TONE_RATE)
+	var data := PackedByteArray()
+	data.resize(n * freqs.size() * 2)
+	for note in freqs.size():
+		for i in n:
+			var idx := note * n + i
+			var env: float = 1.0 - float(i) / float(n)
+			var v := int(clampf(sin(TAU * float(freqs[note]) * float(i) / _TONE_RATE) * 0.45 * env, -1.0, 1.0) * 32767.0)
+			data.encode_s16(idx * 2, v)
+	var wav := AudioStreamWAV.new()
+	wav.format = AudioStreamWAV.FORMAT_16_BITS
+	wav.mix_rate = _TONE_RATE
+	wav.stereo = false
+	wav.data = data
+	return wav
 
 func _ensure_bus(bus_name: String) -> void:
 	if AudioServer.bus_count > 0 and AudioServer.get_bus_index(bus_name) != -1:
@@ -57,6 +110,18 @@ func apply_volumes() -> void:
 
 func has(key: String) -> bool:
 	return _streams.has(key)
+
+## Fire-and-forget 2D sound for global UI / round stingers (self-frees when done).
+func oneshot2d(key: String, vol_db := 0.0) -> void:
+	if not _streams.has(key):
+		return
+	var p := AudioStreamPlayer.new()
+	p.stream = _streams[key]
+	p.volume_db = vol_db
+	p.bus = SFX_BUS
+	p.finished.connect(p.queue_free)
+	add_child(p)
+	p.play()
 
 ## Fire-and-forget positional sound attached to a node (self-frees when done).
 func oneshot3d(key: String, at: Node3D, unit_size := 10.0, max_dist := 80.0, vol_db := 0.0) -> void:

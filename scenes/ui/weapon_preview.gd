@@ -5,6 +5,10 @@ extends Node3D
 const SCENES := {
 	"ak47": "res://scenes/weapons/main/ak47.tscn",
 	"m4a4": "res://scenes/weapons/main/m4a4.tscn",
+	"mp5": "res://scenes/weapons/main/mp5.tscn",
+	"steyr_aug": "res://scenes/weapons/main/SteyrAUG.tscn",
+	"rpd": "res://scenes/weapons/main/RPD.tscn",
+	"remington_870": "res://scenes/weapons/main/remington_870.tscn",
 	"m700": "res://scenes/weapons/main/m700.tscn",
 	"knife": "res://scenes/weapons/melee/Knife.tscn",
 	"at4": "res://scenes/weapons/heavy/at4.tscn",

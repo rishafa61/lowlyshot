@@ -13,6 +13,15 @@ extends Resource
 @export var res: int = 90
 @export var max_res: int = 90
 @export var auto: bool = true
+@export var is_shotgun: bool = false
+@export var pellets: int = 1
+@export var spread_base: float = 0.0
+@export var reload_time: float = 0.0 # 0 = engine default (RELOAD_TIME in player.gd)
+@export var recoil_v: float = 0.05 # camera pitch punch per shot
+@export var recoil_h: float = 0.0 # camera yaw wander per shot
+@export var kick_vm: float = 0.15 # viewmodel push-back per shot
+@export var spread_per_shot: float = 0.02 # sustained-fire accuracy loss
+@export var speed_mult: float = 1.0 # movement multiplier while equipped (LMG < 1.0)
 @export var is_sniper: bool = false
 @export var owned: bool = false
 @export var equipped: bool = false
@@ -41,6 +50,15 @@ func to_dict() -> Dictionary:
 		"res": res,
 		"max_res": max_res,
 		"auto": auto,
+		"is_shotgun": is_shotgun,
+		"pellets": pellets,
+		"spread_base": spread_base,
+		"reload_time": reload_time,
+		"recoil_v": recoil_v,
+		"recoil_h": recoil_h,
+		"kick_vm": kick_vm,
+		"spread_per_shot": spread_per_shot,
+		"speed_mult": speed_mult,
 		"is_sniper": is_sniper,
 		"owned": owned,
 		"equipped": equipped,
@@ -68,6 +86,15 @@ static func from_dict(d: Dictionary) -> WeaponData:
 	w.res = int(d.get("res", 90))
 	w.max_res = int(d.get("max_res", w.res))
 	w.auto = bool(d.get("auto", true))
+	w.is_shotgun = bool(d.get("is_shotgun", false))
+	w.pellets = int(d.get("pellets", 1))
+	w.spread_base = float(d.get("spread_base", 0.0))
+	w.reload_time = float(d.get("reload_time", 0.0))
+	w.recoil_v = float(d.get("recoil_v", 0.05))
+	w.recoil_h = float(d.get("recoil_h", 0.0))
+	w.kick_vm = float(d.get("kick_vm", 0.15))
+	w.spread_per_shot = float(d.get("spread_per_shot", 0.02))
+	w.speed_mult = float(d.get("speed_mult", 1.0))
 	w.is_sniper = bool(d.get("is_sniper", false))
 	w.owned = bool(d.get("owned", false))
 	w.equipped = bool(d.get("equipped", false))

@@ -22,15 +22,19 @@ func _ready() -> void:
 		steam_sync.lobby_joined.connect(_on_lobby_ready)
 
 func _update_bounds() -> void:
-	# FULL_RECT anchors auto-size to the CanvasLayer viewport; no manual size.
-	pass
+	# Root Control under a CanvasLayer: anchors can't resolve against a
+	# non-Control parent, so pin to top-left (equal anchors) and track the
+	# viewport rect manually. Deferred: safe to call during _ready/layout.
+	set_deferred("size", get_viewport_rect().size)
 
 func _on_lobby_ready(_lobby_id: int) -> void:
 	_refresh_lobby_label()
 	refresh_friends()
 
 func _build_ui() -> void:
-	set_anchors_preset(Control.PRESET_FULL_RECT)
+	set_anchors_preset(Control.PRESET_TOP_LEFT)
+	anchor_right = 0.0
+	anchor_bottom = 0.0
 	var dim := ColorRect.new()
 	dim.color = Color(0, 0, 0, 0.7)
 	dim.set_anchors_preset(Control.PRESET_FULL_RECT)

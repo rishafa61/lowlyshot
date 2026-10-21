@@ -1,26 +1,144 @@
 [gd_scene format=3 uid="uid://dvi5jb0fh1r1w"]
 
-[sub_resource type="BoxMesh" id="BoxMesh_blade"]
-size = Vector3(0.02, 0.08, 0.4)
+[sub_resource type="BoxMesh" id="Box_blade"]
+size = Vector3(0.016, 0.05, 0.3)
 
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_blade"]
+[sub_resource type="StandardMaterial3D" id="Mat_blade"]
+albedo_color = Color(0.23, 0.24, 0.26, 1)
 metallic = 1.0
-roughness = 0.2
+roughness = 0.3
 
-[node name="Knife" type="Node3D" unique_id=986353158]
-transform = Transform3D(-1, 8.74228e-08, 0, -8.74228e-08, -1, 0, 0, 0, 1, 0, 0, 0)
+[sub_resource type="BoxMesh" id="Box_tip"]
+size = Vector3(0.016, 0.042, 0.13)
 
-[node name="Blade" type="MeshInstance3D" parent="." unique_id=1837279914]
-transform = Transform3D(9.41625e-16, -3.14301e-08, 1, -0.49282, -3.14301e-08, 0, 2.15419e-08, -0.719038, -4.37114e-08, 0.145, 0, 0)
-mesh = SubResource("BoxMesh_blade")
-surface_material_override/0 = SubResource("StandardMaterial3D_blade")
+[sub_resource type="BoxMesh" id="Box_tooth"]
+size = Vector3(0.014, 0.014, 0.02)
 
-[node name="Handle" type="MeshInstance3D" parent="." unique_id=1864748869]
-transform = Transform3D(3.5331e-15, -4.37114e-08, 0.382933, -1.84913, -4.37114e-08, 5.29396e-23, 8.08279e-08, -1, -1.67385e-08, -0.106069, 0, 0)
-mesh = SubResource("BoxMesh_blade")
-surface_material_override/0 = SubResource("StandardMaterial3D_blade")
+[sub_resource type="StandardMaterial3D" id="Mat_dark"]
+albedo_color = Color(0.06, 0.06, 0.07, 1)
+metallic = 0.6
+roughness = 0.5
 
-[node name="Handle2" type="MeshInstance3D" parent="." unique_id=1818309364]
-transform = Transform3D(3.05087e-15, -3.71906e-08, 0.10758, -1.59674, -3.71906e-08, -1.94118e-23, 6.97957e-08, -0.850822, -4.70247e-09, -0.202152, 0, 0)
-mesh = SubResource("BoxMesh_blade")
-surface_material_override/0 = SubResource("StandardMaterial3D_blade")
+[sub_resource type="CylinderMesh" id="Cyl_hole"]
+top_radius = 0.011
+bottom_radius = 0.011
+height = 0.022
+
+[sub_resource type="BoxMesh" id="Box_guard"]
+size = Vector3(0.052, 0.014, 0.022)
+
+[sub_resource type="TorusMesh" id="Torus_ring"]
+inner_radius = 0.008
+outer_radius = 0.014
+
+[sub_resource type="BoxMesh" id="Box_handle"]
+size = Vector3(0.032, 0.038, 0.16)
+
+[sub_resource type="StandardMaterial3D" id="Mat_grip"]
+albedo_color = Color(0.09, 0.09, 0.1, 1)
+metallic = 0.1
+roughness = 0.65
+
+[sub_resource type="BoxMesh" id="Box_rib"]
+size = Vector3(0.036, 0.042, 0.012)
+
+[sub_resource type="BoxMesh" id="Box_pommel"]
+size = Vector3(0.034, 0.04, 0.02)
+
+[node name="Knife" type="Node3D" unique_id=1928371425]
+transform = Transform3D(1.9106855e-15, 4.371139e-08, 1, 1, -4.371139e-08, 0, 4.371139e-08, 1, -4.371139e-08, 0, 0, 0)
+
+[node name="Blade" type="MeshInstance3D" parent="." unique_id=1614470166]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.3877788e-17, 0.0040000007, -0.16476035)
+mesh = SubResource("Box_blade")
+surface_material_override/0 = SubResource("Mat_blade")
+
+[node name="BladeTip" type="MeshInstance3D" parent="." unique_id=408617799]
+transform = Transform3D(-1.0039223, 0.0018497123, -0.001519031, 0.0014860088, -0.6267907, -0.21178074, -0.005042195, -0.55301005, 0.24003063, 0, 0.007989122, -0.3212471)
+mesh = SubResource("Box_tip")
+surface_material_override/0 = SubResource("Mat_blade")
+
+[node name="SawTooth1" type="MeshInstance3D" parent="." unique_id=861546566]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.032, -0.08)
+mesh = SubResource("Box_tooth")
+surface_material_override/0 = SubResource("Mat_dark")
+
+[node name="SawTooth2" type="MeshInstance3D" parent="." unique_id=2090806401]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.032122694, -0.105)
+mesh = SubResource("Box_tooth")
+surface_material_override/0 = SubResource("Mat_dark")
+
+[node name="SawTooth3" type="MeshInstance3D" parent="." unique_id=2085103108]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.031760737, -0.13)
+mesh = SubResource("Box_tooth")
+surface_material_override/0 = SubResource("Mat_dark")
+
+[node name="SawTooth4" type="MeshInstance3D" parent="." unique_id=1353536295]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.031883433, -0.155)
+mesh = SubResource("Box_tooth")
+surface_material_override/0 = SubResource("Mat_dark")
+
+[node name="SawTooth5" type="MeshInstance3D" parent="." unique_id=1925268177]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.03200613, -0.18)
+mesh = SubResource("Box_tooth")
+surface_material_override/0 = SubResource("Mat_dark")
+
+[node name="SawTooth6" type="MeshInstance3D" parent="." unique_id=204996145]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.0326135, -0.205)
+mesh = SubResource("Box_tooth")
+surface_material_override/0 = SubResource("Mat_dark")
+
+[node name="BladeHole" type="MeshInstance3D" parent="." unique_id=1125180207]
+transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, 0, 0.016, -0.26)
+mesh = SubResource("Cyl_hole")
+surface_material_override/0 = SubResource("Mat_dark")
+
+[node name="Guard" type="MeshInstance3D" parent="." unique_id=2129792979]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.028750371, 0)
+mesh = SubResource("Box_guard")
+surface_material_override/0 = SubResource("Mat_dark")
+
+[node name="MuzzleRing" type="MeshInstance3D" parent="." unique_id=1824343406]
+transform = Transform3D(0, -1, 0, 1, 0, 0, 0, 0, 1, 0.024, 0.038750373, 0)
+mesh = SubResource("Torus_ring")
+surface_material_override/0 = SubResource("Mat_dark")
+
+[node name="Handle" type="MeshInstance3D" parent="." unique_id=367067477]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.006353341, 0.06137988)
+mesh = SubResource("Box_handle")
+surface_material_override/0 = SubResource("Mat_grip")
+
+[node name="HandleRib1" type="MeshInstance3D" parent="." unique_id=611921961]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.006353341, 0.00637988)
+mesh = SubResource("Box_rib")
+surface_material_override/0 = SubResource("Mat_dark")
+
+[node name="HandleRib2" type="MeshInstance3D" parent="." unique_id=1481753204]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.006353341, 0.03137988)
+mesh = SubResource("Box_rib")
+surface_material_override/0 = SubResource("Mat_dark")
+
+[node name="HandleRib3" type="MeshInstance3D" parent="." unique_id=1540147506]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.006353341, 0.056379884)
+mesh = SubResource("Box_rib")
+surface_material_override/0 = SubResource("Mat_dark")
+
+[node name="HandleRib4" type="MeshInstance3D" parent="." unique_id=565157056]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.006353341, 0.08137988)
+mesh = SubResource("Box_rib")
+surface_material_override/0 = SubResource("Mat_dark")
+
+[node name="HandleRib5" type="MeshInstance3D" parent="." unique_id=619261291]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.006353341, 0.10637988)
+mesh = SubResource("Box_rib")
+surface_material_override/0 = SubResource("Mat_dark")
+
+[node name="HandleRib6" type="MeshInstance3D" parent="." unique_id=377123801]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.006353341, 0.13137989)
+mesh = SubResource("Box_rib")
+surface_material_override/0 = SubResource("Mat_dark")
+
+[node name="Pommel" type="MeshInstance3D" parent="." unique_id=1515840187]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.006353341, 0.15137988)
+mesh = SubResource("Box_pommel")
+surface_material_override/0 = SubResource("Mat_dark")

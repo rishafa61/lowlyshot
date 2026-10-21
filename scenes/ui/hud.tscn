@@ -167,6 +167,28 @@ value = 0.0
 show_percentage = false
 fill_mode = 3
 
+[node name="AltitudeLabel" type="Label" parent="AircraftHUD"]
+visible = false
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -200.0
+offset_top = -16.0
+offset_right = -28.0
+offset_bottom = 16.0
+grow_horizontal = 0
+grow_vertical = 2
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.55, 1, 0.65, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 5
+theme_override_font_sizes/font_size = 18
+text = "ALT 0 m"
+horizontal_alignment = 2
+vertical_alignment = 1
+
 [node name="OverheatLabel" type="Label" parent="AircraftHUD"]
 visible = false
 anchors_preset = 8
@@ -190,24 +212,24 @@ horizontal_alignment = 1
 vertical_alignment = 1
 
 [node name="LoadoutPanel" type="Label" parent="AircraftHUD"]
-anchors_preset = 7
-anchor_left = 0.5
-anchor_top = 1.0
-anchor_right = 0.5
-anchor_bottom = 1.0
-offset_left = -320.0
-offset_top = -130.0
-offset_right = 320.0
-offset_bottom = -20.0
-grow_horizontal = 2
-grow_vertical = 0
+anchors_preset = 6
+anchor_left = 1.0
+anchor_top = 0.5
+anchor_right = 1.0
+anchor_bottom = 0.5
+offset_left = -330.0
+offset_top = -190.0
+offset_right = -30.0
+offset_bottom = 190.0
+grow_horizontal = 0
+grow_vertical = 2
 mouse_filter = 2
-theme_override_colors/font_color = Color(0.9, 0.95, 1, 1)
+theme_override_colors/font_color = Color(0.85, 0.95, 1, 1)
 theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
-theme_override_constants/outline_size = 4
-theme_override_font_sizes/font_size = 15
+theme_override_constants/outline_size = 5
+theme_override_font_sizes/font_size = 19
 text = ""
-horizontal_alignment = 1
+horizontal_alignment = 0
 vertical_alignment = 1
 
 [node name="HeliGuide" type="PanelContainer" parent="AircraftHUD"]

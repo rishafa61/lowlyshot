@@ -1,0 +1,25 @@
+[gd_resource type="Resource" script_class="WeaponData" format=3 uid="uid://ynsnoem7urb0"]
+
+[ext_resource type="Script" uid="uid://bb02xcedscp06" path="res://scripts/weapon_data.gd" id="1_script"]
+
+[resource]
+script = ExtResource("1_script")
+id = "rpd"
+display_name = "RPD"
+dmg = 18.0
+rng = 70.0
+stab = 60.0
+fire_rate = 0.0923
+mag = 100
+max_mag = 100
+res = 200
+max_res = 200
+reload_time = 5.0
+recoil_v = 0.038
+recoil_h = 0.012
+kick_vm = 0.09
+spread_per_shot = 0.018
+speed_mult = 0.85
+owned = true
+price = 3200
+scene_path = "res://scenes/weapons/main/RPD.tscn"

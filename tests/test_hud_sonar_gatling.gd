@@ -131,6 +131,25 @@ func _run() -> void:
 	})
 	check(hud.overheat_label.visible == true, "Overheat label visible when overheated")
 
+	# 6. Heat gauge thermometer chrome (bracket caps + ticks frame)
+	check(hud.heat_gauge_chrome != null, "Heat gauge chrome built")
+	check(hud.heat_gauge_chrome.overheated == true, "Gauge chrome overheated flag set at 100% heat")
+	check(hud.heat_gauge_chrome.visible == hud.heat_bar.visible, "Gauge chrome visibility syncs with heat bar")
+	hud._update_heat_gauge(50.0, false)
+	check(hud.heat_gauge_chrome.overheated == false, "Gauge chrome overheated flag clears")
+	check(hud.heat_bar.offset_left > 0 and hud.heat_gauge_chrome.offset_left < hud.heat_bar.offset_left,
+		"Gauge chrome frames the fill column on its left side")
+	check(absf((hud.heat_bar.offset_right - hud.heat_bar.offset_left) - 12.0) < 0.01,
+		"Fill column is 12px wide, inset in the gauge frame (got %f)" % (hud.heat_bar.offset_right - hud.heat_bar.offset_left))
+	var bar_cx: float = (hud.heat_bar.offset_left + hud.heat_bar.offset_right) * 0.5
+	var chrome_cx: float = (hud.heat_gauge_chrome.offset_left + hud.heat_gauge_chrome.offset_right) * 0.5
+	check(absf(bar_cx - chrome_cx) < 0.01, "Fill column centered in gauge chrome (bar %f vs chrome %f)" % [bar_cx, chrome_cx])
+	var cap_found := false
+	for c in hud.heat_gauge_chrome.get_children():
+		if c is Label and c.text == "HEAT":
+			cap_found = true
+	check(cap_found, "HEAT caption present under gauge")
+
 	hud.queue_free()
 	await process_frame
 

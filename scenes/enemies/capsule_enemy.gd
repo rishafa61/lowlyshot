@@ -75,6 +75,19 @@ var ammo = 30
 var max_ammo = 30
 var fire_cooldown = 0.0
 var is_reloading = false
+# Perf: line-of-sight cache — raycast at ~6.7 Hz instead of every think tick
+var _los_timer: float = 0.0
+var _los_cache: bool = false
+# Hitbox Y positions at rest — crouch moves boxes instead of non-uniform scaling (Jolt rejects)
+var _hitbox_base_y: Array[float] = []
+# Soft mover state: shapecast sweep + ray floor snap (no move_and_slide)
+var _grounded: bool = false
+var _blocked: bool = false
+var _block_normal: Vector3 = Vector3.ZERO
+var _move_accum: float = 0.0
+var _move_query := PhysicsShapeQueryParameters3D.new()
+var _move_ready := false
+var _nav_goal: Vector3 = Vector3.INF
 var reload_timer = 0.0
 var equipped_primary = null
 var primary_weapons = [
@@ -91,6 +104,7 @@ const RUN_SPEED = 5.5
 const SLIDE_SPEED = 9.0
 const CROUCH_HEIGHT = 1.0
 const STAND_HEIGHT = 2.0
+const STEP_HEIGHT = 0.5 # walkable rise the sweep clears; walls taller than this block
 
 var is_crouching = false
 var is_sliding = false
@@ -128,6 +142,12 @@ func reveal_silhouette():
 	tween.tween_callback(func(): body.clear_overlay())
 
 func _ready():
+	# Soft mover: body is script-driven only — invisible to other bodies' sweeps
+	collision_layer = 0
+	collision_mask = 0
+	_hitbox_base_y.clear()
+	for hb in hitboxes:
+		_hitbox_base_y.append(hb.position.y)
 	if bot_name == "":
 		bot_name = GlobalData.get_random_bot_name()
 	# Replicated puppets: visuals + collision only, no AI (host owns the sim)
@@ -210,7 +230,11 @@ func _equip_random_primary() -> void:
 	var scene_map = {
 		"ak47": "res://scenes/weapons/main/ak47.tscn",
 		"m4a4": "res://scenes/weapons/main/m4a4.tscn",
-		"m700": "res://scenes/weapons/main/m700.tscn"
+		"m700": "res://scenes/weapons/main/m700.tscn",
+		"mp5": "res://scenes/weapons/main/mp5.tscn",
+		"steyr_aug": "res://scenes/weapons/main/SteyrAUG.tscn",
+		"rpd": "res://scenes/weapons/main/RPD.tscn",
+		"remington_870": "res://scenes/weapons/main/remington_870.tscn"
 	}
 	
 	var scene_path = scene_map.get(w["id"], "res://scenes/weapons/main/ak47.tscn")
@@ -218,6 +242,10 @@ func _equip_random_primary() -> void:
 	if scene:
 		var inst = scene.instantiate() as Node3D
 		inst.name = w["id"]
+		# Perf: weapon detail meshes fade out beyond 120 m — bots keep body silhouette
+		for mi in inst.find_children("*", "MeshInstance3D", true, false):
+			mi.visibility_range_end = 120.0
+			mi.visibility_range_end_margin = 15.0
 		weapon_holder.add_child(inst)
 	
 	equipped_primary = w
@@ -265,9 +293,15 @@ func _physics_process(delta):
 		global_position = global_position.lerp(_net_target_pos, t)
 		rotation.y = lerp_angle(rotation.y, _net_target_yaw, t)
 		return
-	if not is_on_floor():
-		velocity.y -= gravity * delta
-		
+
+	# Intermission freeze: stay locked at spawn until warmup countdown ends
+	var mgr_scene = get_tree().current_scene
+	if mgr_scene and mgr_scene.get("players_frozen") == true:
+		velocity.x = move_toward(velocity.x, 0, delta * 15.0)
+		velocity.z = move_toward(velocity.z, 0, delta * 15.0)
+		_soft_move(delta)
+		return
+
 	if is_dead:
 		if can_respawn:
 			respawn_timer -= delta
@@ -275,12 +309,10 @@ func _physics_process(delta):
 				respawn()
 				return # Don't do physics on the exact frame we respawn
 		
-		# Only apply gravity if collision is still somehow active, otherwise just wait
 		velocity.x = move_toward(velocity.x, 0, delta * 10.0)
 		velocity.z = move_toward(velocity.z, 0, delta * 10.0)
 		if not collision_shape.disabled:
-			move_and_slide()
-			
+			_soft_move(delta)
 		return
 		
 	# Process stun
@@ -293,7 +325,7 @@ func _physics_process(delta):
 		# Keep applying gravity and simple friction while stunned, but no AI logic
 		velocity.x = move_toward(velocity.x, 0, delta * 15.0)
 		velocity.z = move_toward(velocity.z, 0, delta * 15.0)
-		move_and_slide()
+		_soft_move(delta)
 		return # Stops all AI pathfinding, targeting, and shooting!
 
 	# Weapon Cooldowns
@@ -312,63 +344,116 @@ func _physics_process(delta):
 		if slide_timer <= 0:
 			is_sliding = false
 
-	process_ai(delta)
-	process_stance(delta)
-
-	# Push away from overlapping bots so they never clip through each other
-	_apply_bot_separation()
-
-	# Stair step-up: glide up step risers up to 0.5m
-	var fwd := -global_transform.basis.z
-	if is_on_floor():
-		var space := get_world_3d().direct_space_state
-		var feet := global_position
-		var low_ray := PhysicsRayQueryParameters3D.create(
-			feet + Vector3.UP * 0.08, feet + Vector3.UP * 0.08 + fwd * 0.5,
-			collision_mask, [get_rid()])
-		var low := space.intersect_ray(low_ray)
-		if not low.is_empty():
-			var high_ray := PhysicsRayQueryParameters3D.create(
-				feet + Vector3.UP * 0.55, feet + Vector3.UP * 0.55 + fwd * 0.65,
-				collision_mask, [get_rid()])
-			if space.intersect_ray(high_ray).is_empty():
-				var tread_ray := PhysicsRayQueryParameters3D.create(
-					low.position + fwd * 0.15 + Vector3.UP * 0.55,
-					low.position + fwd * 0.15 + Vector3.DOWN * 0.1,
-					collision_mask, [get_rid()])
-				var tread := space.intersect_ray(tread_ray)
-				if not tread.is_empty() and tread.normal.dot(Vector3.UP) > 0.6:
-					var rise: float = tread.position.y - feet.y
-					if rise > 0.03 and rise <= 0.5:
-						global_position.y = tread.position.y + 0.02
-
-	move_and_slide()
-
-	# Step-up / Mantle assist over spawn cliff (1.18m vertical drop)
-	if is_on_wall():
-		var space := get_world_3d().direct_space_state
-		var step_target := global_position + Vector3.UP * 1.35 + fwd * 0.4
-		var down_ray := PhysicsRayQueryParameters3D.create(
-			step_target, step_target + Vector3.DOWN * 1.5,
-			collision_mask, [get_rid()]
-		)
-		var hit := space.intersect_ray(down_ray)
-		if not hit.is_empty():
-			global_position = hit.position + Vector3.UP * 0.08
+	# Perf: stagger think + move — half the bots run ALL physics queries per tick
+	# (AI, separation, sweep, floor ray). Accumulated delta keeps timers real-time.
+	_move_accum += delta
+	if (Engine.get_physics_frames() + int(get_instance_id() % 2)) % 2 == 0:
+		var step := _move_accum
+		_move_accum = 0.0
+		process_ai(step)
+		process_stance(step)
+		# Push away from overlapping bots so they never clip through each other
+		_apply_bot_separation()
+		_soft_move(step)
+		_step_up_if_needed()
 
 	# Footstep / slide loops (positional, quieter with distance)
 	var hspeed := Vector2(velocity.x, velocity.z).length()
 	var move_state := ""
 	if is_sliding:
 		move_state = "slide"
-	elif is_on_floor() and hspeed > 1.0:
+	elif _grounded and hspeed > 1.0:
 		move_state = "run" if hspeed > WALK_SPEED * 1.4 else "walk"
+	# Animation sync: idle / run / crouch / slide
+	body.sync_movement(move_state != "", is_crouching and move_state == "", is_sliding, not _grounded)
 	if move_state != _sfx_move_state:
 		_sfx_move_state = move_state
 		Sfx.stop_loop(_sfx_move)
 		_sfx_move = null
 		if move_state != "":
 			_sfx_move = Sfx.loop3d(move_state, self, 3.0, 28.0, -8.0)
+
+## Soft mover: capsule sweep (shapecast) + ray floor snap.
+## No move_and_slide, no hard body contacts — bots pass through each other and
+## players, slide along walls via the hit normal, and shove doors aside.
+## Mask 1 = world geometry only; runs at half rate with the full accumulated dt.
+func _soft_move(dt: float) -> void:
+	if dt <= 0.0:
+		return
+	var space := get_world_3d().direct_space_state
+	if not _move_ready:
+		_move_ready = true
+		_move_query.shape = collision_shape.shape
+		_move_query.collision_mask = 1
+		_move_query.exclude = [get_rid()]
+	velocity.y -= gravity * dt
+	var shape: Shape3D = collision_shape.shape
+	var half_h: float = shape.height * 0.5 if shape is CapsuleShape3D else 0.9
+	# Horizontal sweep lifted by STEP_HEIGHT: walkable rises (ramps, kerbs, lips
+	# up to 0.5 m) pass under the query; the floor snap below re-lands the bot.
+	# Walls taller than STEP_HEIGHT still block and slide as before.
+	var remaining := Vector3(velocity.x, 0.0, velocity.z) * dt
+	_blocked = false
+	_block_normal = Vector3.ZERO
+	for i in 2:
+		if remaining.length_squared() < 1e-8:
+			break
+		_move_query.transform = Transform3D(Basis.IDENTITY, global_position + Vector3.UP * (half_h + STEP_HEIGHT))
+		_move_query.motion = remaining
+		var res = space.cast_motion(_move_query)
+		var safe: float = res.x if res is Vector2 else res[0]
+		global_position += remaining * safe
+		if safe >= 0.9999:
+			break
+		var rest := space.get_rest_info(_move_query)
+		if rest.is_empty():
+			break
+		var n: Vector3 = rest["normal"]
+		# Doors / physics props: soft shove, keep going
+		var col = instance_from_id(rest["collider_id"])
+		if col is RigidBody3D:
+			col.apply_central_impulse(-n * 1.5)
+			if col.get_parent() and col.get_parent().has_method("register_interaction"):
+				col.get_parent().register_interaction()
+			global_position += remaining * 0.25
+			break
+		_blocked = true
+		_block_normal = n
+		var into := remaining.dot(n)
+		if into < 0.0:
+			remaining = (remaining - n * into) * 0.98
+		else:
+			break
+	# Vertical: snap to floor when falling, free rise otherwise
+	if velocity.y <= 0.0:
+		var drop := -velocity.y * dt + STEP_HEIGHT + 0.05
+		var fq := PhysicsRayQueryParameters3D.create(
+			global_position + Vector3.UP * 0.6, global_position + Vector3.DOWN * (0.6 + drop), 1, [get_rid()])
+		var fh := space.intersect_ray(fq)
+		if not fh.is_empty():
+			global_position.y = fh.position.y
+			velocity.y = 0.0
+			_grounded = true
+		else:
+			_grounded = false
+	else:
+		global_position.y += velocity.y * dt
+		_grounded = false
+
+func _step_up_if_needed() -> void:
+	# Mantle assist over spawn cliff (1.18 m) when blocked by a high ledge
+	if not _blocked:
+		return
+	var fwd := -global_transform.basis.z
+	var space := get_world_3d().direct_space_state
+	var step_target := global_position + Vector3.UP * 1.35 + fwd * 0.4
+	var down_ray := PhysicsRayQueryParameters3D.create(
+		step_target, step_target + Vector3.DOWN * 1.5,
+		1, [get_rid()]
+	)
+	var hit := space.intersect_ray(down_ray)
+	if not hit.is_empty() and hit.position.y > global_position.y:
+		global_position = hit.position + Vector3.UP * 0.08
 
 func _apply_bot_separation() -> void:
 	# Repel every other bot within 1.2 m
@@ -382,14 +467,6 @@ func _apply_bot_separation() -> void:
 			if d > 0.001 and d < 1.2:
 				var push: float = (1.2 - d) * 3.5
 				velocity += diff.normalized() * push
-	
-	# AI pushes doors open
-	for i in get_slide_collision_count():
-		var c = get_slide_collision(i)
-		if c.get_collider() is RigidBody3D:
-			c.get_collider().apply_central_impulse(-c.get_normal() * 1.5)
-			if c.get_collider().get_parent().has_method("register_interaction"):
-					c.get_collider().get_parent().register_interaction()
 
 
 func process_ai(delta):
@@ -397,7 +474,12 @@ func process_ai(delta):
 	if randf() < 0.05 or not target or target.get("is_dead"):
 		_find_nearest_target()
 
-	var sees_target = can_see_target()
+	# Cached line-of-sight: refresh at ~6.7 Hz, humans don't react faster anyway
+	_los_timer -= delta
+	if _los_timer <= 0.0:
+		_los_timer = 0.15
+		_los_cache = can_see_target()
+	var sees_target = _los_cache
 	
 	if not target or target.get("is_dead") or not sees_target:
 		# ROAM STATE
@@ -411,12 +493,12 @@ func process_ai(delta):
 				random_pos = flag.global_position + Vector3(randf_range(-3.0, 3.0), 0.0, randf_range(5.0, 15.0))
 			else:
 				random_pos = start_pos + Vector3(randf_range(-8, 8), 0, randf_range(-8, 8))
-			nav_agent.target_position = random_pos
+			_set_nav_goal(random_pos)
 			roam_timer = randf_range(3.0, 6.0)
 		# Sprint to the objective, walk once on it
 		var spd := RUN_SPEED if (flag != null and global_position.distance_to(flag.global_position) > 15.0) else WALK_SPEED
 		# Occasional slide while sprinting: burst of speed
-		if spd > WALK_SPEED and is_on_floor() and not is_sliding and randf() < 0.004:
+		if spd > WALK_SPEED and _grounded and not is_sliding and randf() < 0.004:
 			is_sliding = true
 			slide_timer = 0.9
 		if is_sliding:
@@ -477,10 +559,10 @@ func process_ai(delta):
 			if dist > 12.0:
 				# CHASE - close the distance to optimal range
 				is_crouching = false
-				nav_agent.target_position = target.global_position
+				_set_nav_goal(target.global_position)
 				
 				# Randomly slide to close distance
-				if randf() < 0.02 and not is_sliding and is_on_floor():
+				if randf() < 0.02 and not is_sliding and _grounded:
 					is_sliding = true
 					slide_timer = 1.2
 					
@@ -500,6 +582,22 @@ func process_ai(delta):
 				
 				# Randomly crouch for evasion
 				if randf() < 0.02: is_crouching = !is_crouching
+
+# Snap any goal onto the navmesh — off-mesh targets (crate/roof/air) make the
+# path corridor query fail with "not find the most reachable polygons" spam.
+# Re-path only when the goal moved > 1 m: one corridor query per leg, not per tick.
+func _set_nav_goal(p: Vector3) -> void:
+	var map: RID = nav_agent.get_navigation_map()
+	if NavigationServer3D.map_get_iteration_id(map) == 0:
+		return # map not synced yet this session — skip, next tick will retry
+	# Targets standing on roofs, crates, or parachuting would snap to isolated
+	# navmesh polygons, producing "not find the most reachable polygons" corridor
+	# breaks. Clamp the probe height near the bot's elevation before snapping.
+	var probe := Vector3(p.x, clampf(p.y, global_position.y - 1.5, global_position.y + 2.5), p.z)
+	var goal := NavigationServer3D.map_get_closest_point(map, probe)
+	if goal.distance_to(_nav_goal) > 1.0:
+		_nav_goal = goal
+		nav_agent.target_position = goal
 
 func move_along_path(speed: float, rotate_to_path: bool):
 	var goal_dist: float = nav_agent.target_position.distance_to(global_position)
@@ -549,9 +647,10 @@ func process_stance(delta):
 		visuals.scale.y = current_scale
 		visuals.position.y = 0.0
 		
-		# Also scale down the Hitboxes node so the head hitbox physically drops down
-		$Hitboxes.scale.y = current_scale
+		# Crouch drops hitboxes by moving them down — non-uniform scale is rejected by Jolt
 		$Hitboxes.position.y = 0.0
+		for i in hitboxes.size():
+			hitboxes[i].position.y = _hitbox_base_y[i] * current_scale
 
 func can_see_target() -> bool:
 	if not target or target.get("is_dead"): return false
@@ -574,7 +673,15 @@ func can_see_target() -> bool:
 
 func shoot():
 	ammo -= 1
-	Sfx.oneshot3d("rifle_single", self, 14.0, 120.0, 0.0)
+	var is_snp: bool = equipped_primary != null and equipped_primary.get("id") == "m700"
+	if is_snp:
+		Sfx.oneshot3d("sniper_shot", self, 18.0, 160.0, 1.0)
+		get_tree().create_timer(0.45).timeout.connect(func():
+			if is_instance_valid(self) and not is_dead:
+				Sfx.oneshot3d("sniper_bolt", self, 12.0, 80.0, 0.5)
+		)
+	else:
+		Sfx.oneshot3d("rifle_single", self, 14.0, 120.0, 0.0)
 	# Use equipped primary fire rate if available
 	if equipped_primary and equipped_primary.has("fire_rate"):
 		fire_cooldown = equipped_primary["fire_rate"]

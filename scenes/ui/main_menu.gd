@@ -1,5 +1,10 @@
 extends Control
 
+const UI_ORANGE := Color(1.0, 0.44, 0.08)
+const UI_PLATE := Color(0.115, 0.125, 0.15, 0.94)
+const UI_PLATE_HOVER := Color(0.165, 0.18, 0.21, 0.97)
+const UI_TEXT := Color(0.88, 0.9, 0.93)
+
 @onready var btn_left_play = $LeftNav/VBoxContainer/BtnPlay
 @onready var btn_giant_play = $RightPanel/VBoxContainer/GiantPlayBtn
 @onready var btn_loadout = $LeftNav/VBoxContainer/BtnLoadout
@@ -37,12 +42,14 @@ var maps = {
 	],
 	"Multiplayer": [
 		{"name": "Team Deathmatch", "scene": "res://scenes/levels/multiplayer_arena.tscn", "desc": "5v5 Arena. Pick a side, eliminate the enemy team."},
-		{"name": "Ground War", "scene": "res://scenes/levels/ground_war.tscn", "desc": "10v10 King of the Hill. Capture the Flagpoint and hold it — first team to 300 points wins."}
+		{"name": "Ground War", "scene": "res://scenes/levels/ground_war.tscn", "desc": "10v10 King of the Hill. Capture the Flagpoint and hold it — first team to 300 points wins."},
+		{"name": "Search & Destroy", "scene": "res://scenes/levels/search_and_destroy.tscn", "desc": "5v5 Round-based. Attackers plant the bomb at Site A or B; Defenders stop them. First to 5 rounds wins."}
 	]
 }
 
 func _ready():
 	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
+	_apply_style()
 	# Back in the menu = leave any online match (closes the peer; every return path ends here)
 	var _ss = get_node_or_null("/root/SteamSync")
 	if _ss and _ss.has_method("leave_steam_game"):
@@ -207,15 +214,52 @@ func _init_party_system() -> void:
 	)
 	squad_bar.add_child(btn_copy)
 
+	# Leave party: only while actually joined in a (non-host) lobby
+	var btn_leave := Button.new()
+	btn_leave.text = "🚪 LEAVE PARTY"
+	btn_leave.custom_minimum_size = Vector2(150, 42)
+	btn_leave.visible = false
+	btn_leave.pressed.connect(_on_party_leave)
+	squad_bar.add_child(btn_leave)
+	_btn_leave_party = btn_leave
+
 	var steam_sync = get_node_or_null("/root/SteamSync")
 	if steam_sync:
 		steam_sync.party_member_joined.connect(_on_steam_friend_joined)
 		steam_sync.party_member_left.connect(_on_steam_friend_left)
+		steam_sync.lobby_joined.connect(_update_leave_party_visibility)
+		steam_sync.lobby_left.connect(_update_leave_party_visibility)
+		steam_sync.party_member_joined.connect(func(_id: int, _name: String): _update_leave_party_visibility())
+		steam_sync.party_member_left.connect(func(_id: int): _update_leave_party_visibility())
 		for member in steam_sync.party_members:
 			_on_steam_friend_joined(member.get("id", 0), member.get("name", ""))
+		_update_leave_party_visibility()
 
 var _toast_label: Label
 var _toast_token: int = 0
+var _btn_leave_party: Button = null
+
+func _update_leave_party_visibility(_extra = null) -> void:
+	if _btn_leave_party == null or not is_instance_valid(_btn_leave_party):
+		return
+	var steam_sync = get_node_or_null("/root/SteamSync")
+	if steam_sync == null:
+		_btn_leave_party.visible = false
+		return
+	# Visible if we joined someone else's lobby (not host) OR if our lobby has members
+	var in_foreign_lobby: bool = steam_sync.current_lobby_id != 0 and not steam_sync.is_lobby_host()
+	var has_members: bool = steam_sync.party_members.size() > 0
+	_btn_leave_party.visible = in_foreign_lobby or has_members
+
+func _on_party_leave() -> void:
+	var steam_sync = get_node_or_null("/root/SteamSync")
+	if steam_sync and steam_sync.has_method("leave_lobby"):
+		steam_sync.leave_lobby()
+		# Clear all party slot UIs
+		for slot in party_slots:
+			slot.clear()
+		_toast("Left the party.")
+		_update_leave_party_visibility()
 
 ## Small on-screen message so a failing button is never a silent no-op in exported builds.
 func _toast(msg: String) -> void:
@@ -241,6 +285,176 @@ func _toast(msg: String) -> void:
 		if is_instance_valid(_toast_label) and _toast_token == token:
 			_toast_label.hide()
 	)
+
+# ---------------- Stylized UI theme (reference: dark tactical plates + orange accents) ----------------
+
+var _ui_font: FontFile = null
+var _ui_font_bold: FontVariation = null
+
+func _ui_load_font() -> void:
+	_ui_font = load("res://addons/GD-Sync/UI/Fonts/Outfit-Regular.ttf")
+	if _ui_font != null:
+		_ui_font_bold = FontVariation.new()
+		_ui_font_bold.base_font = _ui_font
+		_ui_font_bold.variation_embolden = 0.7
+
+## Dark rounded plate StyleBoxFlat with optional orange left accent bar.
+func _ui_plate(bg: Color, accent: bool = false, radius: int = 6) -> StyleBoxFlat:
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = bg
+	sb.set_corner_radius_all(radius)
+	sb.content_margin_left = 18.0 if accent else 16.0
+	sb.content_margin_right = 14.0
+	sb.content_margin_top = 8.0
+	sb.content_margin_bottom = 8.0
+	if accent:
+		sb.border_width_left = 3
+		sb.border_color = UI_ORANGE
+	return sb
+
+func _ui_style_button(b: Button, primary: bool = false) -> void:
+	if b == null:
+		return
+	if _ui_font != null:
+		var f: Font = _ui_font
+		if primary:
+			f = _ui_font_bold
+		b.add_theme_font_override("font", f)
+	b.add_theme_color_override("font_color", Color.WHITE if primary else UI_TEXT)
+	b.add_theme_color_override("font_hover_color", Color.WHITE)
+	b.add_theme_color_override("font_pressed_color", Color.WHITE)
+	b.add_theme_color_override("font_focus_color", Color.WHITE)
+	b.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
+	if primary:
+		b.add_theme_color_override("font_pressed_color", Color(0.98, 0.9, 0.8))
+		var n := _ui_plate(UI_ORANGE, false, 8)
+		n.shadow_color = Color(0, 0, 0, 0.35)
+		n.shadow_size = 6
+		n.shadow_offset = Vector2(0, 3)
+		b.add_theme_stylebox_override("normal", n)
+		b.add_theme_stylebox_override("hover", _ui_plate(UI_ORANGE.lightened(0.1), false, 8))
+		b.add_theme_stylebox_override("pressed", _ui_plate(UI_ORANGE.darkened(0.18), false, 8))
+	else:
+		b.add_theme_stylebox_override("normal", _ui_plate(UI_PLATE))
+		b.add_theme_stylebox_override("hover", _ui_plate(UI_PLATE_HOVER, true))
+		b.add_theme_stylebox_override("pressed", _ui_plate(UI_PLATE.darkened(0.2), true))
+
+func _apply_style() -> void:
+	_ui_load_font()
+
+	# Title lockup: bold Outfit
+	if _ui_font_bold != null:
+		for l in [$LeftNav/VBoxContainer/TitleContainer/TitleRow/TitleStack/TitleLine/Poly,
+				$LeftNav/VBoxContainer/TitleContainer/TitleRow/TitleStack/TitleLine/Shot]:
+			if l != null:
+				l.add_theme_font_override("font", _ui_font_bold)
+				l.add_theme_font_size_override("font_size", 48)
+		var sub: Label = $LeftNav/VBoxContainer/TitleContainer/TitleRow/TitleStack/SubTitle
+		if sub != null and _ui_font != null:
+			sub.add_theme_font_override("font", _ui_font)
+
+	# Left nav: PLAY primary orange, rest dark plates with hover accent
+	_ui_style_button(btn_left_play, true)
+	for n in ["BtnLoadout", "BtnOperator", "BtnShop", "BtnDaily", "BtnSetting", "BtnExit"]:
+		_ui_style_button(get_node_or_null("LeftNav/VBoxContainer/" + n) as Button, false)
+
+	# Right panel: currency pills + daily reward plate
+	for panel_path in ["RightPanel/VBoxContainer/CurrencyHBox/CoinPanel",
+			"RightPanel/VBoxContainer/CurrencyHBox/GemPanel",
+			"RightPanel/VBoxContainer/DailyRewardPanel"]:
+		var p := get_node_or_null(panel_path) as PanelContainer
+		if p != null:
+			p.add_theme_stylebox_override("panel", _ui_plate(UI_PLATE, false, 8))
+	var claim := get_node_or_null("RightPanel/VBoxContainer/DailyRewardPanel/VBox/ClaimBtn") as Button
+	_ui_style_button(claim, false)
+
+	# Giant PLAY: orange with shadow, distinct hover/pressed
+	var giant := get_node_or_null("RightPanel/VBoxContainer/GiantPlayBtn") as Button
+	if giant != null:
+		if _ui_font_bold != null:
+			giant.add_theme_font_override("font", _ui_font_bold)
+		giant.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
+		var gn := _ui_plate(UI_ORANGE, false, 10)
+		gn.shadow_color = Color(0, 0, 0, 0.4)
+		gn.shadow_size = 10
+		gn.shadow_offset = Vector2(0, 4)
+		giant.add_theme_stylebox_override("normal", gn)
+		giant.add_theme_stylebox_override("hover", _ui_plate(UI_ORANGE.lightened(0.1), false, 10))
+		giant.add_theme_stylebox_override("pressed", _ui_plate(UI_ORANGE.darkened(0.18), false, 10))
+
+	# Play overlay: dark plate + mode buttons + orange start
+	var overlay_panel := get_node_or_null("PlayOverlay/CenterContainer/PanelContainer") as PanelContainer
+	if overlay_panel != null:
+		var op := _ui_plate(Color(0.09, 0.095, 0.115, 0.98), false, 10)
+		op.border_width_bottom = 2
+		op.border_color = UI_ORANGE
+		overlay_panel.add_theme_stylebox_override("panel", op)
+	for n in ["BtnCampaign", "BtnPractice", "BtnMultiplayer"]:
+		_ui_style_button(get_node_or_null("PlayOverlay/CenterContainer/PanelContainer/HBoxContainer/Sidebar/" + n) as Button, false)
+	var start := get_node_or_null("PlayOverlay/CenterContainer/PanelContainer/HBoxContainer/MapArea/MarginStart/BtnStartGame") as Button
+	_ui_style_button(start, true)
+	var close := get_node_or_null("PlayOverlay/CenterContainer/PanelContainer/HBoxContainer/Sidebar/BtnClosePlay") as Button
+	_ui_style_button(close, false)
+
+	# Squad bar buttons (created in _init_party_system after this — style deferred)
+	call_deferred("_style_squad_bar")
+
+	_style_environment()
+	_add_vignette()
+
+func _style_squad_bar() -> void:
+	await get_tree().process_frame
+	var party := get_node_or_null("PartyUI")
+	if party == null:
+		return
+	for c in party.get_children():
+		if c is HBoxContainer:
+			for b in c.get_children():
+				if b is Button:
+					_ui_style_button(b, false)
+
+func _style_environment() -> void:
+	var we := get_node_or_null("3DEnvironment/WorldEnvironment") as WorldEnvironment
+	if we != null and we.environment != null:
+		var env := we.environment
+		env.ambient_light_color = Color(0.55, 0.58, 0.64)
+		env.ambient_light_energy = 0.75
+		env.tonemap_mode = Environment.TONE_MAPPER_FILMIC
+		env.tonemap_exposure = 1.05
+		env.fog_enabled = true
+		env.fog_light_color = Color(0.09, 0.095, 0.115)
+		env.fog_density = 0.012
+		env.fog_sky_affect = 0.0
+		env.glow_enabled = true
+		env.glow_intensity = 0.5
+		env.glow_bloom = 0.02
+	var sun := get_node_or_null("3DEnvironment/DirectionalLight3D") as DirectionalLight3D
+	if sun != null:
+		sun.light_color = Color(1.0, 0.87, 0.7)
+		sun.light_energy = 1.25
+	var spot := get_node_or_null("3DEnvironment/SpotLight3D") as SpotLight3D
+	if spot != null:
+		spot.light_color = Color(1.0, 0.72, 0.45)
+
+func _add_vignette() -> void:
+	var grad := Gradient.new()
+	grad.offsets = PackedFloat32Array([0.55, 1.0])
+	grad.colors = PackedColorArray([Color(0, 0, 0, 0), Color(0, 0, 0, 0.42)])
+	var gt := GradientTexture2D.new()
+	gt.gradient = grad
+	gt.fill = GradientTexture2D.FILL_RADIAL
+	gt.fill_from = Vector2(0.5, 0.5)
+	gt.fill_to = Vector2(0.5, -0.5)
+	gt.width = 512
+	gt.height = 512
+	var vignette := TextureRect.new()
+	vignette.name = "Vignette"
+	vignette.texture = gt
+	vignette.stretch_mode = TextureRect.STRETCH_SCALE
+	vignette.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(vignette)
+	move_child(vignette, 0)
+	vignette.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 
 func _on_party_invite(_slot_idx: int) -> void:
 	# Always open the in-game dialog directly — never a silent no-op.
@@ -350,11 +564,101 @@ func _on_setting_pressed():
 	get_tree().change_scene_to_file("res://scenes/ui/settings_menu.tscn")
 
 func _on_exit_pressed():
-	# Clean shutdown: leave any Steam lobby before closing.
-	var _ss = get_node_or_null("/root/SteamSync")
-	if _ss and _ss.has_method("leave_steam_game"):
-		_ss.leave_steam_game()
-	get_tree().quit()
+	_show_exit_confirm()
+
+## Centered "ARE YOU SURE?" modal: YES quits, NO/ESC dismisses.
+func _show_exit_confirm() -> void:
+	if get_node_or_null("ExitConfirmLayer") != null:
+		return
+	var layer := CanvasLayer.new()
+	layer.name = "ExitConfirmLayer"
+	layer.layer = 130
+	add_child(layer)
+
+	var root := Control.new()
+	root.set_anchors_preset(Control.PRESET_TOP_LEFT)
+	root.anchor_right = 0.0
+	root.anchor_bottom = 0.0
+	layer.add_child(root)
+	root.set_deferred("size", get_viewport_rect().size)
+	get_viewport().size_changed.connect(func():
+		if is_instance_valid(root):
+			root.set_deferred("size", get_viewport_rect().size))
+
+	var dim := ColorRect.new()
+	dim.color = Color(0, 0, 0, 0.7)
+	dim.set_anchors_preset(Control.PRESET_FULL_RECT)
+	root.add_child(dim)
+
+	var center := CenterContainer.new()
+	center.set_anchors_preset(Control.PRESET_FULL_RECT)
+	root.add_child(center)
+
+	var panel := PanelContainer.new()
+	panel.custom_minimum_size = Vector2(420, 0)
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = Color(0.075, 0.085, 0.105, 0.98)
+	sb.set_corner_radius_all(12)
+	sb.content_margin_left = 32
+	sb.content_margin_right = 32
+	sb.content_margin_top = 28
+	sb.content_margin_bottom = 28
+	sb.border_width_bottom = 3
+	sb.border_color = Color(1.0, 0.44, 0.08)
+	panel.add_theme_stylebox_override("panel", sb)
+	center.add_child(panel)
+
+	var vbox := VBoxContainer.new()
+	vbox.add_theme_constant_override("separation", 22)
+	panel.add_child(vbox)
+
+	var msg := Label.new()
+	msg.text = "ARE YOU SURE?"
+	msg.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	msg.add_theme_font_size_override("font_size", 30)
+	msg.add_theme_color_override("font_color", Color.WHITE)
+	vbox.add_child(msg)
+
+	var btns := HBoxContainer.new()
+	btns.alignment = BoxContainer.ALIGNMENT_CENTER
+	btns.add_theme_constant_override("separation", 18)
+	vbox.add_child(btns)
+
+	var press := func(quit_game: bool):
+		if quit_game:
+			var _ss = get_node_or_null("/root/SteamSync")
+			if _ss and _ss.has_method("leave_steam_game"):
+				_ss.leave_steam_game()
+			get_tree().quit()
+		else:
+			layer.queue_free()
+
+	for opt in [["YES", true, Color(1.0, 0.44, 0.08)], ["NO", false, Color(0.09, 0.1, 0.12)]]:
+		var b := Button.new()
+		b.text = opt[0]
+		b.custom_minimum_size = Vector2(150, 52)
+		b.focus_mode = Control.FOCUS_NONE
+		var pl := func(c: Color) -> StyleBoxFlat:
+			var bs := StyleBoxFlat.new()
+			bs.bg_color = c
+			bs.set_corner_radius_all(8)
+			return bs
+		var n: StyleBoxFlat = pl.call(opt[2])
+		if opt[1]:
+			n.shadow_color = Color(0, 0, 0, 0.4)
+			n.shadow_size = 8
+			n.shadow_offset = Vector2(0, 3)
+		else:
+			n.border_width_bottom = 2
+			n.border_color = Color(0.18, 0.2, 0.24)
+		b.add_theme_stylebox_override("normal", n)
+		b.add_theme_stylebox_override("hover", pl.call(opt[2].lightened(0.1) if opt[1] else Color(0.13, 0.145, 0.17)))
+		b.add_theme_stylebox_override("pressed", pl.call(opt[2].darkened(0.18) if opt[1] else Color(0.06, 0.07, 0.09)))
+		b.add_theme_font_size_override("font_size", 20)
+		b.add_theme_color_override("font_color", Color.WHITE if opt[1] else Color(0.9, 0.92, 0.95))
+		b.add_theme_color_override("font_hover_color", Color.WHITE)
+		b.pressed.connect(press.bind(opt[1]))
+		btns.add_child(b)
 
 func _on_operator_pressed():
 	get_tree().change_scene_to_file("res://scenes/ui/operator_menu.tscn")

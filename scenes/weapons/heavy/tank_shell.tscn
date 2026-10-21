@@ -1,0 +1,23 @@
+[gd_scene format=3 uid="uid://btli35gqubqpk"]
+
+[ext_resource type="Script" path="res://scenes/weapons/heavy/tank_shell.gd" id="1_script"]
+
+[sub_resource type="StandardMaterial3D" id="mat_tracer"]
+albedo_color = Color(1, 0.75, 0.2, 1)
+emission_enabled = true
+emission = Color(1, 0.6, 0.1, 1)
+emission_energy_multiplier = 4.0
+shading_mode = 0
+
+[sub_resource type="CylinderMesh" id="mesh_shell"]
+material = SubResource("mat_tracer")
+top_radius = 0.06
+bottom_radius = 0.1
+height = 0.6
+
+[node name="TankShell" type="Node3D"]
+script = ExtResource("1_script")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, -4.37114e-08, 1, 0, -1, -4.37114e-08, 0, 0, 0)
+mesh = SubResource("mesh_shell")

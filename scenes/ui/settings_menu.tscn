@@ -285,40 +285,6 @@ value = 0.5
 [node name="TabControlsPanel" type="VBoxContainer" parent="Content"]
 visible = false
 layout_mode = 2
-theme_override_constants/separation = 20
-
-[node name="Label" type="Label" parent="Content/TabControlsPanel"]
-layout_mode = 2
-theme_override_font_sizes/font_size = 28
-text = "Control Keys Guide"
-
-[node name="HSeparator" type="HSeparator" parent="Content/TabControlsPanel"]
-layout_mode = 2
-
-[node name="RichTextLabel" type="RichTextLabel" parent="Content/TabControlsPanel"]
-layout_mode = 2
+size_flags_horizontal = 3
 size_flags_vertical = 3
-theme_override_font_sizes/normal_font_size = 18
-text = "Movement:
-[W] [A] [S] [D]  - Move
-[SPACE]          - Jump
-[SHIFT]          - Sprint
-[C] or [CTRL]    - Crouch
-[SHIFT] + [C]    - Slide
-
-Combat:
-[LEFT CLICK]     - Fire / Light Melee
-[RIGHT CLICK]    - ADS / Scope / Heavy Melee
-[R]              - Reload
-
-Loadout:
-[1] - Primary
-[2] - Secondary
-[3] - Melee
-[4] - Grenade (Hold Left Click to Cook)
-
-Other:
-[Q] / [E]        - Lean Left / Right
-[F]              - Interact
-[ESC]            - Pause
-[~]              - Toggle Debug Menu"
+theme_override_constants/separation = 16

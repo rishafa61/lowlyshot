@@ -66,6 +66,23 @@ func _run() -> void:
 	await process_frame
 	check(true, "unknown weapon id handled")
 
+	# 7. Stylized UI contracts
+	var top: HBoxContainer = menu.get_node("Margin/VBox/TopBar")
+	check(top.get_node_or_null("SlashBadge") != null, "slash badge present")
+	var title_lbl: Label = top.get_node("Title")
+	check(title_lbl.text == "LOADOUT" and title_lbl.get_theme_font_size("font_size") == 40, "title LOADOUT 40px")
+	check(menu.get_node_or_null("BgArt") is TextureRect, "background art TextureRect present")
+	check(menu.get_node_or_null("LoadoutVignette") is TextureRect, "vignette present")
+	var tab1_sb: StyleBoxFlat = menu.preset_buttons[0].get_theme_stylebox("normal") as StyleBoxFlat
+	check(tab1_sb != null and tab1_sb.bg_color.r > 0.9, "active preset tab orange")
+	var prim_card: PanelContainer = menu.slot_cards["Primary"]
+	var prim_sb: StyleBoxFlat = prim_card.get_theme_stylebox("panel") as StyleBoxFlat
+	check(prim_sb != null and prim_sb.border_color.r > 0.9, "active slot card orange border")
+	var eq_sb: StyleBoxFlat = menu.btn_equip.get_theme_stylebox("normal") as StyleBoxFlat
+	check(eq_sb != null and eq_sb.bg_color.r > 0.9, "save/equip button orange")
+	var det_sb: StyleBoxFlat = menu.get_node("Margin/VBox/Main/Mid/Detail").get_theme_stylebox("panel") as StyleBoxFlat
+	check(det_sb != null and det_sb.border_width_left == 4, "detail panel has orange left accent")
+
 	menu.queue_free()
 	await process_frame
 

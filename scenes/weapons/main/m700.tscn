@@ -1,23 +1,11 @@
 [gd_scene format=3 uid="uid://bsng5sis2atev"]
 
+[sub_resource type="BoxMesh" id="m_forestock"]
+size = Vector3(0.062, 0.085, 0.5)
+
 [sub_resource type="StandardMaterial3D" id="mat_green"]
 albedo_color = Color(0.24, 0.66, 0.24, 1)
 roughness = 0.55
-
-[sub_resource type="StandardMaterial3D" id="mat_black"]
-albedo_color = Color(0.13, 0.13, 0.14, 1)
-metallic = 0.75
-roughness = 0.4
-
-[sub_resource type="StandardMaterial3D" id="mat_lens"]
-albedo_color = Color(0.12, 0.72, 0.95, 1)
-emission_enabled = true
-emission = Color(0.1, 0.6, 0.85, 1)
-emission_energy_multiplier = 0.6
-roughness = 0.15
-
-[sub_resource type="BoxMesh" id="m_forestock"]
-size = Vector3(0.062, 0.085, 0.5)
 
 [sub_resource type="BoxMesh" id="m_midstock"]
 size = Vector3(0.062, 0.09, 0.22)
@@ -36,6 +24,11 @@ size = Vector3(0.05, 0.155, 0.045)
 
 [sub_resource type="BoxMesh" id="m_buttpad"]
 size = Vector3(0.055, 0.16, 0.018)
+
+[sub_resource type="StandardMaterial3D" id="mat_black"]
+albedo_color = Color(0.13, 0.13, 0.14, 1)
+metallic = 0.75
+roughness = 0.4
 
 [sub_resource type="BoxMesh" id="m_cheek"]
 size = Vector3(0.045, 0.018, 0.13)
@@ -90,6 +83,13 @@ top_radius = 0.036
 bottom_radius = 0.036
 height = 0.006
 
+[sub_resource type="StandardMaterial3D" id="mat_lens"]
+albedo_color = Color(0.12, 0.72, 0.95, 1)
+roughness = 0.15
+emission_enabled = true
+emission = Color(0.1, 0.6, 0.85, 1)
+emission_energy_multiplier = 0.6
+
 [sub_resource type="CylinderMesh" id="m_ocular"]
 top_radius = 0.038
 bottom_radius = 0.032
@@ -100,132 +100,137 @@ top_radius = 0.011
 bottom_radius = 0.011
 height = 0.022
 
-[node name="Sniper" type="Node3D"]
+[node name="Sniper" type="Node3D" unique_id=703914081]
 
-[node name="Forestock" type="MeshInstance3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.025, -0.4)
+[node name="Forestock" type="MeshInstance3D" parent="." unique_id=45252907]
+transform = Transform3D(0.6783852, 0, 0, 0, 0.7056341, 0, 0, 0, 1, 0, -0.006872112, -0.3648212)
 mesh = SubResource("m_forestock")
 surface_material_override/0 = SubResource("mat_green")
 
-[node name="Midstock" type="MeshInstance3D" parent="."]
+[node name="Midstock" type="MeshInstance3D" parent="." unique_id=1749550403]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.03, 0)
 mesh = SubResource("m_midstock")
 surface_material_override/0 = SubResource("mat_green")
 
-[node name="Comb" type="MeshInstance3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.055, 0.21)
+[node name="Comb" type="MeshInstance3D" parent="." unique_id=1234268803]
+transform = Transform3D(1, 0, 0, 0, 1.119024, 0, 0, 0, 1, 0, -0.041143812, 0.21941222)
 mesh = SubResource("m_comb")
 surface_material_override/0 = SubResource("mat_green")
 
-[node name="Toe" type="MeshInstance3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.07, 0.21)
+[node name="Toe" type="MeshInstance3D" parent="." unique_id=691230490]
+transform = Transform3D(1, 0, 0, 0, 0.71107435, 0, 0, 0, 0.75812215, 0, -0.1502588, 0.1313846)
 mesh = SubResource("m_toe")
 surface_material_override/0 = SubResource("mat_green")
 
-[node name="Grip" type="MeshInstance3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 0.939693, 0.34202, 0, -0.34202, 0.939693, 0, -0.105, 0.045)
+[node name="Grip" type="MeshInstance3D" parent="." unique_id=626409717]
+transform = Transform3D(1, 0, 0, 0, 1.0325842, 0.24912871, 0, -0.37582964, 0.6844761, 0, -0.105, 0.045)
 mesh = SubResource("m_grip")
 surface_material_override/0 = SubResource("mat_green")
 
-[node name="Butt" type="MeshInstance3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0.335)
+[node name="Grip2" type="MeshInstance3D" parent="." unique_id=589886562]
+transform = Transform3D(1, 0, 0, 0, 0.8385067, 0.3777781, 0, -0.30519128, 1.0379378, 0, -0.105, 0.16245113)
+mesh = SubResource("m_grip")
+surface_material_override/0 = SubResource("mat_green")
+
+[node name="Butt" type="MeshInstance3D" parent="." unique_id=840099027]
+transform = Transform3D(1, 0, 0, 0, 0.55632335, 0, 0, 0, 1, 0, -0.029353842, 0.335)
 mesh = SubResource("m_butt")
 surface_material_override/0 = SubResource("mat_green")
 
-[node name="Buttpad" type="MeshInstance3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0.362)
+[node name="Buttpad" type="MeshInstance3D" parent="." unique_id=675083655]
+transform = Transform3D(1, 0, 0, 0, 0.58799833, 0, 0, 0, 1, 0, -0.023306698, 0.362)
 mesh = SubResource("m_buttpad")
 surface_material_override/0 = SubResource("mat_black")
 
-[node name="CheekRest" type="MeshInstance3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.098, 0.21)
+[node name="CheekRest" type="MeshInstance3D" parent="." unique_id=1685516610]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1.5648, 0, -0.0034555718, 0.21)
 mesh = SubResource("m_cheek")
 surface_material_override/0 = SubResource("mat_black")
 
-[node name="Receiver" type="MeshInstance3D" parent="."]
+[node name="Receiver" type="MeshInstance3D" parent="." unique_id=2065070548]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.028, -0.06)
 mesh = SubResource("m_receiver")
 surface_material_override/0 = SubResource("mat_black")
 
-[node name="Barrel" type="MeshInstance3D" parent="."]
+[node name="Barrel" type="MeshInstance3D" parent="." unique_id=1184282405]
 transform = Transform3D(1, 0, 0, 0, 0, 1, 0, -1, 0, 0, 0.035, -0.6)
 mesh = SubResource("m_barrel")
 surface_material_override/0 = SubResource("mat_black")
 
-[node name="MuzzleRing" type="MeshInstance3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 0, 1, 0, -1, 0, 0, 0.035, -1.0)
+[node name="MuzzleRing" type="MeshInstance3D" parent="." unique_id=652650483]
+transform = Transform3D(1, 0, 0, 0, 0, 1, 0, -1, 0, 0, 0.035, -1)
 mesh = SubResource("m_muzzlering")
 surface_material_override/0 = SubResource("mat_black")
 
-[node name="BoltHandle" type="MeshInstance3D" parent="."]
+[node name="BoltHandle" type="MeshInstance3D" parent="." unique_id=1114433850]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.04, 0.03, 0.035)
 mesh = SubResource("m_bolt")
 surface_material_override/0 = SubResource("mat_black")
 
-[node name="BoltKnob" type="MeshInstance3D" parent="."]
+[node name="BoltKnob" type="MeshInstance3D" parent="." unique_id=1805987436]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.072, 0.03, 0.035)
 mesh = SubResource("m_boltknob")
 surface_material_override/0 = SubResource("mat_black")
 
-[node name="Trigger" type="MeshInstance3D" parent="."]
+[node name="Trigger" type="MeshInstance3D" parent="." unique_id=382614506]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.05, 0.02)
 mesh = SubResource("m_trigger")
 surface_material_override/0 = SubResource("mat_black")
 
-[node name="TriggerGuard" type="MeshInstance3D" parent="."]
+[node name="TriggerGuard" type="MeshInstance3D" parent="." unique_id=368693262]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.075, 0.015)
 mesh = SubResource("m_guard")
 surface_material_override/0 = SubResource("mat_black")
 
-[node name="TriggerGuardFront" type="MeshInstance3D" parent="."]
+[node name="TriggerGuardFront" type="MeshInstance3D" parent="." unique_id=444407223]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.062, 0.058)
 mesh = SubResource("m_guardfront")
 surface_material_override/0 = SubResource("mat_black")
 
-[node name="Magazine" type="MeshInstance3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.085, -0.13)
+[node name="Magazine" type="MeshInstance3D" parent="." unique_id=1476046182]
+transform = Transform3D(0.5627215, 0, 0, 0, 1.1132659, 0, 0, 0, 0.8875925, 0, -0.057645787, -0.18083683)
 mesh = SubResource("m_mag")
 surface_material_override/0 = SubResource("mat_black")
 
-[node name="ScopeRingFront" type="MeshInstance3D" parent="."]
+[node name="ScopeRingFront" type="MeshInstance3D" parent="." unique_id=2112739183]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.078, -0.16)
 mesh = SubResource("m_ring")
 surface_material_override/0 = SubResource("mat_black")
 
-[node name="ScopeRingRear" type="MeshInstance3D" parent="."]
+[node name="ScopeRingRear" type="MeshInstance3D" parent="." unique_id=1761078415]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.078, -0.02)
 mesh = SubResource("m_ring")
 surface_material_override/0 = SubResource("mat_black")
 
-[node name="ScopeTube" type="MeshInstance3D" parent="."]
+[node name="ScopeTube" type="MeshInstance3D" parent="." unique_id=1186987626]
 transform = Transform3D(1, 0, 0, 0, 0, 1, 0, -1, 0, 0, 0.115, -0.09)
 mesh = SubResource("m_tube")
 surface_material_override/0 = SubResource("mat_black")
 
-[node name="ScopeBell" type="MeshInstance3D" parent="."]
+[node name="ScopeBell" type="MeshInstance3D" parent="." unique_id=1945873385]
 transform = Transform3D(1, 0, 0, 0, 0, 1, 0, -1, 0, 0, 0.115, -0.245)
 mesh = SubResource("m_bell")
 surface_material_override/0 = SubResource("mat_black")
 
-[node name="ScopeLens" type="MeshInstance3D" parent="."]
+[node name="ScopeLens" type="MeshInstance3D" parent="." unique_id=384900356]
 transform = Transform3D(1, 0, 0, 0, 0, 1, 0, -1, 0, 0, 0.115, -0.284)
 mesh = SubResource("m_lens")
 surface_material_override/0 = SubResource("mat_lens")
 
-[node name="ScopeOcular" type="MeshInstance3D" parent="."]
+[node name="ScopeOcular" type="MeshInstance3D" parent="." unique_id=103416848]
 transform = Transform3D(1, 0, 0, 0, 0, 1, 0, -1, 0, 0, 0.115, 0.065)
 mesh = SubResource("m_ocular")
 surface_material_override/0 = SubResource("mat_black")
 
-[node name="TurretTop" type="MeshInstance3D" parent="."]
+[node name="TurretTop" type="MeshInstance3D" parent="." unique_id=1053524878]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.148, -0.09)
 mesh = SubResource("m_turret")
 surface_material_override/0 = SubResource("mat_black")
 
-[node name="TurretSide" type="MeshInstance3D" parent="."]
+[node name="TurretSide" type="MeshInstance3D" parent="." unique_id=2082444061]
 transform = Transform3D(0, 1, 0, -1, 0, 0, 0, 0, 1, 0.03, 0.115, -0.09)
 mesh = SubResource("m_turret")
 surface_material_override/0 = SubResource("mat_black")
 
-[node name="Muzzle" type="Marker3D" parent="."]
+[node name="Muzzle" type="Marker3D" parent="." unique_id=1715905639]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.035, -1.03)

@@ -8,12 +8,13 @@ extends Node3D
 
 signal vehicle_spawned(vehicle: Node)
 
-enum VehicleType { AIRCRAFT, HUMVEE, HELICOPTER }
+enum VehicleType { AIRCRAFT, HUMVEE, HELICOPTER, M1_ABRAMS }
 
 const VEHICLE_SCENES: Dictionary = {
 	VehicleType.AIRCRAFT: "res://scenes/vehicles/aircraft.tscn",
 	VehicleType.HUMVEE: "res://scenes/vehicles/humvee.tscn",
 	VehicleType.HELICOPTER: "res://scenes/vehicles/helicopter.tscn",
+	VehicleType.M1_ABRAMS: "res://scenes/vehicles/m1_abrams.tscn",
 }
 
 @export_group("Spawner")

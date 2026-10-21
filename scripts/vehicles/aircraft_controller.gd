@@ -34,6 +34,7 @@ const GATLING_DMG := 20.0
 const GATLING_RATE := 0.125      ## 8 rounds/s
 const GATLING_RANGE := 500.0
 const GATLING_SPREAD := 0.004
+const GATLING_BLAST_RADIUS := 8.0 ## same burst area as an AGM-65 missile
 const HEAT_PER_SHOT := 2.0       ## 8/s * 2 = ~6s hold to reach the peak
 const HEAT_COOL_RATE := 25.0
 const HEAT_OVERHEAT_RESUME := 35.0
@@ -104,22 +105,39 @@ func _notify_release() -> void:
 		mgr.send_vehicle_release(String(get_path()))
 
 func net_set_target(pos: Vector3, rot: Vector3, vel: Vector3, thr: float = 0.0) -> void:
+	if not pos.is_finite() or not rot.is_finite() or not vel.is_finite():
+		return
 	_net_puppet = true
 	freeze = true
 	_net_target_pos = pos
-	_net_target_quat = Basis.from_euler(rot).get_rotation_quaternion()
+	var b := Basis.from_euler(rot)
+	if b.is_finite():
+		_net_target_quat = b.get_rotation_quaternion().normalized()
 	_net_target_vel = vel
-	throttle = thr
+	throttle = thr if is_finite(thr) else 0.0
 
 func net_release_puppet() -> void:
 	_net_puppet = false
 	freeze = false
 
 @onready var pilot_seat: Marker3D = $PilotSeat
+@onready var chase_pivot: Node3D = $ChasePivot
 @onready var chase_arm: SpringArm3D = $ChasePivot/ChaseArm
 @onready var chase_cam: Camera3D = $ChasePivot/ChaseArm/ChaseCamera
 @onready var interact_area: Area3D = $InteractArea
 @onready var muzzle: Node3D = $Model/GAU8_Cannon
+
+# Camera roll lag for smooth, flowing bank feeling
+var _cam_fwd: Vector3 = Vector3.FORWARD
+var _cam_up: Vector3 = Vector3.UP
+var _cam_look_back: bool = false
+
+# AGM-65 missile vehicle lock-on (same mechanism as AT4 launcher)
+const LOCK_MAX_PIXEL_DIST: float = 240.0
+const LOCK_HOLD_TIME: float = 1.4 ## seconds to acquire lock
+var _current_lock_target: Node3D = null
+var _lock_timer: float = 0.0
+var _locked_target: Node3D = null
 
 func _ready() -> void:
 	gravity_scale = 0.0 # gravity is applied manually so lift can counteract it
@@ -129,6 +147,10 @@ func _ready() -> void:
 	hp = max_hp
 	if chase_cam != null:
 		chase_cam.current = false
+	if chase_pivot != null:
+		chase_pivot.top_level = true
+		_cam_fwd = -global_basis.z
+		_cam_up = global_basis.y
 	chase_arm.add_excluded_object(get_rid())
 	interact_area.body_entered.connect(_on_body_entered)
 	interact_area.body_exited.connect(_on_body_exited)
@@ -181,10 +203,16 @@ func _select_slot(slot: int) -> void:
 func _physics_process(delta: float) -> void:
 	if _net_puppet:
 		var t := minf(1.0, delta * 15.0)
-		global_position = global_position.lerp(_net_target_pos, t)
-		var q := global_basis.get_rotation_quaternion().slerp(_net_target_quat, t)
-		global_basis = Basis(q)
-		linear_velocity = _net_target_vel
+		if _net_target_pos.is_finite():
+			global_position = global_position.lerp(_net_target_pos, t)
+		if _net_target_quat.is_finite() and global_basis.is_finite():
+			var cur_q := global_basis.get_rotation_quaternion()
+			if cur_q.is_finite():
+				var q := cur_q.slerp(_net_target_quat, t)
+				if q.is_finite():
+					global_basis = Basis(q).orthonormalized()
+		if _net_target_vel.is_finite():
+			linear_velocity = _net_target_vel
 		# Engine audio for observers
 		if throttle > 0.02 and _engine_sfx == null:
 			_engine_sfx = Sfx.loop3d("jet", self, 15.0, 150.0, 2.0)
@@ -193,9 +221,13 @@ func _physics_process(delta: float) -> void:
 			_engine_sfx = null
 		if _engine_sfx:
 			_engine_sfx.volume_db = lerpf(-24.0, 2.0, throttle)
+		_update_camera_lag(delta)
+		_update_missile_lock(delta)
 		return
 
 	_flash_timer = maxf(0.0, _flash_timer - delta)
+	if selected_slot == OrdnanceSlot.MISSILE and _locked_target != null and (not is_instance_valid(_locked_target) or _locked_target.get("is_destroyed") == true):
+		_update_missile_lock_reset()
 	if active_pilot == null and _prompt_player != null \
 			and Input.is_action_just_pressed("vehicle_interact"):
 		var mgr = get_tree().current_scene
@@ -204,6 +236,8 @@ func _physics_process(delta: float) -> void:
 		else:
 			_enter(_prompt_player)
 	var grounded := _is_grounded()
+	_update_camera_lag(delta)
+	_update_missile_lock(delta)
 	# Engine audio: audible while spooled (pilot aboard or throttle winding down);
 	# volume tracks throttle so distant/idle planes are quieter.
 	if throttle > 0.02 or active_pilot != null:
@@ -234,8 +268,13 @@ func _physics_process(delta: float) -> void:
 	_update_pilot_hud()
 
 func _console_open() -> bool:
-	var hud = active_pilot.get("hud") if active_pilot != null else null
-	return hud != null and hud.console_visible
+	if active_pilot == null:
+		return false
+	var hud = active_pilot.get("hud")
+	if hud != null and hud.console_visible:
+		return true
+	var pause = active_pilot.get_node_or_null("PauseMenu")
+	return pause != null and pause.visible
 
 # --- Enter / exit / eject ---
 
@@ -246,13 +285,20 @@ func _on_body_entered(body: Node3D) -> void:
 	if hud == null:
 		return # remote puppet
 	_prompt_player = body
-	hud.show_hover_name(prompt_text, false)
+	if hud.has_method("show_enter_prompt"):
+		hud.show_enter_prompt()
+	elif hud.has_method("show_hover_name"):
+		hud.show_hover_name(prompt_text, false)
 
 func _on_body_exited(body: Node3D) -> void:
 	if body == _prompt_player:
 		_prompt_player = null
-		if active_pilot == null:
-			body.get("hud").hide_hover_name()
+		var hud = body.get("hud")
+		if hud != null:
+			if hud.has_method("hide_enter_prompt"):
+				hud.hide_enter_prompt()
+			if active_pilot == null and hud.has_method("hide_hover_name"):
+				hud.hide_hover_name()
 
 func has_free_seat() -> bool:
 	return active_pilot == null and not is_destroyed
@@ -265,6 +311,9 @@ func net_sync_enter(pilot: Node3D, _seat_idx: int = 0) -> void:
 	_pilotless_time = 0.0
 	_last_ejected_pilot = null
 	_prompt_player = null
+	var hud = pilot.get("hud")
+	if hud != null and hud.has_method("hide_enter_prompt"):
+		hud.hide_enter_prompt()
 	_pitch_vel = 0.0
 	_yaw_vel = 0.0
 	_pilot_name = str(pilot.get("player_name")) if pilot.get("player_name") != null else "Pilot"
@@ -299,6 +348,7 @@ func _try_exit() -> void:
 	var pilot := active_pilot
 	active_pilot = null
 	chase_cam.current = false # player.exit_aircraft restores the player camera
+	_update_missile_lock_reset()
 	_notify_release()
 	if can_walk_out():
 		_is_ejected = false
@@ -344,13 +394,18 @@ func _apply_forces(delta: float, grounded: bool) -> void:
 	var fwd_speed := linear_velocity.dot(forward)
 	# Thrust
 	apply_central_force(forward * max_thrust * throttle * mass)
-	# Gravity (gravity_scale = 0, applied manually)
-	var grav_mult := 1.8 if (_is_ejected and _pilotless_time > PILOTLESS_CUTOFF_DELAY) else 1.0
-	apply_central_force(Vector3.DOWN * GRAVITY * grav_mult * mass)
-	# Lift along the airframe's up: climbs when the nose rises, bleeds in banks
+	# Reverse taxi: throttle idle + S backs the jet up on the ground
+	if grounded and throttle <= 0.01 and active_pilot != null \
+			and not _console_open() and Input.is_action_pressed("move_backward"):
+		if fwd_speed > -8.0: # reverse speed cap (~29 km/h)
+			apply_central_force(-forward * max_thrust * 0.35 * mass)
+	# Gravity (gravity_scale = 0, applied manually) — natural 1.0G, no cartoon multiplier
+	apply_central_force(Vector3.DOWN * GRAVITY * mass)
+	# Lift along the airframe's up: climbs when the nose rises, bleeds in banks.
+	# Dead-stick: lift smoothly decays over 2.5 seconds as energy bleeds.
 	var lift_mult := 1.0
 	if _is_ejected and _pilotless_time > PILOTLESS_CUTOFF_DELAY:
-		lift_mult = maxf(0.0, 1.0 - (_pilotless_time - PILOTLESS_CUTOFF_DELAY) * 2.5)
+		lift_mult = maxf(0.0, 1.0 - (_pilotless_time - PILOTLESS_CUTOFF_DELAY) * 0.4)
 	var lift := compute_lift_ratio(fwd_speed, stall_speed) * lift_boost * lift_mult
 	apply_central_force(global_basis.y * GRAVITY * lift * mass)
 	# Drag / air resistance
@@ -371,9 +426,20 @@ func _apply_forces(delta: float, grounded: bool) -> void:
 func _apply_rotation(delta: float, grounded: bool) -> void:
 	if active_pilot == null:
 		if _is_ejected and _pilotless_time > PILOTLESS_CUTOFF_DELAY:
-			# Lost power: heavy engine nose pitches down into a dive
-			var dive_torque := -global_basis.x * (pitch_rate * 1.5)
-			angular_velocity = angular_velocity.lerp(dive_torque, 1.0 - exp(-3.0 * delta))
+			# Dead-stick: aerodynamic weather-vaning. The airframe gently aligns
+			# with its ACTUAL flight path (velocity) instead of a fake pitch-down
+			# torque — it keeps its momentum and glides into a stable dive along
+			# its trajectory rather than tumbling nose-first like a cartoon anvil.
+			var speed := linear_velocity.length()
+			var vel_dir := linear_velocity / maxf(speed, 0.001)
+			if speed > 4.0 and absf(vel_dir.dot(Vector3.UP)) < 0.98:
+				# not vertical yet: settle toward the velocity vector (heading preserved)
+				var target := Basis.looking_at(vel_dir, Vector3.UP)
+				if target.is_finite() and global_transform.basis.is_finite():
+					var nb := global_transform.basis.slerp(target, 1.0 - exp(-1.5 * delta))
+					if nb.is_finite():
+						global_transform.basis = nb.orthonormalized()
+			angular_velocity = angular_velocity.lerp(Vector3.ZERO, 1.0 - exp(-4.0 * delta))
 		else:
 			angular_velocity = angular_velocity.lerp(Vector3.ZERO, 1.0 - exp(-2.0 * delta))
 		return
@@ -388,7 +454,10 @@ func _apply_rotation(delta: float, grounded: bool) -> void:
 		fwd.y = 0.0
 		if fwd.length() > 0.2:
 			var level := Basis.looking_at(fwd.normalized(), Vector3.UP)
-			global_transform.basis = global_transform.basis.slerp(level, 1.0 - exp(-4.0 * delta)).orthonormalized()
+			if level.is_finite() and global_transform.basis.is_finite():
+				var nb := global_transform.basis.slerp(level, 1.0 - exp(-4.0 * delta))
+				if nb.is_finite():
+					global_transform.basis = nb.orthonormalized()
 	else:
 		# Mouse rates decay toward zero for smooth stops (no snapping)
 		_pitch_vel = move_toward(_pitch_vel, 0.0, pitch_rate * 2.5 * delta)
@@ -456,30 +525,66 @@ func _fire_gatling() -> void:
 			var hud = active_pilot.get("hud")
 			if hud and target.is_in_group("enemy"):
 				hud.show_hit_marker(GATLING_DMG)
-		_spawn_spark(hit_pos, hit.normal)
+		# HEI shells burst on impact: missile-sized blast AREA (8 m, AGM-65),
+		# gatling-level damage falloff. Direct target already took its damage.
+		_gatling_splash(hit_pos, target)
+	_spawn_spark(hit_pos, hit.normal if hit else Vector3.UP, true)
 	var start := muzzle.global_position + global_basis * Vector3(0, 0, -1.0)
 	Sfx.pool_fire3d("rifle_single", self, 18.0, 160.0, 3.0)
-	if active_pilot != null and active_pilot.has_method("create_tracer"):
+	var mgr = get_tree().current_scene
+	if GlobalData.is_networked() and mgr is MultiplayerManager:
+		mgr.send_tracer(start, hit_pos, 0.14, false) # fat gatling tracer, all peers
+	elif active_pilot != null and active_pilot.has_method("create_tracer"):
 		active_pilot.create_tracer(start, hit_pos, 0.14) # fat tracer: visible at 100+ m/s
 
-func _spawn_spark(pos: Vector3, normal: Vector3) -> void:
+func _gatling_splash(pos: Vector3, direct_hit: Object) -> void:
+	var space := get_world_3d().direct_space_state
+	var query := PhysicsShapeQueryParameters3D.new()
+	var sphere := SphereShape3D.new()
+	sphere.radius = GATLING_BLAST_RADIUS
+	query.shape = sphere
+	query.transform = Transform3D(Basis(), pos)
+	query.collide_with_areas = true
+	query.collide_with_bodies = true
+	query.exclude = [get_rid()]
+	var hit: Array = []
+	var gave_marker := false
+	for res in space.intersect_shape(query, 24):
+		var col = res.collider
+		if col == null or col == self or col == direct_hit:
+			continue
+		if not (col as Object).has_method("take_damage") or col in hit:
+			continue
+		hit.append(col)
+		var dist: float = pos.distance_to(col.global_position)
+		var dmg: float = AircraftOrdnance.compute_blast_damage(
+			dist, GATLING_BLAST_RADIUS, GATLING_DMG, GATLING_DMG * 0.4)
+		if dmg > 0.0:
+			col.take_damage(dmg, _pilot_name, "GAU-8 HEI", _pilot_faction, pos)
+			if not gave_marker and active_pilot != null and col.is_in_group("enemy"):
+				var hud = active_pilot.get("hud")
+				if hud:
+					hud.show_hit_marker(dmg)
+					gave_marker = true
+
+func _spawn_spark(pos: Vector3, normal: Vector3, explosive: bool = false) -> void:
 	var p := CPUParticles3D.new()
-	p.amount = 14
-	p.lifetime = 0.25
+	p.amount = 22 if explosive else 14
+	p.lifetime = 0.35 if explosive else 0.25
 	p.one_shot = true
 	p.explosiveness = 1.0
 	p.direction = normal if normal.length_squared() > 0.1 else Vector3.UP
-	p.spread = 45.0
-	p.initial_velocity_min = 6.0
-	p.initial_velocity_max = 14.0
+	p.spread = 60.0 if explosive else 45.0
+	p.initial_velocity_min = 8.0
+	p.initial_velocity_max = 18.0
 	p.gravity = Vector3(0, -18.0, 0)
 	var mesh := BoxMesh.new()
-	mesh.size = Vector3(0.08, 0.08, 0.08)
+	mesh.size = Vector3(0.18, 0.18, 0.18) if explosive else Vector3(0.08, 0.08, 0.08)
 	var mat := StandardMaterial3D.new()
-	mat.albedo_color = Color(1.0, 0.85, 0.2)
+	mat.albedo_color = Color(1.0, 0.6, 0.1) if explosive else Color(1.0, 0.85, 0.2)
 	mat.emission_enabled = true
-	mat.emission = Color(1.0, 0.7, 0.1)
-	mat.emission_energy_multiplier = 5.0
+	mat.emission = Color(1.0, 0.45, 0.05) if explosive else Color(1.0, 0.7, 0.1)
+	mat.emission_energy_multiplier = 6.0
 	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	mesh.material = mat
 	p.mesh = mesh
@@ -500,8 +605,18 @@ func _fire_missile(side: int) -> void:
 	var pos := global_position + global_basis * local
 	var target := chase_cam.global_position - chase_cam.global_basis.z * 300.0
 	var dir := (target - pos).normalized()
-	var missile := AircraftOrdnance.spawn_missile(pos, dir, _pilot_name, _pilot_faction, self)
+	# Locked onto a vehicle in the crosshair? Home in (AT4-style). No lock = fly straight.
+	var locked := _locked_target if (_locked_target != null and is_instance_valid(_locked_target)) else null
+	if locked != null:
+		dir = (locked.global_position + Vector3(0, 0.8, 0) - pos).normalized()
+	var missile := AircraftOrdnance.spawn_missile(pos, dir, _pilot_name, _pilot_faction, self, locked)
 	get_tree().current_scene.add_child(missile)
+	# Replicate visual missile to every peer (damage stays shooter-authoritative)
+	var mgr = get_tree().current_scene
+	if GlobalData.is_networked() and mgr is MultiplayerManager:
+		mgr.send_ordnance("missile", pos, missile.linear_velocity,
+			String(locked.get_path()) if locked != null and is_instance_valid(locked) else "",
+			_pilot_name, _pilot_faction)
 	Sfx.oneshot3d("missile", self, 20.0, 180.0, 3.0)
 
 func _drop_bomb() -> void:
@@ -513,6 +628,10 @@ func _drop_bomb() -> void:
 	var pos := global_position + global_basis * Vector3(0.0, -1.4, 0.0)
 	var bomb := AircraftOrdnance.spawn_bomb(pos, linear_velocity * 0.9, _pilot_name, _pilot_faction, self)
 	get_tree().current_scene.add_child(bomb)
+	# Replicate visual bomb to every peer
+	var mgr = get_tree().current_scene
+	if GlobalData.is_networked() and mgr is MultiplayerManager:
+		mgr.send_ordnance("bomb", pos, bomb.linear_velocity, "", _pilot_name, _pilot_faction)
 	Sfx.oneshot3d("bomb", self, 20.0, 160.0, 3.0)
 
 func _launch_flare() -> void:
@@ -576,6 +695,7 @@ func take_damage(amount: float, attacker_name: String = "", _weapon_name: String
 func _explode(kill_occupants: bool = true) -> void:
 	Sfx.stop_loop(_engine_sfx)
 	_engine_sfx = null
+	_update_missile_lock_reset()
 	if is_destroyed:
 		return
 	is_destroyed = true
@@ -607,6 +727,9 @@ func _explode(kill_occupants: bool = true) -> void:
 func _on_impact(body: Node) -> void:
 	if is_destroyed:
 		return
+	# Infantry touching the airframe must never explode the jet
+	if body == null or body is CharacterBody3D:
+		return
 	if body == active_pilot or body == _last_ejected_pilot:
 		return
 	if _is_ejected and _pilotless_time > 0.3:
@@ -617,6 +740,104 @@ func _on_impact(body: Node) -> void:
 		var forward := -global_basis.z
 		if (speed > 18.0 and forward.dot(Vector3.DOWN) > 0.35) or speed > 35.0:
 			_explode()
+
+## Chase camera: position hard-follows the plane, but orientation eases in —
+## forward/pitch track quickly, roll lags so banking feels like the plane is
+## flowing through the turn instead of rigidly welded to the airframe.
+func _update_camera_lag(delta: float) -> void:
+	if chase_pivot == null:
+		return
+	chase_pivot.global_position = global_position + global_basis * Vector3(0.0, 5.2, 0.0)
+	if not chase_cam.current:
+		# Camera not driven: snap to the airframe so the next occupant starts clean
+		_cam_fwd = -global_basis.z
+		_cam_up = global_basis.y
+		_cam_look_back = false
+		chase_pivot.global_basis = global_basis
+		return
+	# V: snap-look behind the tail (instant flip, no lag on the switch)
+	var look_back: bool = active_pilot != null and not _console_open() \
+			and Input.is_action_pressed("camera_look_back")
+	if look_back != _cam_look_back:
+		_cam_look_back = look_back
+		_cam_fwd = (global_basis.z if look_back else -global_basis.z).normalized()
+		_cam_up = global_basis.y.normalized()
+	var w_track := 1.0 - exp(-8.0 * delta)  # pitch/yaw responsiveness
+	var w_roll := 1.0 - exp(-3.5 * delta)   # roll responsiveness (the "flow")
+	var target_fwd := (global_basis.z if look_back else -global_basis.z).normalized()
+	var target_up := global_basis.y.normalized()
+	_cam_fwd = _cam_fwd.lerp(target_fwd, w_track).normalized()
+	_cam_up = _cam_up.lerp(target_up, w_roll).normalized()
+	# Re-orthogonalize so the basis stays valid while roll lags
+	var right := _cam_fwd.cross(_cam_up).normalized()
+	if right.length_squared() < 0.01:
+		right = global_basis.x.normalized()
+	var up := right.cross(_cam_fwd).normalized()
+	chase_pivot.global_basis = Basis(right, up, -_cam_fwd)
+
+## AGM-65 lock-on: nearest vehicle inside the crosshair cone (screen-space,
+## same mechanism as the AT4 launcher). No target = straight-flying missile.
+func _update_missile_lock(delta: float) -> void:
+	var hud = active_pilot.get("hud") if active_pilot != null else null
+	if hud == null or selected_slot != OrdnanceSlot.MISSILE or chase_cam == null:
+		_update_missile_lock_reset()
+		return
+	var vp_size := get_viewport().get_visible_rect().size
+	var crosshair_center := vp_size * 0.5
+	var best_target: Node3D = null
+	var best_dist := LOCK_MAX_PIXEL_DIST
+	# Sticky tracking: keep latching the current target while it stays in range
+	if _current_lock_target and is_instance_valid(_current_lock_target) and _current_lock_target.get("is_destroyed") != true:
+		var cur_pos: Vector3 = _current_lock_target.global_position + Vector3(0, 0.8, 0)
+		var cam_pos := chase_cam.global_position
+		var to_cur := cur_pos - cam_pos
+		if to_cur.dot(-chase_cam.global_basis.z) > 0.0:
+			var cur_dist := chase_cam.unproject_position(cur_pos).distance_to(crosshair_center)
+			if cur_dist <= LOCK_MAX_PIXEL_DIST:
+				best_target = _current_lock_target
+				best_dist = cur_dist
+	for v in get_tree().get_nodes_in_group("vehicles"):
+		if not is_instance_valid(v) or not (v is Node3D):
+			continue
+		if v.get("is_destroyed") == true:
+			continue
+		if v == self or v == _current_lock_target:
+			continue
+		var v_pos: Vector3 = v.global_position + Vector3(0, 0.8, 0)
+		var to_v := v_pos - chase_cam.global_position
+		if to_v.dot(-chase_cam.global_basis.z) <= 0.0:
+			continue
+		var screen_pos := chase_cam.unproject_position(v_pos)
+		var dist := screen_pos.distance_to(crosshair_center)
+		if dist <= best_dist:
+			# Line of sight check
+			var space := get_world_3d().direct_space_state
+			var ray := PhysicsRayQueryParameters3D.create(chase_cam.global_position, v_pos)
+			ray.exclude = [get_rid()]
+			var hit := space.intersect_ray(ray)
+			if hit.is_empty() or hit.collider == v or (hit.collider is Node and (hit.collider as Node).get_parent() == v):
+				best_dist = dist
+				best_target = v
+	if best_target != null:
+		if _current_lock_target == best_target:
+			_lock_timer = minf(_lock_timer + delta, LOCK_HOLD_TIME)
+		else:
+			_current_lock_target = best_target
+			_lock_timer = 0.0
+		_locked_target = best_target if _lock_timer >= LOCK_HOLD_TIME else null
+		if hud.has_method("show_lock_indicator"):
+			var target_screen_pos: Vector2 = chase_cam.unproject_position(best_target.global_position + Vector3(0, 0.8, 0))
+			hud.show_lock_indicator(_lock_timer / LOCK_HOLD_TIME, _locked_target != null, target_screen_pos)
+	else:
+		_update_missile_lock_reset()
+
+func _update_missile_lock_reset() -> void:
+	_current_lock_target = null
+	_locked_target = null
+	_lock_timer = 0.0
+	var hud = active_pilot.get("hud") if active_pilot != null else null
+	if hud and hud.has_method("hide_lock_indicator"):
+		hud.hide_lock_indicator()
 
 func _blast_area(pos: Vector3, radius: float, center_dmg: float, outer_dmg: float) -> void:
 	var space := get_world_3d().direct_space_state
@@ -642,23 +863,7 @@ func _blast_area(pos: Vector3, radius: float, center_dmg: float, outer_dmg: floa
 			collider.take_damage(dmg, _pilot_name, "Aircraft Explosion", _pilot_faction, pos)
 
 func _spawn_blast_visual(pos: Vector3, radius: float) -> void:
-	var explosion := MeshInstance3D.new()
-	var sphere := SphereMesh.new()
-	sphere.radius = radius
-	sphere.height = radius * 2.0
-	explosion.mesh = sphere
-	var mat := StandardMaterial3D.new()
-	mat.albedo_color = Color(1.0, 0.5, 0.0, 1.0)
-	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	explosion.material_override = mat
-	get_tree().root.add_child(explosion)
-	explosion.global_position = pos
-	var timer := Timer.new()
-	timer.wait_time = 0.25
-	timer.one_shot = true
-	timer.autostart = true
-	timer.timeout.connect(explosion.queue_free)
-	explosion.add_child(timer)
+	AircraftOrdnance.spawn_blast_visual(pos, radius)
 
 # --- HUD ---
 
@@ -668,6 +873,12 @@ func _update_pilot_hud() -> void:
 	var hud = active_pilot.get("hud")
 	if hud == null:
 		return
+	# Incoming homing missile (AT4 / AGM-65 locked onto us): warning + beeps
+	if hud.has_method("set_missile_warning"):
+		var mgr = get_tree().current_scene
+		var inbound: bool = mgr != null and mgr.has_method("is_missile_inbound") \
+			and mgr.is_missile_inbound(self)
+		hud.set_missile_warning(inbound)
 	if _flash_timer > 0.0:
 		hud.show_hover_name(_flash_text, false)
 	elif not overheated:
@@ -684,4 +895,22 @@ func _update_pilot_hud() -> void:
 		"missile_r": missile_cd[1],
 		"bombs": bombs,
 		"flares": flares,
+		"alt": _altitude_agl(),
 	})
+
+var _alt_cache: float = 0.0
+var _alt_timer: float = 0.0
+
+## Height above ground (AGL): downward ray to terrain/rooftops, 800 m max.
+## Perf: cached at 10 Hz — HUD text doesn't need a fresh 800 m ray every physics tick.
+func _altitude_agl() -> float:
+	_alt_timer -= get_physics_process_delta_time()
+	if _alt_timer > 0.0:
+		return _alt_cache
+	_alt_timer = 0.1
+	var space := get_world_3d().direct_space_state
+	var query := PhysicsRayQueryParameters3D.create(
+		global_position, global_position + Vector3.DOWN * 800.0, ~0, [get_rid()])
+	var hit := space.intersect_ray(query)
+	_alt_cache = global_position.y if hit.is_empty() else global_position.y - hit.position.y
+	return _alt_cache

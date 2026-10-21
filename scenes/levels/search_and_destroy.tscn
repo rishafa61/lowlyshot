@@ -1,0 +1,102 @@
+[gd_scene format=3 uid="uid://dyyejwn367n4o"]
+
+[ext_resource type="Script" uid="uid://b6ldbjgu2rj2m" path="res://scripts/multiplayer/search_and_destroy_manager.gd" id="1_mgr"]
+[ext_resource type="Script" uid="uid://cn7iraan51how" path="res://scripts/multiplayer/multiplayer_hud.gd" id="2_hud"]
+[ext_resource type="Script" uid="uid://y0txexnje83c" path="res://scripts/multiplayer/player_spawner.gd" id="3_spawner"]
+[ext_resource type="Script" uid="uid://di4y2763f8jkg" path="res://scripts/multiplayer/spawn_point.gd" id="4_sp"]
+[ext_resource type="PackedScene" uid="uid://c8usao40qdgdd" path="res://scenes/levels/arena_template.tscn" id="5_arena"]
+[ext_resource type="PackedScene" path="res://scenes/levels/bomb_site.tscn" id="6_site"]
+
+[node name="SearchAndDestroy" type="Node3D" unique_id=1990338260]
+script = ExtResource("1_mgr")
+round_time = 120
+target_kills = 999
+mode_title = "SEARCH & DESTROY"
+
+[node name="PlayerSpawner" type="Node3D" parent="." unique_id=658474021]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -12.676846, 0, 0)
+script = ExtResource("3_spawner")
+
+[node name="Timer" type="Timer" parent="." unique_id=521745920]
+
+[node name="ArenaTemplate" parent="." unique_id=1345192288 instance=ExtResource("5_arena")]
+
+[node name="BombSiteA" parent="." unique_id=640662806 instance=ExtResource("6_site")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -22.184788, 0.05, -23.432755)
+
+[node name="BombSiteB" parent="." unique_id=1888577595 instance=ExtResource("6_site")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -31.952446, 0.05, 16.386314)
+site_id = "B"
+
+[node name="CoverCrate1" type="CSGBox3D" parent="." unique_id=548607991]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4, 1, -8)
+use_collision = true
+size = Vector3(2, 2, 2)
+
+[node name="CoverCrate2" type="CSGBox3D" parent="." unique_id=33380544]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -12, 1, -18)
+use_collision = true
+size = Vector3(2, 2, 2)
+
+[node name="CoverCrate3" type="CSGBox3D" parent="." unique_id=1867985814]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4, 1, 8)
+use_collision = true
+size = Vector3(2, 2, 2)
+
+[node name="CoverCrate4" type="CSGBox3D" parent="." unique_id=1074918139]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 12, 1, 18)
+use_collision = true
+size = Vector3(2, 2, 2)
+
+[node name="AttackersSpawn1" type="Marker3D" parent="." unique_id=391653437]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 54.41577, 2.2, -12)
+script = ExtResource("4_sp")
+team = "attackers"
+
+[node name="AttackersSpawn2" type="Marker3D" parent="." unique_id=1437669740]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 54.41577, 2.2, -6)
+script = ExtResource("4_sp")
+team = "attackers"
+
+[node name="AttackersSpawn3" type="Marker3D" parent="." unique_id=251146060]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 54.41577, 2.2, 0)
+script = ExtResource("4_sp")
+team = "attackers"
+
+[node name="AttackersSpawn4" type="Marker3D" parent="." unique_id=596965371]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 54.41577, 2.2, 6)
+script = ExtResource("4_sp")
+team = "attackers"
+
+[node name="AttackersSpawn5" type="Marker3D" parent="." unique_id=593517641]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 54.41577, 2.2, 12)
+script = ExtResource("4_sp")
+team = "attackers"
+
+[node name="DefendersSpawn1" type="Marker3D" parent="." unique_id=926629010]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -55.159378, 2.2, -12)
+script = ExtResource("4_sp")
+team = "defenders"
+
+[node name="DefendersSpawn2" type="Marker3D" parent="." unique_id=1960010671]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -55.159378, 2.2, -6)
+script = ExtResource("4_sp")
+team = "defenders"
+
+[node name="DefendersSpawn3" type="Marker3D" parent="." unique_id=789034790]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -55.159378, 2.2, 0)
+script = ExtResource("4_sp")
+team = "defenders"
+
+[node name="DefendersSpawn4" type="Marker3D" parent="." unique_id=635455486]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -55.159378, 2.2, 6)
+script = ExtResource("4_sp")
+team = "defenders"
+
+[node name="DefendersSpawn5" type="Marker3D" parent="." unique_id=163559517]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -55.159378, 2.2, 12)
+script = ExtResource("4_sp")
+team = "defenders"
+
+[node name="MultiplayerHUD" type="CanvasLayer" parent="." unique_id=1785123968]
+script = ExtResource("2_hud")
