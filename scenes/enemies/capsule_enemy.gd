@@ -71,6 +71,17 @@ func net_play_death() -> void:
 	tween.tween_property(visuals, "rotation:x", deg_to_rad(-90), 0.5).set_trans(Tween.TRANS_BOUNCE)
 	tween.tween_property(visuals, "position:y", -0.5, 0.5)
 
+## Host bot respawned: restore this puppet's visuals/collision (Ground War etc.)
+func net_play_respawn() -> void:
+	if not is_net_puppet:
+		return
+	is_dead = false
+	for box in hitbox_shapes:
+		box.set_deferred("disabled", false)
+	collision_shape.set_deferred("disabled", false)
+	visuals.rotation.x = 0
+	visuals.position.y = 0
+
 # Weapon Stats
 var ammo = 30
 var max_ammo = 30
@@ -881,5 +892,11 @@ func respawn():
 	visuals.scale.y = 1.0
 	is_crouching = false
 	is_sliding = false
+	
+	# Replicate respawn to clients so puppets resurrect visually
+	if not is_net_puppet:
+		var mgr = get_tree().current_scene
+		if mgr is MultiplayerManager and net_id >= 0 and mgr.has_method("broadcast_bot_respawned"):
+			mgr.broadcast_bot_respawned(net_id)
 	
 	print("Enemy Respawned!")

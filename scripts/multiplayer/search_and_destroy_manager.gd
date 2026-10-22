@@ -81,8 +81,40 @@ func _validate_map_setup() -> void:
 
 func _process(delta: float) -> void:
 	super._process(delta)
-	if is_multiplayer_authority() and current_state == MatchState.ACTIVE:
-		_process_bomb_action(delta)
+	if is_multiplayer_authority():
+		if current_state == MatchState.ACTIVE:
+			_process_bomb_action(delta)
+		_process_auto_pickup()
+
+## S&D auto-pickup: any living attacker walking over a DROPPED bomb collects it immediately
+func _process_auto_pickup() -> void:
+	if current_state != MatchState.ACTIVE or current_bomb_state != BombState.DROPPED:
+		return
+	# Human attackers
+	for pid in players_data.keys():
+		if players_data[pid].get("team") != "attackers":
+			continue
+		var p_node := _get_player_node_by_peer(pid)
+		if is_instance_valid(p_node) and not bool(p_node.get("is_dead")):
+			if p_node.global_position.distance_to(bomb_world_position) <= pickup_radius:
+				current_bomb_state = BombState.CARRIED
+				bomb_carrier_peer = pid
+				bomb_carrier_name = players_data[pid].get("name", str(pid))
+				_clear_world_bomb()
+				_sync_bomb_data_to_all()
+				print("[S&D] Bomb auto-picked up by %s (peer %d)" % [bomb_carrier_name, pid])
+				return
+	# Attacker bots
+	for b in team_bots.get("attackers", []):
+		if is_instance_valid(b) and not bool(b.get("is_dead")) and not b.is_queued_for_deletion():
+			if b.global_position.distance_to(bomb_world_position) <= pickup_radius:
+				current_bomb_state = BombState.CARRIED
+				bomb_carrier_peer = int(b.get("net_id")) if b.get("net_id") != null else 101
+				bomb_carrier_name = str(b.get("bot_name"))
+				_clear_world_bomb()
+				_sync_bomb_data_to_all()
+				print("[S&D] Bomb auto-picked up by bot %s" % bomb_carrier_name)
+				return
 
 # ----------------- Round State Flow -----------------
 
@@ -238,11 +270,17 @@ func _respawn_all_participants() -> void:
 			if not is_instance_valid(b) or b.is_queued_for_deletion():
 				continue
 			b.set("can_respawn", false)
+			# EVERY bot repositions to its (possibly new after halftime) team
+			# spawn — living bots included, otherwise a side swap leaves both
+			# teams piled in the same base.
+			var sp = spawner.get_spawn_point(team_key)
+			if sp:
+				b.start_pos = sp.global_position + Vector3(randf_range(-2, 2), 1.0, randf_range(-2, 2))
 			if bool(b.get("is_dead")) and b.has_method("respawn"):
-				var sp = spawner.get_spawn_point(team_key)
-				if sp:
-					b.start_pos = sp.global_position + Vector3(randf_range(-2, 2), 1.0, randf_range(-2, 2))
 				b.respawn()
+			elif not bool(b.get("is_dead")):
+				b.global_position = b.start_pos
+				b.velocity = Vector3.ZERO
 
 func _start_active_round() -> void:
 	_assign_bomb_carrier()
@@ -470,6 +508,20 @@ func swap_halftime_teams() -> void:
 	_sync_match_data()
 	if multiplayer.has_multiplayer_peer():
 		net_halftime_announced.rpc()
+		# Re-sync all bot puppets to clients with their post-swap team/tint/role
+		for p in ready_peers:
+			for b_id in net_bots.keys():
+				var b = net_bots[b_id]
+				if is_instance_valid(b):
+					net_despawn_bot.rpc_id(p, b_id)
+					var team = str(b.get("snd_team"))
+					if team == "":
+						team = "attackers" if b.is_in_group("ally") else "defenders"
+					var scene_path = "res://scenes/enemies/capsule_ally.tscn" if team == "attackers" else "res://scenes/enemies/capsule_enemy.tscn"
+					var weapon_id = ""
+					if b.get("equipped_primary") and b.equipped_primary.has("id"):
+						weapon_id = b.equipped_primary["id"]
+					net_spawn_bot.rpc_id(p, b_id, scene_path, b.global_position, b.rotation.y, team, b.bot_name, weapon_id)
 	else:
 		net_halftime_announced()
 
@@ -497,7 +549,7 @@ func drop_bomb(pos: Vector3) -> void:
 	bomb_carrier_peer = 0
 	bomb_carrier_name = ""
 	bomb_world_position = pos
-	_spawn_world_bomb(pos, false)
+	# World bomb visual spawns on every peer via sync_bomb_data below
 	_sync_bomb_data_to_all()
 	print("[S&D] Bomb dropped at %v" % pos)
 
@@ -507,6 +559,7 @@ func _spawn_world_bomb(pos: Vector3, is_planted: bool) -> void:
 	if scene:
 		_world_bomb_instance = scene.instantiate() as Node3D
 		_world_bomb_instance.position = pos
+		_world_bomb_instance.add_to_group("bomb_item")
 		if _world_bomb_instance.has_method("setup"):
 			_world_bomb_instance.setup(is_planted, planted_site_id)
 		add_child(_world_bomb_instance)
@@ -515,6 +568,10 @@ func _clear_world_bomb() -> void:
 	if is_instance_valid(_world_bomb_instance):
 		_world_bomb_instance.queue_free()
 		_world_bomb_instance = null
+	# Also clear any lingering bomb items from the scene tree (handles edge-case desync)
+	for b in get_tree().get_nodes_in_group("bomb_item"):
+		if is_instance_valid(b) and b != _world_bomb_instance:
+			b.queue_free()
 
 func _detonate_bomb() -> void:
 	current_bomb_state = BombState.DETONATED
@@ -562,7 +619,7 @@ func _plant_bomb_success() -> void:
 	bomb_carrier_peer = 0
 	bomb_carrier_name = ""
 	_cancel_bomb_action()
-	_spawn_world_bomb(bomb_world_position, true)
+	# World bomb visual spawns on every peer via sync_bomb_data below
 	_sync_bomb_data_to_all()
 	if multiplayer.has_multiplayer_peer():
 		net_bomb_planted.rpc(planted_site_id, bomb_world_position)
@@ -759,6 +816,13 @@ func sync_bomb_data(b_state: String, site_id: String, carrier_name: String, b_ti
 	bomb_timer = b_timer
 	bomb_carrier_peer = carrier_peer
 	bomb_world_position = b_pos
+	# Synchronize physical bomb item in the world across host and all clients
+	if current_bomb_state == BombState.DROPPED:
+		_spawn_world_bomb(b_pos, false)
+	elif current_bomb_state == BombState.PLANTED or current_bomb_state == BombState.DEFUSING:
+		_spawn_world_bomb(b_pos, true)
+	else:
+		_clear_world_bomb()
 	bomb_state_synced.emit(b_state, site_id, carrier_name, b_timer)
 
 func _bomb_state_to_str(s: BombState) -> String:
@@ -801,7 +865,7 @@ func _get_player_node_by_peer(peer_id: int) -> Node3D:
 		var p = container.get_node_or_null(str(peer_id))
 		if p: return p
 	for p in get_tree().get_nodes_in_group("player"):
-		if p.name == str(peer_id) or (peer_id == 1 and p.name == "Player"):
+		if is_instance_valid(p) and (p.name == str(peer_id) or (peer_id == 1 and p.name == "Player")):
 			return p
 	return null
 

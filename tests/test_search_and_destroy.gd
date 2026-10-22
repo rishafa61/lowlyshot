@@ -117,9 +117,16 @@ func _run() -> void:
 
 	# 7. Elimination win rule post-plant: all attackers dead does NOT end round
 	mgr.current_state = mgr.MatchState.ACTIVE
+	# A living defender is required, otherwise defenders=0 is a legit instant
+	# "attackers win by elimination" and the planted-bomb branch never runs
+	var p2 = mgr.spawner.spawn_player(2, "defenders")
 	# Simulate 0 living attackers
+	if p_node:
+		p_node.is_dead = true
 	mgr._check_elimination_win()
 	check(mgr.current_state == mgr.MatchState.ACTIVE, "Post-plant attackers death does not end round")
+	if p_node:
+		p_node.is_dead = false
 
 	# 8. Defuse validation
 	# Attacker cannot defuse

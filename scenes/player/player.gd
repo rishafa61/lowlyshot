@@ -423,6 +423,9 @@ func net_play_death() -> void:
 	if not is_puppet or _puppet_death_played:
 		return
 	_puppet_death_played = true
+	# Host-side state must match: without this the host still counts the dead
+	# player as alive (S&D elimination never fires) and bots keep shooting the corpse.
+	is_dead = true
 	if is_instance_valid(_puppet_gun_holder):
 		_puppet_gun_holder.visible = false
 	if is_instance_valid(_puppet_body):
@@ -2064,9 +2067,7 @@ func _snd_process_interactions() -> void:
 		elif my_team == "attackers" and dropped:
 			var bpos2: Vector3 = mgr.get("bomb_world_position")
 			if global_position.distance_to(bpos2) <= 4.0:
-				prompt = "HOLD [F] TO PICK UP BOMB"
-				if held:
-					requested = "PICKUP"
+				prompt = "WALK OVER BOMB TO PICK UP"
 
 	# Send request transitions to the host
 	if requested != "" and _snd_active_request != requested:

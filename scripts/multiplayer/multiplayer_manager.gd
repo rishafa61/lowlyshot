@@ -168,13 +168,17 @@ func _balance_team_bots(team: String) -> void:
 
 	# Reconcile against the REAL host-side bots in the tree (team fill AND
 	# console spawned) so a team can never exceed team_size total members.
-	var group := "ally" if team == "attackers" else "enemy"
+	# S&D derives affiliation from snd_team; fall back to group for deathmatch
 	var live_bots: Array = []
-	for b in get_tree().get_nodes_in_group(group):
+	for b in get_tree().get_nodes_in_group("ally") + get_tree().get_nodes_in_group("enemy"):
 		if is_instance_valid(b) and not b.is_queued_for_deletion() \
 				and b is CharacterBody3D and "bot_name" in b and not b.get("is_net_puppet"):
-			b.set("snd_team", team) # role stamp: relations derive from team, not group
-			live_bots.append(b)
+			var b_team := str(b.get("snd_team"))
+			if b_team == "":
+				b_team = "attackers" if b.is_in_group("ally") else "defenders"
+			if b_team == team and not live_bots.has(b):
+				b.set("snd_team", team)
+				live_bots.append(b)
 	team_bots[team] = live_bots
 
 	# Kick excess bots to make room for humans
@@ -353,6 +357,19 @@ func net_bot_died(b_id: int) -> void:
 		var b = net_bots[b_id]
 		if is_instance_valid(b) and b.has_method("net_play_death"):
 			b.net_play_death()
+
+## Replicate bot respawn to all clients (Ground War / respawn modes)
+func broadcast_bot_respawned(b_id: int) -> void:
+	if GlobalData.is_networked():
+		for p in ready_peers:
+			net_bot_respawned.rpc_id(p, b_id)
+
+@rpc("authority", "call_remote", "reliable")
+func net_bot_respawned(b_id: int) -> void:
+	if net_bots.has(b_id):
+		var b = net_bots[b_id]
+		if is_instance_valid(b) and b.has_method("net_play_respawn"):
+			b.net_play_respawn()
 
 func _on_kill_occurred(killer: String, killer_faction: String, weapon: String, victim: String, victim_faction: String) -> void:
 	# Host is the authority on scores and stats
