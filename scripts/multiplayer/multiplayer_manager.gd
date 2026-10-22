@@ -124,6 +124,7 @@ const BOT_SYNC_INTERVAL: float = 0.1 # 10 Hz
 
 func _ready() -> void:
 	GlobalData.reset_bot_names()
+	add_to_group("multiplayer_manager")
 	GlobalData.kill_occurred.connect(_on_kill_occurred)
 	_prune_unreachable_navmesh()
 	if GlobalData.is_networked():

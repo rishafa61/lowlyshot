@@ -151,13 +151,33 @@ func add_killfeed_entry(killer: String, killer_faction: String, weapon: String, 
 	label.scroll_active = false
 	label.custom_minimum_size = Vector2(0, 18)
 	
-	var get_color = func(faction: String):
+	var viewer_name := ""
+	var vp := get_parent()
+	if vp and vp.get("player_name") != null:
+		viewer_name = str(vp.get("player_name"))
+	elif vp and vp.name != "":
+		# In multiplayer player node name is str(peer_id); host may be "1" or "Player"
+		viewer_name = str(vp.name)
+	if viewer_name == "1":
+		viewer_name = "Player"
+
+	var get_color = func(faction: String, pname: String) -> String:
+		# Self always yellow; resolve teammates/enemies viewer-relative
+		# so each player colors the same kill their own way
+		if pname != "" and pname == viewer_name:
+			return "#ffeb3b"
+		var mgr = _mp_manager()
+		if mgr and mgr.get("match_stats") != null and mgr.match_stats.has(pname):
+			var my_team := _viewer_team(mgr)
+			var their_team: String = str(mgr.match_stats[pname].get("team", ""))
+			if my_team != "" and their_team != "":
+				return "#38bdf8" if their_team == my_team else "#ef4444"
 		if faction == "Player": return "#ffeb3b" # Yellow for self
 		if faction == "Ally": return "#38bdf8"   # Blue for ally
 		return "#ef4444"                         # Red for enemy
 
-	var k_col = get_color.call(killer_faction)
-	var v_col = get_color.call(victim_faction)
+	var k_col = get_color.call(killer_faction, killer)
+	var v_col = get_color.call(victim_faction, victim)
 	
 	label.text = "[color=%s]%s[/color] [color=#cccccc]kill (%s)[/color] [color=%s]%s[/color]" % [k_col, killer, weapon, v_col, victim]
 	
@@ -168,6 +188,21 @@ func add_killfeed_entry(killer: String, killer_faction: String, weapon: String, 
 	tween.tween_interval(3.0)
 	tween.tween_property(panel, "modulate:a", 0.0, 0.5)
 	tween.tween_callback(panel.queue_free)
+
+func _mp_manager() -> Node:
+	var root = get_tree().current_scene
+	if root is MultiplayerManager:
+		return root
+	for g in ["multiplayer_manager", "game_manager"]:
+		var nodes = get_tree().get_nodes_in_group(g)
+		if nodes.size() > 0:
+			return nodes[0]
+	return null
+
+func _viewer_team(mgr: Node) -> String:
+	var pid := multiplayer.get_unique_id() if multiplayer.has_multiplayer_peer() else 1
+	var pdata: Dictionary = mgr.get("players_data") if mgr.get("players_data") != null else {}
+	return str(pdata.get(pid, {}).get("team", ""))
 
 func show_hover_name(name_text: String, is_enemy: bool = false) -> void:
 	crosshair_name.text = name_text

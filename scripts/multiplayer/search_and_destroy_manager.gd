@@ -62,6 +62,7 @@ func _ready() -> void:
 	max_rounds = 999 # Rounds to win governs match termination
 	is_search_and_destroy = true
 	super._ready()
+	add_to_group("multiplayer_manager")
 	_validate_map_setup()
 
 func _validate_map_setup() -> void:
