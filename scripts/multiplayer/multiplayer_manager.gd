@@ -173,6 +173,7 @@ func _balance_team_bots(team: String) -> void:
 	for b in get_tree().get_nodes_in_group(group):
 		if is_instance_valid(b) and not b.is_queued_for_deletion() \
 				and b is CharacterBody3D and "bot_name" in b and not b.get("is_net_puppet"):
+			b.set("snd_team", team) # role stamp: relations derive from team, not group
 			live_bots.append(b)
 	team_bots[team] = live_bots
 
@@ -215,6 +216,7 @@ func _balance_team_bots(team: String) -> void:
 					spawn_pos = nav_pt + Vector3.UP * 0.1
 		var bot = host_spawn_bot(scene_path, spawn_pos, team)
 		if bot:
+			bot.set("snd_team", team)
 			team_bots[team].append(bot)
 
 	if kicked:

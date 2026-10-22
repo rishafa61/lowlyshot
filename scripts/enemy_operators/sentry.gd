@@ -39,3 +39,7 @@ func _execute_skill(_target: Node3D):
 		turret.remove_from_group("player_turret")
 		turret.add_to_group("enemy_turret")
 		turret.add_to_group("enemy")
+	# S&D / team modes: relations follow the summoner's team, not groups
+	var bot_team = enemy_ref.get("snd_team")
+	if bot_team != null and str(bot_team) != "":
+		turret.snd_team = str(bot_team)

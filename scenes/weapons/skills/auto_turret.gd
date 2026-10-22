@@ -19,6 +19,7 @@ var owner_name: String = "Player"
 var weapon_name: String = "Auto-Turret"
 ## Set by MultiplayerManager on non-owner peers: visual replica only (no AI, no damage)
 var is_net_replica: bool = false
+var snd_team: String = "" # "attackers"/"defenders" in team modes; "" = legacy faction mode
 
 @onready var swivel: Node3D = $Swivel
 @onready var pitch: Node3D = $Swivel/Pitch
@@ -91,6 +92,10 @@ func is_valid_enemy(node: Node) -> bool:
 		return false
 	if node.get("is_dead") == true:
 		return false
+	if snd_team != "":
+		# Team modes: hostile iff combatant is on the other team
+		var target_team := _snd_side_of(node)
+		return target_team != "" and target_team != snd_team
 	var f := _faction_of(node)
 	return f != "" and f != faction
 
@@ -107,6 +112,16 @@ func _faction_of(n: Node) -> String:
 			return "Ally"
 		if t == "defenders":
 			return "Enemy"
+	return ""
+
+## S&D team of any combatant: bots carry snd_team, players carry team.
+func _snd_side_of(n: Node) -> String:
+	var t = n.get("snd_team")
+	if t != null and str(t) != "":
+		return str(t)
+	var pt = n.get("team")
+	if pt != null and str(pt) != "":
+		return str(pt)
 	return ""
 
 func get_target_center(target: Node3D) -> Vector3:
@@ -218,11 +233,20 @@ var last_attacker_faction: String = ""
 var last_weapon: String = ""
 
 func take_damage(amount: float, attacker_name: String = "", w_name: String = "", attacker_faction: String = "", _attacker_pos: Vector3 = Vector3.INF) -> float:
-	# Friendly/ally turrets are invulnerable: no friendly fire, no enemy destruction
-	if faction != "Enemy" or is_dead:
+	if is_dead:
 		return 0.0
-	if attacker_faction == "Enemy":
-		return 0.0
+	# Team modes: check attacker side vs turret team
+	if snd_team != "":
+		# Combatants pass their faction ("Ally" for attackers, "Enemy" for defenders)
+		var att_team := "attackers" if attacker_faction == "Ally" else ("defenders" if attacker_faction == "Enemy" else "")
+		if att_team != "" and att_team == snd_team:
+			return 0.0 # Friendly fire blocked
+	else:
+		# Legacy: only Enemy turrets take damage, only from non-Enemy
+		if faction != "Enemy":
+			return 0.0
+		if attacker_faction == "Enemy":
+			return 0.0
 	if attacker_name != "":
 		last_attacker = attacker_name
 		last_attacker_faction = attacker_faction if attacker_faction != "" else "Player"

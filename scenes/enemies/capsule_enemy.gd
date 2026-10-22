@@ -32,6 +32,7 @@ var current_speed_mult = 1.0
 
 var active_operator: EnemyOperator = null
 var bot_name: String = ""
+var snd_team: String = "" # "attackers"/"defenders" — stamped by the match manager
 var last_attacker: String = ""
 var last_attacker_faction: String = ""
 var last_weapon: String = ""
@@ -190,15 +191,34 @@ func _setup_puppet_bot() -> void:
 	body.set_tint(Color(0.9, 0.2, 0.2))
 	_equip_random_primary()
 
+## Resolves a combatant's S&D team ("attackers"/"defenders"). Bots carry
+## snd_team (stamped by the manager); players carry team. Returns "" outside
+## team modes — callers fall back to legacy group logic then.
+func _snd_side_of(n: Node) -> String:
+	var t = n.get("snd_team")
+	if t != null and str(t) != "":
+		return str(t)
+	var pt = n.get("team")
+	if pt != null and str(pt) != "":
+		return str(pt)
+	return ""
+
 func _find_nearest_target() -> void:
-	var potential_targets = get_tree().get_nodes_in_group("player") + get_tree().get_nodes_in_group("ally")
+	var my_team := str(get("snd_team"))
+	var potential_targets = get_tree().get_nodes_in_group("player") \
+		+ get_tree().get_nodes_in_group("ally") + get_tree().get_nodes_in_group("enemy")
 	var closest_dist = INF
 	target = null
 	for pt in potential_targets:
-		if pt is Node3D and not pt.get("is_dead"):
-			# A player who joined the defenders is on OUR side — skip them
-			if pt.is_in_group("enemy"):
-				continue
+		if pt is Node3D and not pt.get("is_dead") and pt != self:
+			if my_team != "":
+				# S&D / team modes: shoot the OTHER team (handles halftime swaps cleanly)
+				if _snd_side_of(pt) == my_team:
+					continue
+			else:
+				# Legacy deathmatch: skip anyone in group "enemy"
+				if pt.is_in_group("enemy"):
+					continue
 			var d = global_position.distance_to(pt.global_position)
 			if d < closest_dist:
 				closest_dist = d
@@ -723,14 +743,21 @@ func shoot():
 			dmg = equipped_primary["dmg"]
 		if equipped_primary and equipped_primary.has("id"):
 			w_name = equipped_primary["id"]
-		# Hostile check: enemy bots consider anyone in group "enemy" as friendly teammate
+		# Hostile check: teammate on same team is friendly
 		var hit_body = hit.get_parent() if hit is Area3D else hit
-		var friendly = hit.is_in_group("enemy") or (hit_body and hit_body != hit and hit_body.is_in_group("enemy"))
+		var my_team := str(get("snd_team"))
+		var friendly: bool
+		if my_team != "":
+			friendly = _snd_side_of(hit) == my_team \
+				or (hit_body and hit_body != hit and _snd_side_of(hit_body) == my_team)
+		else:
+			friendly = hit.is_in_group("enemy") or (hit_body and hit_body != hit and hit_body.is_in_group("enemy"))
 		if not friendly:
+			var my_faction := "Ally" if my_team == "attackers" else "Enemy"
 			if hit.has_method("take_damage"):
-				hit.take_damage(dmg, bot_name, w_name, "Enemy")
+				hit.take_damage(dmg, bot_name, w_name, my_faction)
 			elif hit_body and hit_body != hit and hit_body.has_method("take_damage"):
-				hit_body.take_damage(dmg, bot_name, w_name, "Enemy")
+				hit_body.take_damage(dmg, bot_name, w_name, my_faction)
 
 	create_tracer(ray_start, visual_end)
 

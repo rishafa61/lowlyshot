@@ -218,8 +218,17 @@ func _respawn_all_participants() -> void:
 		var p_team: String = players_data[pid].get("team", "attackers")
 		spawner.despawn_player(pid)
 		var p_node = spawner.spawn_player(pid, p_team)
-		if p_node and p_node.has_method("exit_spectator_mode"):
-			p_node.exit_spectator_mode()
+		if is_instance_valid(p_node):
+			p_node.set("snd_team", p_team)
+			p_node.set("team", p_team)
+			if p_team == "attackers":
+				p_node.remove_from_group("enemy")
+				p_node.add_to_group("ally")
+			else:
+				p_node.remove_from_group("ally")
+				p_node.add_to_group("enemy")
+			if p_node.has_method("exit_spectator_mode"):
+				p_node.exit_spectator_mode()
 
 	# Re-balance bots, revive the dead at their team spawn, and forbid
 	# mid-round self-respawn (round-based lives).
@@ -441,14 +450,20 @@ func swap_halftime_teams() -> void:
 
 	for b in team_bots["attackers"]:
 		if is_instance_valid(b):
+			b.set("snd_team", "attackers")
 			b.remove_from_group("enemy")
 			b.add_to_group("ally")
+			if b.has_node("Body") and b.get_node("Body").has_method("set_tint"):
+				b.get_node("Body").set_tint(Color(0.2, 0.7, 0.9)) # blue tint for attackers
 			if match_stats.has(b.bot_name):
 				match_stats[b.bot_name]["team"] = "attackers"
 	for b in team_bots["defenders"]:
 		if is_instance_valid(b):
+			b.set("snd_team", "defenders")
 			b.remove_from_group("ally")
 			b.add_to_group("enemy")
+			if b.has_node("Body") and b.get_node("Body").has_method("set_tint"):
+				b.get_node("Body").set_tint(Color(0.9, 0.2, 0.2)) # red tint for defenders
 			if match_stats.has(b.bot_name):
 				match_stats[b.bot_name]["team"] = "defenders"
 
