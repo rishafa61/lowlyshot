@@ -39,7 +39,7 @@ func _initialize() -> void:
 	snd_mgr.players_data[2] = {"name": "AttackerGuy", "team": "attackers"}
 
 	var MockPlayer = GDScript.new()
-	MockPlayer.source_code = "extends CharacterBody3D\nvar is_dead: bool = false\nvar team: String = \"attackers\"\n"
+	MockPlayer.source_code = "extends CharacterBody3D\nvar is_dead: bool = false\nvar team: String = \"attackers\"\nvar snd_team: String = \"\"\nvar bot_name: String = \"\"\nvar is_net_puppet: bool = false\n"
 	MockPlayer.reload()
 
 	var walker: CharacterBody3D = MockPlayer.new()
@@ -78,9 +78,52 @@ func _initialize() -> void:
 	check(not bot.is_dead, "Enemy bot puppet revived after net_play_respawn")
 	check(bot.visuals.rotation.x == 0.0, "Enemy bot visuals upright after respawn")
 
+	# 4. Halftime swap keeps 5v5 balance even when host players_data name is "1" and match_stats key is "Player"
+	var snd_mgr2 = snd_scene.instantiate()
+	root.add_child(snd_mgr2)
+	await process_frame
+	# Setup: host peer 1 as defender with legacy mismatched name "1", stats under "Player"
+	snd_mgr2.players_data[1] = {"name": "1", "team": "defenders", "kills": 20, "deaths": 0, "ping": 0}
+	snd_mgr2.players_data[2] = {"name": "Cipher", "team": "defenders", "kills": 0, "deaths": 4, "ping": 50}
+	snd_mgr2.match_stats["Player"] = {"kills": 20, "deaths": 0, "team": "defenders"}
+	snd_mgr2.match_stats["Cipher"] = {"kills": 0, "deaths": 4, "team": "defenders"}
+	# 4 attacker bots, 4 defender bots (making 5v5 pre-swap)
+	var att_bots: Array = []
+	var def_bots: Array = []
+	for n in ["Echo", "Cliffe", "Minh", "Chris"]:
+		var b: CharacterBody3D = MockPlayer.new()
+		b.set("bot_name", n)
+		b.set("snd_team", "attackers")
+		snd_mgr2.match_stats[n] = {"kills": 0, "deaths": 0, "team": "attackers"}
+		att_bots.append(b)
+	for n in ["Striker", "Dave", "Titan", "Gabe"]:
+		var b: CharacterBody3D = MockPlayer.new()
+		b.set("bot_name", n)
+		b.set("snd_team", "defenders")
+		snd_mgr2.match_stats[n] = {"kills": 0, "deaths": 0, "team": "defenders"}
+		def_bots.append(b)
+	snd_mgr2.team_bots["attackers"] = att_bots
+	snd_mgr2.team_bots["defenders"] = def_bots
+
+	snd_mgr2.swap_halftime_teams()
+
+	# Count teams across all match_stats
+	var stat_att: int = 0
+	var stat_def: int = 0
+	for k in snd_mgr2.match_stats:
+		var t = snd_mgr2.match_stats[k].get("team")
+		if t == "attackers": stat_att += 1
+		elif t == "defenders": stat_def += 1
+
+	check(snd_mgr2.match_stats["Player"]["team"] == "attackers", "Host 'Player' entry flipped to attackers despite players_data name='1'")
+	check(snd_mgr2.match_stats["Cipher"]["team"] == "attackers", "Cipher flipped to attackers")
+	check(stat_att == 6 and stat_def == 4, "Post-swap stats reflect actual roster (2 humans+4 bots attack, 4 bots defend)")
 	# Cleanup
 	arena.queue_free()
+	snd_mgr2.queue_free()
 	bot.queue_free()
+	await process_frame
+	await process_frame
 
 	print("--- multiplayer issue tests done: %d fails ---" % fails)
 	quit(1 if fails > 0 else 0)

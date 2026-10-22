@@ -514,7 +514,9 @@ func request_join_team(team: String) -> void:
 		team = "defenders" if team == "attackers" else "attackers"
 	
 	if not players_data.has(peer):
-		players_data[peer] = { "name": str(peer), "team": team, "kills": 0, "deaths": 0, "ping": 0 }
+		# Name MUST match the match_stats key below ("Player" for the host),
+		# otherwise halftime swap / kill stats can't find this player's entry
+		players_data[peer] = { "name": "Player" if peer == 1 else str(peer), "team": team, "kills": 0, "deaths": 0, "ping": 0 }
 	else:
 		players_data[peer]["team"] = team
 	

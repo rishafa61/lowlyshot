@@ -479,6 +479,10 @@ func swap_halftime_teams() -> void:
 		var p_name: String = players_data[pid].get("name", str(pid))
 		if match_stats.has(p_name):
 			match_stats[p_name]["team"] = new_t
+		elif pid == 1 and match_stats.has("Player"):
+			# Host's stats may live under the legacy "Player" key while
+			# players_data name differs — flip it too or scoreboard shows 4v6
+			match_stats["Player"]["team"] = new_t
 
 	# Swap bot teams
 	var old_att_bots = team_bots.get("attackers", []).duplicate()
