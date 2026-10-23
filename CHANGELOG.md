@@ -10,7 +10,8 @@ Format: version — date — Added / Changed / Fixed. Newest first.
 Flying Scoutsman AI combat, moon jumping, map roaming, and spawn protection.
 
 ### Added
-- **Bot moon jumps**: bots in Flying Scoutsman periodically launch floaty hops into the air (impulse 5.0-7.5 m/s, ~3-5 m apex at 1.6 gravity) while roaming and strafing, matching the floaty feel of the mode; obstacle-blocked bots hop to clear ledges.
+- **Bot moon jumps**: bots in Flying Scoutsman periodically launch floaty hops into the air (impulse 4.0-6.0 m/s, ~4-6 m apex at 1.6 gravity, ~5-7 s airtime) while roaming and strafing, matching the floaty feel of the mode; obstacle-blocked bots hop to clear ledges.
+- **Bot fall physics fix**: `_soft_move` fall branch never integrated `global_position.y` when the floor ray missed, so any bot that gained altitude (e.g. mid-jump) froze at its apex and hovered indefinitely. Vertical position now integrates every frame with the existing floor-snap behavior on landing.
 - **Arena-wide roaming**: roam goal selection in FFA now alternates 50/50 between sweeping a random arena spawn point (covers the entire map) and hunting a live combatant, preventing the spawn-cluster camping pattern.
 - **FFA random respawn**: bots no longer respawn onto static `start_pos`; every respawn picks a random arena spawn point with small jitter.
 - **Sniper engagement spacing**: FFA combat range widened from 5-12 m to 10-30 m so bots don't crowd into point-blank retreat shuffles.

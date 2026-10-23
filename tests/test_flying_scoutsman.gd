@@ -91,7 +91,7 @@ func _run() -> void:
 		ba._hop_cd = 0.0
 		ba._grounded = true
 		ba._try_ffa_jump(1.0)
-		check(ba.velocity.y >= 5.0 and not ba._grounded, "bot _try_ffa_jump launches into air with float impulse")
+		check(ba.velocity.y >= 4.0 and not ba._grounded, "bot _try_ffa_jump launches into air with float impulse")
 
 	# 6. Loadout lock: primary is forced to m700
 	var primary_dict: Dictionary = gd.get_equipped_primary()

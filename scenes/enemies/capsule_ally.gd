@@ -482,7 +482,8 @@ func _soft_move(dt: float) -> void:
 			remaining = (remaining - n * into) * 0.98
 		else:
 			break
-	# Vertical: snap to floor when falling, free rise otherwise
+	# Vertical: integrate y every frame, snap to floor when falling
+	global_position.y += velocity.y * dt
 	if velocity.y <= 0.0:
 		var drop := -velocity.y * dt + STEP_HEIGHT + 0.05
 		var fq := PhysicsRayQueryParameters3D.create(
@@ -495,7 +496,6 @@ func _soft_move(dt: float) -> void:
 		else:
 			_grounded = false
 	else:
-		global_position.y += velocity.y * dt
 		_grounded = false
 
 func _step_up_if_needed() -> void:
@@ -677,7 +677,7 @@ func _try_ffa_jump(chance: float) -> void:
 	if not _grounded or _hop_cd > 0.0:
 		return
 	if randf() < chance:
-		velocity.y = randf_range(5.0, 7.5)
+		velocity.y = randf_range(4.0, 6.0)
 		_grounded = false
 		_hop_cd = randf_range(2.0, 5.0)
 
