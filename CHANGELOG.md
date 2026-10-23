@@ -10,6 +10,7 @@ Format: version — date — Added / Changed / Fixed. Newest first.
 Flying Scoutsman AI combat, moon jumping, map roaming, and spawn protection.
 
 ### Added
+- **Modern stylized scoreboard UI**: hold-TAB scoreboard redesigned with a tactical briefing card plate (shadowed slate, subtle glass scrim, Outfit typography), live team score banners, aligned OPERATOR / K / D columns, kills-descending leaderboard sorting, gold/silver/bronze podium rank tags in FFA mode, and local player row highlight with gold accent stripe.
 - **Bot moon jumps**: bots in Flying Scoutsman periodically launch floaty hops into the air (impulse 4.0-6.0 m/s, ~4-6 m apex at 1.6 gravity, ~5-7 s airtime) while roaming and strafing, matching the floaty feel of the mode; obstacle-blocked bots hop to clear ledges.
 - **Bot fall physics fix**: `_soft_move` fall branch never integrated `global_position.y` when the floor ray missed, so any bot that gained altitude (e.g. mid-jump) froze at its apex and hovered indefinitely. Vertical position now integrates every frame with the existing floor-snap behavior on landing.
 - **Arena-wide roaming**: roam goal selection in FFA now alternates 50/50 between sweeping a random arena spawn point (covers the entire map) and hunting a live combatant, preventing the spawn-cluster camping pattern.

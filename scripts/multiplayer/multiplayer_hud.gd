@@ -12,6 +12,8 @@ var objective_label: Label
 var scoreboard: Control
 var scoreboard_list: Container
 var scoreboard_title: Label
+var scoreboard_font: Font
+var scoreboard_font_bold: FontVariation
 var side_picker: Control
 var btn_attackers: Button
 var btn_defenders: Button
@@ -259,43 +261,79 @@ func _build_ui() -> void:
 	snd_round_banner.visible = false
 	add_child(snd_round_banner)
 
-	# Scoreboard (hold TAB)
+	# Scoreboard (hold TAB) — tactical briefing card: dark plate, team accent badges
 	scoreboard = Control.new()
 	scoreboard.set_anchors_preset(Control.PRESET_FULL_RECT)
 	scoreboard.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	scoreboard.visible = false
 	add_child(scoreboard)
 
+	# Dim the battlefield behind the card so rows stay readable
+	var sb_dim := ColorRect.new()
+	sb_dim.set_anchors_preset(Control.PRESET_FULL_RECT)
+	sb_dim.color = Color(0.0, 0.0, 0.0, 0.35)
+	sb_dim.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	scoreboard.add_child(sb_dim)
+
 	var center := CenterContainer.new()
 	center.set_anchors_preset(Control.PRESET_FULL_RECT)
 	center.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	scoreboard.add_child(center)
 
+	scoreboard_font = load("res://addons/GD-Sync/UI/Fonts/Outfit-Regular.ttf")
+	scoreboard_font_bold = FontVariation.new()
+	scoreboard_font_bold.base_font = scoreboard_font
+	scoreboard_font_bold.variation_embolden = 0.7
+
 	var panel := PanelContainer.new()
-	panel.custom_minimum_size = Vector2(620, 360)
+	var panel_sb := StyleBoxFlat.new()
+	panel_sb.bg_color = Color(0.045, 0.06, 0.08, 0.94)
+	panel_sb.border_color = Color(0.34, 0.42, 0.5, 0.45)
+	panel_sb.set_border_width_all(1)
+	panel_sb.set_corner_radius_all(8)
+	panel_sb.shadow_color = Color(0, 0, 0, 0.45)
+	panel_sb.shadow_size = 22
+	panel_sb.content_margin_left = 22.0
+	panel_sb.content_margin_right = 22.0
+	panel_sb.content_margin_top = 14.0
+	panel_sb.content_margin_bottom = 18.0
+	panel.add_theme_stylebox_override("panel", panel_sb)
+	panel.custom_minimum_size = Vector2(760, 0)
 	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	center.add_child(panel)
 
 	var vbox := VBoxContainer.new()
-	vbox.add_theme_constant_override("separation", 8)
+	vbox.add_theme_constant_override("separation", 12)
 	vbox.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	panel.add_child(vbox)
 
 	scoreboard_title = Label.new()
-	scoreboard_title.text = "TEAM DEATHMATCH (Hold TAB)"
+	scoreboard_title.text = "TEAM DEATHMATCH"
 	scoreboard_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	scoreboard_title.add_theme_font_size_override("font_size", 18)
+	scoreboard_title.add_theme_font_override("font", scoreboard_font_bold)
+	scoreboard_title.add_theme_font_size_override("font_size", 21)
+	scoreboard_title.add_theme_color_override("font_color", Color(0.93, 0.95, 0.97))
 	scoreboard_title.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	vbox.add_child(scoreboard_title)
 
+	var subtitle := Label.new()
+	subtitle.text = "HOLD  TAB  TO  VIEW  —  RELEASE  TO  HIDE"
+	subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	subtitle.add_theme_font_override("font", scoreboard_font)
+	subtitle.add_theme_font_size_override("font_size", 10)
+	subtitle.add_theme_color_override("font_color", Color(0.55, 0.62, 0.7, 0.8))
+	subtitle.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	vbox.add_child(subtitle)
+
 	var hsep := HSeparator.new()
+	hsep.modulate = Color(0.4, 0.5, 0.6, 0.5)
 	hsep.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	vbox.add_child(hsep)
 
-	# 2-column split: Attackers (Blue) vs Defenders (Red)
+	# 2-column split: Attackers (Blue) vs Defenders (Red); single ranked column in FFA
 	scoreboard_list = HBoxContainer.new()
-	scoreboard_list.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	scoreboard_list.add_theme_constant_override("separation", 16)
+	scoreboard_list.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
+	scoreboard_list.add_theme_constant_override("separation", 18)
 	scoreboard_list.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	vbox.add_child(scoreboard_list)
 
@@ -861,6 +899,13 @@ func update_header() -> void:
 	else:
 		objective_label.text = "First to %d" % manager.target_kills
 
+const SB_COL_ATTACKERS := Color(0.45, 0.75, 1.0)
+const SB_COL_DEFENDERS := Color(1.0, 0.48, 0.42)
+const SB_COL_TEXT := Color(0.88, 0.91, 0.94)
+const SB_COL_DIM := Color(0.52, 0.58, 0.66)
+const SB_COL_GOLD := Color(1.0, 0.8, 0.35)
+const SB_KD_WIDTH := 42.0
+
 func refresh_scoreboard() -> void:
 	if not scoreboard_list:
 		return
@@ -868,81 +913,211 @@ func refresh_scoreboard() -> void:
 		c.queue_free()
 	if not manager:
 		return
-	var a = manager.team_scores.get("attackers", 0)
-	var d = manager.team_scores.get("defenders", 0)
+	var a := int(manager.team_scores.get("attackers", 0))
+	var d := int(manager.team_scores.get("defenders", 0))
 	var is_ffa_sb: bool = int(manager.ffa_target_kills) > 0
 	if is_ffa_sb:
 		scoreboard_title.text = "%s   —   FIRST TO %d KILLS" % [manager.mode_title, int(manager.ffa_target_kills)]
 	else:
 		scoreboard_title.text = "%s   —   ATTACKERS %d : %d DEFENDERS" % [manager.mode_title, a, d]
-	var ally_names: Array = []
-	var enemy_names: Array = []
 
 	# Pull all stats from match_stats (strictly human players and AI bots)
+	var entries: Array = [] # {name, kills, deaths, team, local}
 	var stats: Dictionary = manager.match_stats if manager.match_stats else {}
 	for entry_name in stats.keys():
 		var sname := str(entry_name).strip_edges()
 		if not _is_combatant_name(sname):
 			continue
 		var s: Dictionary = stats[entry_name]
-		var kills: int = s.get("kills", 0)
-		var deaths: int = s.get("deaths", 0)
-		var team: String = s.get("team", "attackers")
-		var display = "%s (K:%d D:%d)" % [sname, kills, deaths]
-		if team == "attackers" or is_ffa_sb:
-			if sname == "Player":
-				display = "You (K:%d D:%d)" % [kills, deaths]
-			ally_names.append(display)
-		else:
-			if sname == "Player":
-				display = "You (K:%d D:%d)" % [kills, deaths]
-			enemy_names.append(display)
+		var is_local := sname == "Player"
+		entries.append({
+			"name": "You" if is_local else sname,
+			"kills": int(s.get("kills", 0)),
+			"deaths": int(s.get("deaths", 0)),
+			"team": str(s.get("team", "attackers")),
+			"local": is_local,
+		})
+	var by_kills := func(x: Dictionary, y: Dictionary) -> bool:
+		if int(x.kills) != int(y.kills):
+			return int(x.kills) > int(y.kills)
+		return int(x.deaths) < int(y.deaths)
 
-	# Two team columns
-	var attackers_box := VBoxContainer.new()
-	attackers_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	attackers_box.add_theme_constant_override("separation", 4)
-	attackers_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	scoreboard_list.add_child(attackers_box)
+	if is_ffa_sb:
+		entries.sort_custom(by_kills)
+		scoreboard_list.add_child(_mk_score_column("", Color(0.9, 0.93, 0.96), entries, true, -1))
+	else:
+		var atk: Array = entries.filter(func(e): return str(e.team) != "defenders")
+		var dfn: Array = entries.filter(func(e): return str(e.team) == "defenders")
+		atk.sort_custom(by_kills)
+		dfn.sort_custom(by_kills)
+		scoreboard_list.add_child(_mk_score_column("ATTACKERS", SB_COL_ATTACKERS, atk, false, a))
+		scoreboard_list.add_child(_mk_score_column("DEFENDERS", SB_COL_DEFENDERS, dfn, false, d))
 
-	var defenders_box := VBoxContainer.new()
-	defenders_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	defenders_box.add_theme_constant_override("separation", 4)
-	defenders_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	scoreboard_list.add_child(defenders_box)
+## One team/leaderboard column: accent badge header, K/D column captions, stat rows.
+func _mk_score_column(title: String, color: Color, rows: Array, ranked: bool, score: int) -> VBoxContainer:
+	var col := VBoxContainer.new()
+	col.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	col.add_theme_constant_override("separation", 4)
+	col.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	if title != "":
+		col.add_child(_mk_team_badge(title, color, score))
+	col.add_child(_mk_column_header(ranked))
+	if rows.is_empty():
+		var empty := Label.new()
+		empty.text = "NO COMBATANTS"
+		empty.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		empty.add_theme_font_override("font", scoreboard_font)
+		empty.add_theme_font_size_override("font_size", 12)
+		empty.add_theme_color_override("font_color", Color(SB_COL_DIM.r, SB_COL_DIM.g, SB_COL_DIM.b, 0.6))
+		empty.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		col.add_child(empty)
+		return col
+	for i in rows.size():
+		col.add_child(_mk_score_row(rows[i], color, ranked, i + 1))
+	return col
 
-	var a_head := Label.new()
-	a_head.text = "PLAYERS — %d" % ally_names.size() if is_ffa_sb else "ATTACKERS — %d" % manager.team_scores.get("attackers", 0)
-	a_head.add_theme_color_override("font_color", Color(0.4, 0.8, 1.0))
-	a_head.add_theme_font_size_override("font_size", 17)
-	a_head.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	attackers_box.add_child(a_head)
+## Colored team banner with the live team score on the right.
+func _mk_team_badge(title: String, color: Color, score: int) -> Control:
+	var pc := PanelContainer.new()
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = Color(color.r, color.g, color.b, 0.14)
+	sb.border_color = color
+	sb.border_width_left = 3
+	sb.set_corner_radius_all(4)
+	sb.content_margin_left = 10.0
+	sb.content_margin_right = 10.0
+	sb.content_margin_top = 5.0
+	sb.content_margin_bottom = 5.0
+	pc.add_theme_stylebox_override("panel", sb)
+	pc.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var hb := HBoxContainer.new()
+	hb.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	pc.add_child(hb)
+	var name_l := Label.new()
+	name_l.text = title
+	name_l.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	name_l.add_theme_font_override("font", scoreboard_font_bold)
+	name_l.add_theme_font_size_override("font_size", 15)
+	name_l.add_theme_color_override("font_color", color.lightened(0.25))
+	name_l.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	hb.add_child(name_l)
+	if score >= 0:
+		var score_l := Label.new()
+		score_l.text = str(score)
+		score_l.add_theme_font_override("font", scoreboard_font_bold)
+		score_l.add_theme_font_size_override("font_size", 15)
+		score_l.add_theme_color_override("font_color", Color(0.95, 0.96, 0.98))
+		score_l.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		hb.add_child(score_l)
+	return pc
 
-	var d_head := Label.new()
-	d_head.text = "" if is_ffa_sb else "DEFENDERS — %d" % manager.team_scores.get("defenders", 0)
-	d_head.add_theme_color_override("font_color", Color(1.0, 0.5, 0.4))
-	d_head.add_theme_font_size_override("font_size", 17)
-	d_head.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	defenders_box.add_child(d_head)
+## Small caption row aligning OPERATOR / K / D over the stat columns below.
+func _mk_column_header(ranked: bool) -> Control:
+	var pc := PanelContainer.new()
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = Color(1, 1, 1, 0.0)
+	sb.content_margin_left = 8.0
+	sb.content_margin_right = 8.0
+	sb.content_margin_top = 2.0
+	sb.content_margin_bottom = 0.0
+	pc.add_theme_stylebox_override("panel", sb)
+	pc.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var hb := HBoxContainer.new()
+	hb.add_theme_constant_override("separation", 6)
+	hb.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	pc.add_child(hb)
+	if ranked:
+		var rank_l := Label.new()
+		rank_l.text = "#"
+		rank_l.custom_minimum_size = Vector2(26, 0)
+		rank_l.add_theme_font_override("font", scoreboard_font_bold)
+		rank_l.add_theme_font_size_override("font_size", 11)
+		rank_l.add_theme_color_override("font_color", SB_COL_DIM)
+		rank_l.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		hb.add_child(rank_l)
+	var name_l := Label.new()
+	name_l.text = "OPERATOR"
+	name_l.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	name_l.add_theme_font_override("font", scoreboard_font_bold)
+	name_l.add_theme_font_size_override("font_size", 11)
+	name_l.add_theme_color_override("font_color", SB_COL_DIM)
+	name_l.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	hb.add_child(name_l)
+	for caption in ["K", "D"]:
+		var c := Label.new()
+		c.text = caption
+		c.custom_minimum_size = Vector2(SB_KD_WIDTH, 0)
+		c.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		c.add_theme_font_override("font", scoreboard_font_bold)
+		c.add_theme_font_size_override("font_size", 11)
+		c.add_theme_color_override("font_color", SB_COL_DIM)
+		c.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		hb.add_child(c)
+	return pc
 
-	# Pad shorter column so rows line up horizontally
-	var max_rows = max(ally_names.size(), enemy_names.size())
-	while ally_names.size() < max_rows:
-		ally_names.append("")
-	while enemy_names.size() < max_rows:
-		enemy_names.append("")
-
-	for i in max_rows:
-		attackers_box.add_child(_mk_row(str(ally_names[i]), Color(0.5, 0.85, 1.0)))
-		defenders_box.add_child(_mk_row(str(enemy_names[i]), Color(1.0, 0.6, 0.5)))
-
-func _mk_row(text: String, color: Color) -> Label:
-	var l := Label.new()
-	l.text = text if text != "" else "—"
-	l.modulate = color if text != "" else Color(1, 1, 1, 0.15)
-	l.add_theme_font_size_override("font_size", 14)
-	l.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	return l
+## One combatant row: [rank] name | kills | deaths; local player gets a lit plate.
+func _mk_score_row(e: Dictionary, color: Color, ranked: bool, rank: int) -> Control:
+	var is_local: bool = bool(e.local)
+	var pc := PanelContainer.new()
+	var sb := StyleBoxFlat.new()
+	if is_local:
+		sb.bg_color = Color(1, 1, 1, 0.09)
+		sb.border_color = SB_COL_GOLD
+		sb.border_width_left = 3
+	else:
+		sb.bg_color = Color(1, 1, 1, 0.03)
+	sb.set_corner_radius_all(4)
+	sb.content_margin_left = 8.0
+	sb.content_margin_right = 8.0
+	sb.content_margin_top = 3.0
+	sb.content_margin_bottom = 3.0
+	pc.add_theme_stylebox_override("panel", sb)
+	pc.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var hb := HBoxContainer.new()
+	hb.add_theme_constant_override("separation", 6)
+	hb.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	pc.add_child(hb)
+	if ranked:
+		var rank_l := Label.new()
+		rank_l.text = str(rank)
+		rank_l.custom_minimum_size = Vector2(26, 0)
+		rank_l.add_theme_font_override("font", scoreboard_font_bold)
+		rank_l.add_theme_font_size_override("font_size", 14)
+		match rank:
+			1: rank_l.add_theme_color_override("font_color", SB_COL_GOLD)
+			2: rank_l.add_theme_color_override("font_color", Color(0.82, 0.86, 0.9))
+			3: rank_l.add_theme_color_override("font_color", Color(0.87, 0.62, 0.4))
+			_: rank_l.add_theme_color_override("font_color", SB_COL_DIM)
+		rank_l.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		hb.add_child(rank_l)
+	var name_l := Label.new()
+	name_l.text = str(e.name)
+	name_l.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	name_l.clip_text = true
+	name_l.add_theme_font_override("font", scoreboard_font_bold if is_local else scoreboard_font)
+	name_l.add_theme_font_size_override("font_size", 14)
+	name_l.add_theme_color_override("font_color", Color(0.97, 0.98, 1.0) if is_local else color.lightened(0.35))
+	name_l.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	hb.add_child(name_l)
+	var k_l := Label.new()
+	k_l.text = str(e.kills)
+	k_l.custom_minimum_size = Vector2(SB_KD_WIDTH, 0)
+	k_l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	k_l.add_theme_font_override("font", scoreboard_font_bold if is_local else scoreboard_font)
+	k_l.add_theme_font_size_override("font_size", 14)
+	k_l.add_theme_color_override("font_color", Color(0.95, 0.97, 0.99))
+	k_l.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	hb.add_child(k_l)
+	var d_l := Label.new()
+	d_l.text = str(e.deaths)
+	d_l.custom_minimum_size = Vector2(SB_KD_WIDTH, 0)
+	d_l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	d_l.add_theme_font_override("font", scoreboard_font)
+	d_l.add_theme_font_size_override("font_size", 14)
+	d_l.add_theme_color_override("font_color", SB_COL_DIM)
+	d_l.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	hb.add_child(d_l)
+	return pc
 
 ## Beveled tactical plate stylebox used across top match status segments.
 func _mk_plate_style() -> StyleBoxFlat:
