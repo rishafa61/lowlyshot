@@ -74,13 +74,22 @@ func _initialize() -> void:
 	check(abs(prof.get_win_rate() - 0.5) < 0.01, "Win rate now 50%%")
 	check(prof.history.size() == 2, "History has 2 entries")
 
-	# 5. Player card dialog instantiates and populates
+	# 5. Player card dialog instantiates, populates, and supports mode filters
 	var card_script = load("res://scenes/ui/player_card_dialog.gd")
 	var card: CanvasLayer = CanvasLayer.new()
 	card.set_script(card_script)
 	root.add_child(card)
 	await process_frame
 	check(card.get_child_count() > 0, "Player card dialog creates UI elements")
+	check(card.has_method("_calc_level"), "Dialog has rank/level calculator")
+	var lvl_data = card.call("_calc_level", {"kills": 15, "headshots": 5, "wins": 2, "matches": 5})
+	check(lvl_data.get("level", 0) > 1, "Level calculator returns level > 1 for active career")
+	check(lvl_data.has("title"), "Level calculator returns operator title")
+	check(card.get("_filter_buttons") is Dictionary and card.get("_filter_buttons").has("SEARCH & DESTROY"), "Filter buttons include Search & Destroy")
+	card.call("_set_filter", "SEARCH & DESTROY")
+	check(card.get("_current_filter") == "SEARCH & DESTROY", "Filter tab changes to SEARCH & DESTROY")
+	card.call("_set_filter", "ALL")
+	check(card.get("_current_filter") == "ALL", "Filter tab resets to ALL")
 	card.queue_free()
 
 	# 6. Main menu loads with profile frame and wallet pills

@@ -5,6 +5,26 @@ Format: version — date — Added / Changed / Fixed. Newest first.
 
 ---
 
+## v0.03 — 2026-10-23
+
+Profile panel restyled as a tactical military dossier (player card + main menu frame).
+
+### Changed
+- **Player card** (`scenes/ui/player_card_dialog.gd`) — full tactical dossier redesign:
+  - Rank/level system: XP = kills×100 + headshots×50 + wins×500 + matches×100, 1000 XP per level, rank titles RECRUIT → VETERAN.
+  - Insignia badge with level, operator title tag, and XP progress bar in the header.
+  - Styled vault pills for COMBAT CASH / WAR GOLD with thousands separators.
+  - 4 metric cards (KILL/DEATH, HEADSHOT RATIO, WIN RATE, DEPLOYMENTS) with accent pips and mini meter bars.
+  - COMBAT LOG with mode filter tabs (ALL / SEARCH & DESTROY / GROUND WAR / DEATHMATCH), empty-state panel.
+  - History rows: VICTORY/DRAW/DEFEAT badges, K/D/HS mini columns, payroll pills, MM-DD HH:MM timestamps.
+- **Main menu profile frame** (`_init_profile_frame`): restyled to match — military ID badge with ◆ insignia plate showing the live level, cyan `DOSSIER // VIEW STATS` tag, orange hover border.
+
+### Test Status
+- `test_currency_and_profile.gd` 40/40 PASS (new checks: level calculator, filter tabs)
+- All regression suites PASS (multiplayer 13, S&D 33, team/turret 9, killfeed 6)
+
+---
+
 ## v0.02 — 2026-10-23
 
 Currency economy, post-match payroll, and the profile / player card system.

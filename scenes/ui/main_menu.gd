@@ -89,28 +89,30 @@ func _ready():
 	_init_profile_frame()
 	_init_wallet_labels()
 
-## Top-left profile frame: click opens the player card (stats, history, wallet).
+## Top-left profile frame: tactical military ID badge opening the player card.
 func _init_profile_frame() -> void:
 	var frame := Button.new()
 	frame.name = "ProfileFrame"
-	frame.custom_minimum_size = Vector2(240, 64)
+	frame.custom_minimum_size = Vector2(250, 64)
 	var sb := StyleBoxFlat.new()
-	sb.bg_color = Color(0.09, 0.1, 0.12, 0.9)
-	sb.corner_radius_top_left = 8
-	sb.corner_radius_top_right = 8
-	sb.corner_radius_bottom_left = 8
-	sb.corner_radius_bottom_right = 8
-	sb.border_width_left = 2
-	sb.border_width_top = 2
-	sb.border_width_right = 2
-	sb.border_width_bottom = 2
-	sb.border_color = UI_ORANGE
+	sb.bg_color = Color(0.08, 0.10, 0.14, 0.94)
+	sb.corner_radius_top_left = 4
+	sb.corner_radius_top_right = 4
+	sb.corner_radius_bottom_left = 4
+	sb.corner_radius_bottom_right = 4
+	sb.border_width_left = 3
+	sb.border_width_top = 1
+	sb.border_width_right = 1
+	sb.border_width_bottom = 1
+	sb.border_color = Color(0.20, 0.26, 0.35)
 	frame.add_theme_stylebox_override("normal", sb)
+
 	var hover := sb.duplicate()
-	hover.bg_color = UI_PLATE_HOVER
+	hover.bg_color = Color(0.12, 0.16, 0.22, 0.98)
+	hover.border_color = UI_ORANGE
 	frame.add_theme_stylebox_override("hover", hover)
 	var pressed := sb.duplicate()
-	pressed.bg_color = Color(0.07, 0.08, 0.1)
+	pressed.bg_color = Color(0.06, 0.08, 0.11, 0.98)
 	frame.add_theme_stylebox_override("pressed", pressed)
 	frame.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
 
@@ -124,33 +126,69 @@ func _init_profile_frame() -> void:
 	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	frame.add_child(row)
 
-	var badge := Label.new()
-	var pname: String = "Player"
-	var ss = get_node_or_null("/root/SteamSync")
-	if ss and ss.get("persona_name") != null and str(ss.persona_name) != "":
-		pname = str(ss.persona_name)
-	badge.text = "★"
-	badge.add_theme_font_size_override("font_size", 30)
-	badge.modulate = UI_ORANGE
-	badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	row.add_child(badge)
+	var ins := PanelContainer.new()
+	ins.custom_minimum_size = Vector2(44, 44)
+	var ins_sb := StyleBoxFlat.new()
+	ins_sb.bg_color = Color(0.12, 0.15, 0.20)
+	ins_sb.border_width_left = 1
+	ins_sb.border_width_top = 1
+	ins_sb.border_width_right = 1
+	ins_sb.border_width_bottom = 2
+	ins_sb.border_color = UI_ORANGE
+	ins_sb.corner_radius_top_left = 3
+	ins_sb.corner_radius_top_right = 3
+	ins_sb.corner_radius_bottom_left = 3
+	ins_sb.corner_radius_bottom_right = 3
+	ins.add_theme_stylebox_override("panel", ins_sb)
+	ins.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	row.add_child(ins)
+
+	var ins_vb := VBoxContainer.new()
+	ins_vb.alignment = BoxContainer.ALIGNMENT_CENTER
+	ins_vb.add_theme_constant_override("separation", -2)
+	ins_vb.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	ins.add_child(ins_vb)
+
+	var star := Label.new()
+	star.text = "◆"
+	star.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	star.add_theme_font_size_override("font_size", 14)
+	star.modulate = UI_ORANGE
+	star.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	ins_vb.add_child(star)
+
+	var lvl_lbl := Label.new()
+	var prof = _prof()
+	var s: Dictionary = prof.stats if prof else {}
+	var xp: int = int(s.get("kills", 0)) * 100 + int(s.get("headshots", 0)) * 50 + int(s.get("wins", 0)) * 500 + int(s.get("matches", 0)) * 100
+	var lvl: int = 1 + int(xp / 1000)
+	lvl_lbl.text = "L%d" % lvl
+	lvl_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	lvl_lbl.add_theme_font_size_override("font_size", 11)
+	lvl_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	ins_vb.add_child(lvl_lbl)
 
 	var name_box := VBoxContainer.new()
-	name_box.add_theme_constant_override("separation", 0)
+	name_box.add_theme_constant_override("separation", 1)
 	name_box.alignment = BoxContainer.ALIGNMENT_CENTER
 	name_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	row.add_child(name_box)
 
+	var pname: String = "Player"
+	var ss = get_node_or_null("/root/SteamSync")
+	if ss and ss.get("persona_name") != null and str(ss.persona_name) != "":
+		pname = str(ss.persona_name)
+
 	var name_lbl := Label.new()
 	name_lbl.text = pname.to_upper()
-	name_lbl.add_theme_font_size_override("font_size", 16)
+	name_lbl.add_theme_font_size_override("font_size", 15)
 	name_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	name_box.add_child(name_lbl)
 
 	var sub_lbl := Label.new()
-	sub_lbl.text = "VIEW PROFILE"
+	sub_lbl.text = "DOSSIER // VIEW STATS"
 	sub_lbl.add_theme_font_size_override("font_size", 10)
-	sub_lbl.modulate = Color(1, 1, 1, 0.5)
+	sub_lbl.modulate = Color(0.35, 0.75, 0.85, 0.8)
 	sub_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	name_box.add_child(sub_lbl)
 
@@ -161,8 +199,8 @@ func _init_profile_frame() -> void:
 	frame.anchor_bottom = 0.0
 	frame.offset_left = 60
 	frame.offset_top = 20
-	frame.offset_right = 300
-	frame.offset_bottom = 80
+	frame.offset_right = 310
+	frame.offset_bottom = 84
 	frame.pressed.connect(_on_profile_pressed)
 
 func _on_profile_pressed() -> void:
