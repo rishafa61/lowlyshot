@@ -21,6 +21,15 @@ var is_filled: bool = false
 
 func _ready() -> void:
 	btn_slot.pressed.connect(_on_slot_pressed)
+	# Pop-out effect on hover
+	btn_slot.pivot_offset = btn_slot.size / 2.0
+	btn_slot.mouse_entered.connect(func():
+		btn_slot.pivot_offset = btn_slot.size / 2.0
+		var t := create_tween().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+		t.tween_property(btn_slot, "scale", Vector2.ONE * 1.08, 0.1))
+	btn_slot.mouse_exited.connect(func():
+		var t := create_tween().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+		t.tween_property(btn_slot, "scale", Vector2.ONE, 0.1))
 	_refresh()
 
 func setup(index: int) -> void:

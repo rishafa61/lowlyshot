@@ -130,6 +130,28 @@ func _style_title() -> void:
 	vbox.add_child(underline)
 	vbox.move_child(underline, 1)
 
+func _add_hover_pop(b: Button) -> void:
+	if b == null or b.has_meta("hover_pop"):
+		return
+	b.set_meta("hover_pop", true)
+	b.pivot_offset = b.size / 2.0
+	b.mouse_entered.connect(func():
+		b.pivot_offset = b.size / 2.0
+		var t := create_tween().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+		t.tween_property(b, "scale", Vector2.ONE * 1.03, 0.1))
+	b.mouse_exited.connect(func():
+		var t := create_tween().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+		t.tween_property(b, "scale", Vector2.ONE, 0.1))
+
+func _orange_hover_plate(radius: int = 8) -> StyleBoxFlat:
+	var h := StyleBoxFlat.new()
+	h.bg_color = COL_ACCENT
+	h.set_corner_radius_all(radius)
+	h.shadow_color = Color(0.32, 0.33, 0.36, 0.55)
+	h.shadow_size = 10
+	h.shadow_offset = Vector2(0, 5)
+	return h
+
 func _style_equip_button() -> void:
 	if _font_bold != null:
 		btn_equip.add_theme_font_override("font", _font_bold)
@@ -146,7 +168,7 @@ func _style_equip_button() -> void:
 	n.shadow_size = 8
 	n.shadow_offset = Vector2(0, 3)
 	btn_equip.add_theme_stylebox_override("normal", n)
-	btn_equip.add_theme_stylebox_override("hover", plate.call(COL_ACCENT.lightened(0.1)))
+	btn_equip.add_theme_stylebox_override("hover", _orange_hover_plate(8))
 	btn_equip.add_theme_stylebox_override("pressed", plate.call(COL_ACCENT.darkened(0.18)))
 	var dis: StyleBoxFlat = plate.call(Color(0.16, 0.175, 0.2))
 	dis.border_width_bottom = 2
@@ -156,6 +178,7 @@ func _style_equip_button() -> void:
 	btn_equip.add_theme_color_override("font_hover_color", Color.WHITE)
 	btn_equip.add_theme_color_override("font_pressed_color", Color.WHITE)
 	btn_equip.add_theme_color_override("font_disabled_color", COL_TEXT_DIM)
+	_add_hover_pop(btn_equip)
 
 func _build_stat_rows() -> void:
 	for c in stats_box.get_children():
@@ -195,13 +218,11 @@ func _style_back_button() -> void:
 	sb.border_width_bottom = 2
 	sb.border_color = COL_BORDER
 	back.add_theme_stylebox_override("normal", sb)
-	var hov := sb.duplicate()
-	hov.border_color = COL_ACCENT
-	hov.bg_color = Color(0.13, 0.145, 0.17)
-	back.add_theme_stylebox_override("hover", hov)
+	back.add_theme_stylebox_override("hover", _orange_hover_plate(8))
 	back.add_theme_stylebox_override("pressed", sb.duplicate())
 	back.add_theme_color_override("font_color", Color(0.9, 0.92, 0.95))
 	back.add_theme_color_override("font_hover_color", Color.WHITE)
+	_add_hover_pop(back)
 
 func _build_hints() -> void:
 	# Bottom-right keycap hints: [A]/[D] Change · [ENTER] Equip · [ESC] Back
@@ -388,8 +409,10 @@ func _set_category(cat: String, prefer_id: String = "") -> void:
 			sb.border_color = Color(0.19, 0.22, 0.27)
 		for state in ["normal", "pressed", "focus"]:
 			btn.add_theme_stylebox_override(state, sb)
-		btn.add_theme_stylebox_override("hover", btn.get_theme_stylebox("normal"))
+		btn.add_theme_stylebox_override("hover", _orange_hover_plate(8))
 		btn.add_theme_color_override("font_color", Color.WHITE if active else Color(0.82, 0.86, 0.92))
+		btn.add_theme_color_override("font_hover_color", Color.WHITE)
+		_add_hover_pop(btn)
 	# Rebuild operators in Mid column
 	for c in weapon_list.get_children():
 		c.queue_free()
@@ -409,13 +432,14 @@ func _set_category(cat: String, prefer_id: String = "") -> void:
 			btn.add_theme_font_size_override("font_size", 19)
 			btn.focus_mode = Control.FOCUS_NONE
 			btn.add_theme_stylebox_override("normal", _op_card_sb(false))
-			btn.add_theme_stylebox_override("hover", _op_card_sb(true))
+			btn.add_theme_stylebox_override("hover", _orange_hover_plate(8))
 			btn.add_theme_stylebox_override("pressed", _op_card_sb(true))
 			btn.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
 			btn.add_theme_color_override("font_color", Color(0.85, 0.89, 0.94))
 			btn.add_theme_color_override("font_hover_color", Color.WHITE)
 			btn.add_theme_color_override("font_pressed_color", Color.WHITE)
 			btn.pressed.connect(_select.bind(op["id"]))
+			_add_hover_pop(btn)
 			weapon_list.add_child(btn)
 			op_rows[op["id"]] = btn
 	# Pick operator: prefer_id if in this category, else keep selected if in cat, else first

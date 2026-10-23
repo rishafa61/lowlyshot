@@ -419,6 +419,32 @@ func _slot_card_sb(state: String) -> StyleBoxFlat:
 		sb.border_color = Color(0.16, 0.18, 0.22)
 	return sb
 
+func _add_hover_pop(b: Button) -> void:
+	# Pop-out: scale the button slightly toward the cursor; grey drop shadow
+	# lives on the hover StyleBoxFlat.
+	if b == null or b.has_meta("hover_pop"):
+		return
+	b.set_meta("hover_pop", true)
+	b.pivot_offset = b.size / 2.0
+	b.mouse_entered.connect(func():
+		b.pivot_offset = b.size / 2.0
+		var t := create_tween().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+		t.tween_property(b, "scale", Vector2.ONE * 1.03, 0.1))
+	b.mouse_exited.connect(func():
+		var t := create_tween().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+		t.tween_property(b, "scale", Vector2.ONE, 0.1))
+
+## Hover look shared by every button here: orange fill with a soft grey shade
+## behind it, so the plate reads as lifted off the screen.
+func _orange_hover_plate(radius: int = 8) -> StyleBoxFlat:
+	var h := StyleBoxFlat.new()
+	h.bg_color = COL_ACCENT
+	h.set_corner_radius_all(radius)
+	h.shadow_color = Color(0.32, 0.33, 0.36, 0.55)
+	h.shadow_size = 10
+	h.shadow_offset = Vector2(0, 5)
+	return h
+
 func _style_group_tab(b: Button, active: bool) -> void:
 	var sb := StyleBoxFlat.new()
 	sb.set_corner_radius_all(6)
@@ -434,12 +460,13 @@ func _style_group_tab(b: Button, active: bool) -> void:
 		sb.border_color = Color(0.18, 0.2, 0.24)
 	for s in ["normal", "pressed", "focus"]:
 		b.add_theme_stylebox_override(s, sb)
-	b.add_theme_stylebox_override("hover", sb.duplicate())
+	b.add_theme_stylebox_override("hover", _orange_hover_plate(6))
 	if _font_bold != null:
 		b.add_theme_font_override("font", _font_bold)
 	b.add_theme_font_size_override("font_size", 14)
 	b.add_theme_color_override("font_color", Color.WHITE if active else COL_TEXT_DIM)
 	b.add_theme_color_override("font_hover_color", Color.WHITE)
+	_add_hover_pop(b)
 
 func _style_weapon_row(b: Button, selected: bool) -> void:
 	var sb := StyleBoxFlat.new()
@@ -458,8 +485,10 @@ func _style_weapon_row(b: Button, selected: bool) -> void:
 		sb.border_color = Color(0.18, 0.2, 0.24)
 	for s in ["normal", "pressed", "focus"]:
 		b.add_theme_stylebox_override(s, sb)
-	b.add_theme_stylebox_override("hover", sb.duplicate())
+	b.add_theme_stylebox_override("hover", _orange_hover_plate(7))
 	b.add_theme_color_override("font_color", Color.WHITE if selected else Color(0.85, 0.88, 0.92))
+	b.add_theme_color_override("font_hover_color", Color.WHITE)
+	_add_hover_pop(b)
 
 func _style_detail_panel() -> void:
 	var detail_sb := StyleBoxFlat.new()
@@ -525,7 +554,7 @@ func _style_weapon_buttons() -> void:
 	n.shadow_size = 8
 	n.shadow_offset = Vector2(0, 3)
 	btn_equip.add_theme_stylebox_override("normal", n)
-	btn_equip.add_theme_stylebox_override("hover", plate.call(COL_ACCENT.lightened(0.1)))
+	btn_equip.add_theme_stylebox_override("hover", _orange_hover_plate(8))
 	btn_equip.add_theme_stylebox_override("pressed", plate.call(COL_ACCENT.darkened(0.18)))
 	var dis: StyleBoxFlat = plate.call(Color(0.16, 0.175, 0.2))
 	dis.border_width_bottom = 2
@@ -535,6 +564,7 @@ func _style_weapon_buttons() -> void:
 	btn_equip.add_theme_color_override("font_hover_color", Color.WHITE)
 	btn_equip.add_theme_color_override("font_pressed_color", Color.WHITE)
 	btn_equip.add_theme_color_override("font_disabled_color", COL_TEXT_DIM)
+	_add_hover_pop(btn_equip)
 
 func _style_back_button() -> void:
 	var back: Button = $Margin/VBox/BottomBar/BtnBack
@@ -549,13 +579,11 @@ func _style_back_button() -> void:
 	sb.border_width_bottom = 2
 	sb.border_color = COL_BORDER
 	back.add_theme_stylebox_override("normal", sb)
-	var hov := sb.duplicate()
-	hov.border_color = COL_ACCENT
-	hov.bg_color = Color(0.13, 0.145, 0.17)
-	back.add_theme_stylebox_override("hover", hov)
+	back.add_theme_stylebox_override("hover", _orange_hover_plate(8))
 	back.add_theme_stylebox_override("pressed", sb.duplicate())
 	back.add_theme_color_override("font_color", Color(0.9, 0.92, 0.95))
 	back.add_theme_color_override("font_hover_color", Color.WHITE)
+	_add_hover_pop(back)
 
 func _style_hints() -> void:
 	var bar: HBoxContainer = $Margin/VBox/BottomBar

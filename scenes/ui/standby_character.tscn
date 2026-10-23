@@ -2,9 +2,6 @@
 
 [ext_resource type="Script" uid="uid://esx6dahmoy0k" path="res://scenes/ui/standby_character.gd" id="1_script"]
 [ext_resource type="PackedScene" uid="uid://bm8xy2q3e4p1a" path="res://scenes/characters/human_body.tscn" id="2_body"]
-[ext_resource type="PackedScene" uid="uid://emypq1p0jh6l" path="res://scenes/weapons/main/ak47.tscn" id="2_rifle"]
-[ext_resource type="PackedScene" uid="uid://drhnk1p3dksl8" path="res://scenes/weapons/main/m4a4.tscn" id="3_m4a4"]
-[ext_resource type="PackedScene" uid="uid://bsng5sis2atev" path="res://scenes/weapons/main/m700.tscn" id="4_sniper"]
 
 [node name="StandbyCharacter" type="Node3D" unique_id=1890610667]
 script = ExtResource("1_script")
@@ -14,11 +11,3 @@ script = ExtResource("1_script")
 [node name="WeaponMount" type="Node3D" parent="." unique_id=88490592]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.35, 1.1, -0.35)
 
-[node name="AK47" parent="WeaponMount" unique_id=83939854 instance=ExtResource("2_rifle")]
-visible = false
-
-[node name="M4A4" parent="WeaponMount" unique_id=1453732628 instance=ExtResource("3_m4a4")]
-visible = false
-
-[node name="Sniper" parent="WeaponMount" unique_id=105994460 instance=ExtResource("4_sniper")]
-visible = false

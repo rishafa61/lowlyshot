@@ -4,6 +4,8 @@ extends Node3D
 ## (capsule + visor) because no third-person rig exists yet. Swap `Body` for
 ## a real player model when one is added.
 
+const FALLBACK_SCENE := "res://scenes/weapons/main/ak47.tscn"
+
 @onready var weapon_mount: Node3D = $WeaponMount
 
 func _ready() -> void:
@@ -17,16 +19,15 @@ func set_tint(color: Color) -> void:
 	if b and b.has_method("set_tint"):
 		b.set_tint(color)
 
-## Shows the stand-in weapon that matches the equipped primary loadout.
+## Shows the weapon model matching the equipped primary loadout. Instantiates
+## by scene_path so every catalogued primary (SMG, LMG, shotgun, sniper...)
+## renders its own model instead of a hardcoded 3-model match.
 func _show_equipped_weapon() -> void:
 	var primary: Dictionary = GlobalData.get_equipped_primary()
-	var id: String = str(primary.get("id", ""))
+	var path := str(primary.get("scene_path", FALLBACK_SCENE))
+	if path == "" or not ResourceLoader.exists(path):
+		path = FALLBACK_SCENE
 	for child in weapon_mount.get_children():
-		child.visible = false
-	match id:
-		"m4a4":
-			weapon_mount.get_node("M4A4").visible = true
-		"m700":
-			weapon_mount.get_node("Sniper").visible = true
-		_:
-			weapon_mount.get_node("AK47").visible = true
+		child.queue_free()
+	var model := (load(path) as PackedScene).instantiate() as Node3D
+	weapon_mount.add_child(model)

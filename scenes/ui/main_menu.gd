@@ -457,6 +457,30 @@ func _ui_plate(bg: Color, accent: bool = false, radius: int = 6) -> StyleBoxFlat
 		sb.border_color = UI_ORANGE
 	return sb
 
+func _add_hover_pop(b: Button) -> void:
+	# Pop-out: scale the button slightly toward the cursor; grey drop shadow
+	# lives on the hover StyleBoxFlat (see _ui_style_button).
+	if b == null or b.has_meta("hover_pop"):
+		return
+	b.set_meta("hover_pop", true)
+	b.pivot_offset = b.size / 2.0
+	b.mouse_entered.connect(func():
+		b.pivot_offset = b.size / 2.0
+		var t := create_tween().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+		t.tween_property(b, "scale", Vector2.ONE * 1.05, 0.1))
+	b.mouse_exited.connect(func():
+		var t := create_tween().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+		t.tween_property(b, "scale", Vector2.ONE, 0.1))
+
+## Hover look shared by every menu button: orange fill with a soft grey shade
+## behind it, so the plate reads as lifted off the screen.
+func _orange_hover_plate(radius: int = 8) -> StyleBoxFlat:
+	var h := _ui_plate(UI_ORANGE, false, radius)
+	h.shadow_color = Color(0.32, 0.33, 0.36, 0.55)
+	h.shadow_size = 10
+	h.shadow_offset = Vector2(0, 5)
+	return h
+
 func _ui_style_button(b: Button, primary: bool = false) -> void:
 	if b == null:
 		return
@@ -477,12 +501,13 @@ func _ui_style_button(b: Button, primary: bool = false) -> void:
 		n.shadow_size = 6
 		n.shadow_offset = Vector2(0, 3)
 		b.add_theme_stylebox_override("normal", n)
-		b.add_theme_stylebox_override("hover", _ui_plate(UI_ORANGE.lightened(0.1), false, 8))
+		b.add_theme_stylebox_override("hover", _orange_hover_plate())
 		b.add_theme_stylebox_override("pressed", _ui_plate(UI_ORANGE.darkened(0.18), false, 8))
 	else:
 		b.add_theme_stylebox_override("normal", _ui_plate(UI_PLATE))
-		b.add_theme_stylebox_override("hover", _ui_plate(UI_PLATE_HOVER, true))
-		b.add_theme_stylebox_override("pressed", _ui_plate(UI_PLATE.darkened(0.2), true))
+		b.add_theme_stylebox_override("hover", _orange_hover_plate())
+		b.add_theme_stylebox_override("pressed", _ui_plate(UI_ORANGE.darkened(0.18), false, 8))
+	_add_hover_pop(b)
 
 func _apply_style() -> void:
 	_ui_load_font()
@@ -524,8 +549,9 @@ func _apply_style() -> void:
 		gn.shadow_size = 10
 		gn.shadow_offset = Vector2(0, 4)
 		giant.add_theme_stylebox_override("normal", gn)
-		giant.add_theme_stylebox_override("hover", _ui_plate(UI_ORANGE.lightened(0.1), false, 10))
+		giant.add_theme_stylebox_override("hover", _orange_hover_plate(10))
 		giant.add_theme_stylebox_override("pressed", _ui_plate(UI_ORANGE.darkened(0.18), false, 10))
+		_add_hover_pop(giant)
 
 	# Play overlay: dark plate + mode buttons + orange start
 	var overlay_panel := get_node_or_null("PlayOverlay/CenterContainer/PanelContainer") as PanelContainer
