@@ -43,7 +43,8 @@ var maps = {
 	"Multiplayer": [
 		{"name": "Team Deathmatch", "scene": "res://scenes/levels/multiplayer_arena.tscn", "desc": "5v5 Arena. Pick a side, eliminate the enemy team."},
 		{"name": "Ground War", "scene": "res://scenes/levels/ground_war.tscn", "desc": "10v10 King of the Hill. Capture the Flagpoint and hold it — first team to 300 points wins."},
-		{"name": "Search & Destroy", "scene": "res://scenes/levels/search_and_destroy.tscn", "desc": "5v5 Round-based. Attackers plant the bomb at Site A or B; Defenders stop them. First to 5 rounds wins."}
+		{"name": "Search & Destroy", "scene": "res://scenes/levels/search_and_destroy.tscn", "desc": "5v5 Round-based. Attackers plant the bomb at Site A or B; Defenders stop them. First to 5 rounds wins."},
+		{"name": "Flying Scoutsman", "scene": "res://scenes/levels/flying_scoutsman.tscn", "desc": "Free-for-all sniper deathmatch. M700 only, low moon gravity. First to 40 kills wins."}
 	]
 }
 

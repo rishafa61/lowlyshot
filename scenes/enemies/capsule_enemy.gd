@@ -216,6 +216,8 @@ func _snd_side_of(n: Node) -> String:
 	return ""
 
 func _find_nearest_target() -> void:
+	var mgr = get_tree().current_scene
+	var is_ffa: bool = mgr != null and int(mgr.get("ffa_target_kills")) > 0
 	var my_team := str(get("snd_team"))
 	var potential_targets = get_tree().get_nodes_in_group("player") \
 		+ get_tree().get_nodes_in_group("ally") + get_tree().get_nodes_in_group("enemy")
@@ -223,14 +225,15 @@ func _find_nearest_target() -> void:
 	target = null
 	for pt in potential_targets:
 		if pt is Node3D and not pt.get("is_dead") and pt != self:
-			if my_team != "":
-				# S&D / team modes: shoot the OTHER team (handles halftime swaps cleanly)
-				if _snd_side_of(pt) == my_team:
-					continue
-			else:
-				# Legacy deathmatch: skip anyone in group "enemy"
-				if pt.is_in_group("enemy"):
-					continue
+			if not is_ffa:
+				if my_team != "":
+					# S&D / team modes: shoot the OTHER team (handles halftime swaps cleanly)
+					if _snd_side_of(pt) == my_team:
+						continue
+				else:
+					# Legacy deathmatch: skip anyone in group "enemy"
+					if pt.is_in_group("enemy"):
+						continue
 			var d = global_position.distance_to(pt.global_position)
 			if d < closest_dist:
 				closest_dist = d
@@ -247,10 +250,16 @@ func _equip_random_primary() -> void:
 	for c in weapon_holder.get_children():
 		c.queue_free()
 	
-	# Pick a random primary weapon from GlobalData
+	# Pick a primary weapon: obey manager / GlobalData forced_weapon_id first
 	var primaries = GlobalData.weapons["Primary"]
 	var w = null
-	if net_weapon_id != "":
+	var forced_id: String = str(GlobalData.get("force_primary_id"))
+	if forced_id != "":
+		for cand in primaries:
+			if cand["id"] == forced_id:
+				w = cand
+				break
+	if w == null and net_weapon_id != "":
 		for cand in primaries:
 			if cand["id"] == net_weapon_id:
 				w = cand
@@ -757,15 +766,18 @@ func shoot():
 			dmg = equipped_primary["dmg"]
 		if equipped_primary and equipped_primary.has("id"):
 			w_name = equipped_primary["id"]
-		# Hostile check: teammate on same team is friendly
+		# Hostile check: teammate on same team is friendly (FFA: nobody is friendly)
 		var hit_body = hit.get_parent() if hit is Area3D else hit
+		var mgr = get_tree().current_scene
+		var is_ffa: bool = mgr != null and int(mgr.get("ffa_target_kills")) > 0
 		var my_team := str(get("snd_team"))
-		var friendly: bool
-		if my_team != "":
-			friendly = _snd_side_of(hit) == my_team \
-				or (hit_body and hit_body != hit and _snd_side_of(hit_body) == my_team)
-		else:
-			friendly = hit.is_in_group("enemy") or (hit_body and hit_body != hit and hit_body.is_in_group("enemy"))
+		var friendly: bool = false
+		if not is_ffa:
+			if my_team != "":
+				friendly = _snd_side_of(hit) == my_team \
+					or (hit_body and hit_body != hit and _snd_side_of(hit_body) == my_team)
+			else:
+				friendly = hit.is_in_group("enemy") or (hit_body and hit_body != hit and hit_body.is_in_group("enemy"))
 		if not friendly:
 			var my_faction := "Ally" if my_team == "attackers" else "Enemy"
 			if hit.has_method("take_damage"):

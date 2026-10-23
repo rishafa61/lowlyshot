@@ -16,6 +16,11 @@ enum MatchState { WAITING, WARMUP, ACTIVE, ROUND_END, MATCH_END }
 @export var score_limit: int = 0
 ## HUD header / scoreboard title.
 @export var mode_title: String = "TEAM DEATHMATCH"
+## Free-for-all: first combatant to reach this many kills wins outright.
+## 0 = off (team-score win rules apply). When > 0, team scores don't tick.
+@export var ffa_target_kills: int = 0
+## FFA winner's name (shown by the HUD end screen).
+var ffa_winner_name: String = ""
 @export var team_size: int = 5 # 5v5 (players + bots)
 ## Bots backfill empty slots in online matches too.
 @export var bots_in_online_matches: bool = false
@@ -392,6 +397,10 @@ func _on_kill_occurred(killer: String, killer_faction: String, weapon: String, v
 		# vehicle names never enter match_stats -> never show on the scoreboard.
 		if match_stats.has(killer):
 			match_stats[killer]["kills"] += 1
+			# FFA win check: first individual to ffa_target_kills wins the match
+			if ffa_target_kills > 0 and match_stats[killer]["kills"] >= ffa_target_kills:
+				ffa_winner_name = killer
+				set_state(MatchState.MATCH_END)
 
 		# Determine victim team
 		var _victim_team = ""
@@ -405,8 +414,8 @@ func _on_kill_occurred(killer: String, killer_faction: String, weapon: String, v
 
 		# Team scores: every tracked combatant kill ticks their team score
 		if match_stats.has(killer) and killer_team != "" and team_scores.has(killer_team):
-			# In KOTH (score_limit > 0), kills track individual stats but don't tick the match score
-			if score_limit <= 0:
+			# In KOTH (score_limit > 0) and FFA, kills don't tick team scores
+			if score_limit <= 0 and ffa_target_kills <= 0:
 				team_scores[killer_team] += 1
 				if team_scores[killer_team] >= target_kills:
 					set_state(MatchState.MATCH_END)
@@ -517,7 +526,10 @@ func request_join_team(team: String) -> void:
 
 	# Authority-side 5v5 human cap: spoofed/full team bounces to other side.
 	# Re-picking same team counts self as occupied slot, not a new member.
-	if players_data.has(peer) and players_data[peer].get("team", "") != team and not can_join_team(team):
+	# FFA: every peer gets a unique team so nobody is "friendly".
+	if ffa_target_kills > 0:
+		team = "ffa_%d" % peer
+	elif players_data.has(peer) and players_data[peer].get("team", "") != team and not can_join_team(team):
 		team = "defenders" if team == "attackers" else "attackers"
 	
 	if not players_data.has(peer):

@@ -521,6 +521,8 @@ func setup(mgr: MultiplayerManager) -> void:
 		mgr.round_ended.connect(_on_snd_round_ended)
 	refresh_scoreboard()
 	update_header()
+	if int(mgr.get("ffa_target_kills")) > 0:
+		call_deferred("pick_side", "all")
 
 func _on_scoreboard_sync(_d: Dictionary, _s: Dictionary, _m: Dictionary = {}) -> void:
 	refresh_scoreboard()
@@ -712,8 +714,23 @@ func _show_match_end_screen() -> void:
 	if manager.match_stats.has("Player"):
 		local_team = manager.match_stats["Player"].get("team", "attackers")
 
-	var is_win = (local_team == "attackers" and a > d) or (local_team == "defenders" and d > a)
-	var is_draw = (a == d)
+	# Free-for-all: win is determined by who reached target_kills (ffa_winner_name)
+	var is_ffa: bool = int(manager.get("ffa_target_kills")) > 0
+	var is_win: bool = false
+	var is_draw: bool = false
+
+	if is_ffa:
+		var my_name := _local_player_name()
+		var winner: String = str(manager.get("ffa_winner_name"))
+		is_win = (winner != "" and (winner == my_name or winner == "Player"))
+		if winner != "":
+			match_end_score.text = "%s won with %d kills!" % [winner, int(manager.get("ffa_target_kills"))]
+		else:
+			match_end_score.text = "Match complete"
+	else:
+		is_win = (local_team == "attackers" and a > d) or (local_team == "defenders" and d > a)
+		is_draw = (a == d)
+		match_end_score.text = "Attackers %d  —  %d Defenders" % [a, d]
 
 	if is_draw:
 		match_end_title.text = "DRAW"
@@ -725,7 +742,6 @@ func _show_match_end_screen() -> void:
 		match_end_title.text = "DEFEAT"
 		match_end_title.modulate = Color(0.95, 0.3, 0.3)
 
-	match_end_score.text = "Attackers %d  —  %d Defenders" % [a, d]
 	_show_payroll("win" if is_win else ("draw" if is_draw else "loss"))
 	scoreboard.visible = true
 	match_end_overlay.visible = true
@@ -804,6 +820,21 @@ func update_header() -> void:
 			elif f.get("owner_team") == "defenders":
 				flag_status = "HELD BY DEFENDERS"
 		objective_label.text = "FLAG: %s (Cap: %d)" % [flag_status, manager.score_limit]
+	elif int(manager.get("ffa_target_kills")) > 0:
+		att_score_label.text = ""
+		def_score_label.text = ""
+		# Display the current leader
+		var leader := "None"
+		var leader_k := 0
+		for k in manager.match_stats.keys():
+			var s: Dictionary = manager.match_stats[k]
+			var kills: int = s.get("kills", 0)
+			if kills > leader_k:
+				leader_k = kills
+				leader = str(k)
+		if leader_k > 0:
+			att_score_label.text = "LEAD: %s (%d)" % [leader, leader_k]
+		objective_label.text = "First to %d Kills" % int(manager.get("ffa_target_kills"))
 	elif _is_snd():
 		objective_label.text = "ROUND %d" % manager.current_round
 	else:
@@ -818,7 +849,11 @@ func refresh_scoreboard() -> void:
 		return
 	var a = manager.team_scores.get("attackers", 0)
 	var d = manager.team_scores.get("defenders", 0)
-	scoreboard_title.text = "%s   —   ATTACKERS %d : %d DEFENDERS" % [manager.mode_title, a, d]
+	var is_ffa_sb: bool = int(manager.get("ffa_target_kills")) > 0
+	if is_ffa_sb:
+		scoreboard_title.text = "%s   —   FIRST TO %d KILLS" % [manager.mode_title, int(manager.get("ffa_target_kills"))]
+	else:
+		scoreboard_title.text = "%s   —   ATTACKERS %d : %d DEFENDERS" % [manager.mode_title, a, d]
 	var ally_names: Array = []
 	var enemy_names: Array = []
 
@@ -833,7 +868,7 @@ func refresh_scoreboard() -> void:
 		var deaths: int = s.get("deaths", 0)
 		var team: String = s.get("team", "attackers")
 		var display = "%s (K:%d D:%d)" % [sname, kills, deaths]
-		if team == "attackers":
+		if team == "attackers" or is_ffa_sb:
 			if sname == "Player":
 				display = "You (K:%d D:%d)" % [kills, deaths]
 			ally_names.append(display)
@@ -856,14 +891,14 @@ func refresh_scoreboard() -> void:
 	scoreboard_list.add_child(defenders_box)
 
 	var a_head := Label.new()
-	a_head.text = "ATTACKERS — %d" % manager.team_scores.get("attackers", 0)
+	a_head.text = "PLAYERS — %d" % ally_names.size() if is_ffa_sb else "ATTACKERS — %d" % manager.team_scores.get("attackers", 0)
 	a_head.add_theme_color_override("font_color", Color(0.4, 0.8, 1.0))
 	a_head.add_theme_font_size_override("font_size", 17)
 	a_head.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	attackers_box.add_child(a_head)
 
 	var d_head := Label.new()
-	d_head.text = "DEFENDERS — %d" % manager.team_scores.get("defenders", 0)
+	d_head.text = "" if is_ffa_sb else "DEFENDERS — %d" % manager.team_scores.get("defenders", 0)
 	d_head.add_theme_color_override("font_color", Color(1.0, 0.5, 0.4))
 	d_head.add_theme_font_size_override("font_size", 17)
 	d_head.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -948,7 +983,10 @@ func _is_combatant_name(name_str: String) -> bool:
 func pick_side(team: String) -> void:
 	if not manager:
 		return
-	if multiplayer.has_multiplayer_peer():
+	if int(manager.get("ffa_target_kills")) > 0:
+		# FFA: no sides to pick — join outright (team is assigned per peer)
+		team = "all"
+	elif multiplayer.has_multiplayer_peer():
 		# Cap humans at team_size per side: full team stays on picker with notice
 		if not manager.can_join_team(team):
 			lbl_team_full.text = "%s IS FULL (%d MAX) — PICK OTHER SIDE" % [team.to_upper(), manager.team_size]

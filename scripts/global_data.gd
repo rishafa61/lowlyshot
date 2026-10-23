@@ -91,8 +91,23 @@ func _ready() -> void:
 				d["owned"] = true
 				weapons[category].append(d)
 
+## Game-mode weapon lock (Flying Scoutsman): when set, the primary slot
+## always returns this weapon id regardless of the chosen loadout.
+var force_primary_id: String = ""
+
+func get_weapon_by_id(id: String) -> Dictionary:
+	for category in weapons:
+		for w in weapons[category]:
+			if str(w.get("id", "")) == id:
+				return w
+	return {}
+
 # Helpers to get the currently equipped item dictionary for the Player script
 func get_equipped_primary() -> Dictionary:
+	if force_primary_id != "":
+		var forced := get_weapon_by_id(force_primary_id)
+		if not forced.is_empty():
+			return forced
 	for w in weapons["Primary"]:
 		if w["equipped"]: return w
 	return weapons["Primary"][0]

@@ -208,21 +208,24 @@ func _snd_side_of(n: Node) -> String:
 	return ""
 
 func _find_nearest_enemy() -> void:
+	var mgr = get_tree().current_scene
+	var is_ffa: bool = mgr != null and int(mgr.get("ffa_target_kills")) > 0
 	var my_team := str(get("snd_team"))
 	var candidates: Array = get_tree().get_nodes_in_group("enemy")
-	if my_team != "":
-		# Team modes: hostile = any live combatant on the other team
+	if my_team != "" or is_ffa:
+		# Team modes / FFA: hostile = any live combatant (FFA skips same-team check below)
 		candidates = get_tree().get_nodes_in_group("player") \
 			+ get_tree().get_nodes_in_group("ally") + get_tree().get_nodes_in_group("enemy")
 	var closest_dist = INF
 	target = null
 	for e in candidates:
 		if e is Node3D and not e.get("is_dead") and e != self:
-			if my_team != "":
-				if _snd_side_of(e) == my_team:
+			if not is_ffa:
+				if my_team != "":
+					if _snd_side_of(e) == my_team:
+						continue
+				elif not e.is_in_group("enemy"):
 					continue
-			elif not e.is_in_group("enemy"):
-				continue
 			var d = global_position.distance_to(e.global_position)
 			if d < closest_dist:
 				closest_dist = d
@@ -239,10 +242,16 @@ func _equip_random_primary() -> void:
 	for c in weapon_holder.get_children():
 		c.queue_free()
 	
-	# Pick a random primary weapon from GlobalData
+	# Pick a primary weapon: obey manager / GlobalData forced_weapon_id first
 	var primaries = GlobalData.weapons["Primary"]
 	var w = null
-	if net_weapon_id != "":
+	var forced_id: String = str(GlobalData.get("force_primary_id"))
+	if forced_id != "":
+		for cand in primaries:
+			if cand["id"] == forced_id:
+				w = cand
+				break
+	if w == null and net_weapon_id != "":
 		for cand in primaries:
 			if cand["id"] == net_weapon_id:
 				w = cand
@@ -740,15 +749,18 @@ func shoot():
 		var hit = result.collider
 		if hit:
 			var hit_body = hit.get_parent() if hit is Area3D else hit
+			var mgr = get_tree().current_scene
+			var is_ffa: bool = mgr != null and int(mgr.get("ffa_target_kills")) > 0
 			var my_team := str(get("snd_team"))
-			var is_friendly: bool
-			if my_team != "":
-				# Team modes: same team = friendly (covers halftime side swaps)
-				is_friendly = _snd_side_of(hit) == my_team \
-					or (hit_body and hit_body != hit and _snd_side_of(hit_body) == my_team)
-			else:
-				is_friendly = hit.is_in_group("ally") or (hit.is_in_group("player") and not hit.is_in_group("enemy")) \
-					or (hit_body and hit_body != hit and (hit_body.is_in_group("ally") or (hit_body.is_in_group("player") and not hit_body.is_in_group("enemy"))))
+			var is_friendly: bool = false
+			if not is_ffa:
+				if my_team != "":
+					# Team modes: same team = friendly (covers halftime side swaps)
+					is_friendly = _snd_side_of(hit) == my_team \
+						or (hit_body and hit_body != hit and _snd_side_of(hit_body) == my_team)
+				else:
+					is_friendly = hit.is_in_group("ally") or (hit.is_in_group("player") and not hit.is_in_group("enemy")) \
+						or (hit_body and hit_body != hit and (hit_body.is_in_group("ally") or (hit_body.is_in_group("player") and not hit_body.is_in_group("enemy"))))
 			if not is_friendly:
 				var dmg = 10.0
 				var w_name = "Gun"

@@ -471,8 +471,11 @@ func _net_send_state() -> void:
 func _net_apply_damage(amount: float, attacker_name: String, weapon_name: String, attacker_faction: String, attacker_pos: Vector3 = Vector3.INF) -> void:
 	if is_puppet or is_dead:
 		return
+	var mgr = get_tree().current_scene
 	var my_faction: String = "Ally" if team == "attackers" else "Enemy"
-	if attacker_faction != "" and attacker_faction == my_faction:
+	# FFA: everyone is hostile — skip the friendly-fire gate
+	if attacker_faction != "" and attacker_faction == my_faction \
+			and not (mgr != null and int(mgr.get("ffa_target_kills")) > 0):
 		return # no friendly fire
 	take_damage(amount, attacker_name, weapon_name, attacker_faction, attacker_pos)
 
@@ -708,6 +711,11 @@ func _unhandled_input(event: InputEvent) -> void:
 
 func switch_weapon(slot: Slot) -> void:
 	if is_cooking: return # Don't allow cancelling a cooked grenade
+
+	# In weapon-locked modes (Flying Scoutsman), force primary rifle only
+	var forced = str(GlobalData.get("force_primary_id"))
+	if forced != "" and slot != Slot.RIFLE:
+		return
 	
 	if active_operator and active_operator.has_method("cancel_skill"):
 		active_operator.cancel_skill()
