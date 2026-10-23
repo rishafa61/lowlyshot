@@ -12,7 +12,7 @@ var scope_sensitivity_mult = 0.5
 # Visual
 var graphics_quality = 2 # 0: Low, 1: Med, 2: High
 var fps_limit = 0 # 0=60, 1=120, etc
-var windowed: bool = false # false = fullscreen (default), true = windowed
+var windowed: bool = true # windowed by default; false = fullscreen
 
 # Navigation
 var previous_scene: String = "res://scenes/ui/main_menu.tscn"
@@ -34,17 +34,26 @@ func _ready() -> void:
 		scope_sensitivity_mult = cfg.get_value("gameplay", "scope", scope_sensitivity_mult)
 		graphics_quality = cfg.get_value("visual", "quality", graphics_quality)
 		fps_limit = cfg.get_value("visual", "fps", fps_limit)
-		if cfg.has_section_key("visual", "fullscreen"):
-			windowed = not cfg.get_value("visual", "fullscreen", not windowed) # migrate old key
-		else:
-			windowed = cfg.get_value("visual", "windowed", windowed)
+		windowed = cfg.get_value("visual", "windowed", true)
 		online_bots_enabled = cfg.get_value("multiplayer", "bots", online_bots_enabled)
 	set_windowed(windowed)
 
 func set_windowed(on: bool) -> void:
 	windowed = on
-	DisplayServer.window_set_mode(
-		DisplayServer.WINDOW_MODE_WINDOWED if on else DisplayServer.WINDOW_MODE_FULLSCREEN)
+	if on:
+		DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_WINDOWED)
+		DisplayServer.window_set_flag(DisplayServer.WINDOW_FLAG_BORDERLESS, false)
+		# Size down to standard 1280x720 window and center on primary screen
+		var screen = DisplayServer.window_get_current_screen()
+		var scr_size = DisplayServer.screen_get_size(screen)
+		var win_size = Vector2i(1280, 720)
+		if scr_size.x > 0 and scr_size.y > 0 and (win_size.x >= scr_size.x or win_size.y >= scr_size.y):
+			win_size = Vector2i(int(scr_size.x * 0.8), int(scr_size.y * 0.8))
+		DisplayServer.window_set_size(win_size)
+		var center_pos = (scr_size - win_size) / 2
+		DisplayServer.window_set_position(center_pos)
+	else:
+		DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_FULLSCREEN)
 
 var fullscreen: bool:
 	get: return not windowed

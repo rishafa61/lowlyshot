@@ -7,15 +7,19 @@ Format: version — date — Added / Changed / Fixed. Newest first.
 
 ## v0.04 — 2026-10-23
 
-Windowed-mode toggle replaces the fullscreen toggle; game still boots fullscreen by default.
+Windowed-mode toggle replaces fullscreen toggle; default is now windowed (1280x720 centered).
+
+### Fixed
+- Windowed mode now actually resizes to a 1280x720 decorated window centered on screen (`window_set_size`, `window_set_position`, `WINDOW_FLAG_BORDERLESS = false`) instead of retaining screen dimensions.
+- Default mode set to windowed (`window/size/mode=0` with `1280x720` override in `project.godot`).
+- Settings immediately persist on toggle.
 
 ### Changed
-- Settings → Visual: **Fullscreen** toggle is now a **Windowed** toggle (ON = windowed, OFF = fullscreen). Default stays fullscreen.
-- `GlobalSettings`: new `windowed` flag + `set_windowed()`; old `fullscreen` config key is migrated automatically and `set_fullscreen()` still works as a wrapper.
-- `project.godot`: boot window mode set to exclusive fullscreen (`mode=3`) so the launch mode and the in-game default agree.
+- Settings → Visual: **Fullscreen** toggle replaced by **Windowed** toggle (ON = windowed, OFF = fullscreen).
+- `GlobalSettings`: `windowed` property defaults to `true`. Legacy config files migrate automatically; `set_fullscreen()` retained as wrapper.
 
 ### Test Status
-- `test_settings_styling.gd` 15/15 PASS (new: Windowed label, toggle ON/OFF semantics, default fullscreen)
+- `test_settings_styling.gd` 15/15 PASS
 - All regression suites PASS (currency/profile 40, multiplayer 13, S&D 33, team/turret 9, killfeed 6)
 
 ---

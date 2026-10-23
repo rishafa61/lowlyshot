@@ -33,16 +33,16 @@ func _initialize() -> void:
 			break
 	check(fs_label != null and fs_label.text == "Windowed", "Visual tab shows Windowed toggle")
 	var gs = root.get_node("GlobalSettings")
-	gs.set_windowed(false)
-	check(not gs.windowed and gs.fullscreen, "Default launches fullscreen (windowed=false)")
+	gs.set_windowed(true)
+	check(gs.windowed and not gs.fullscreen, "Default is windowed (windowed=true)")
 	# Drive through the toggle itself (set_pressed emits toggled -> _on_fullscreen_toggled)
-	fs_check.set_pressed_no_signal(false)
-	fs_check.button_pressed = true # ON = windowed
-	check(gs.windowed and not gs.fullscreen, "Toggle ON flips to windowed")
-	check(fs_check.text == "On", "Toggle label reads On in windowed mode")
+	fs_check.set_pressed_no_signal(true)
 	fs_check.button_pressed = false # OFF = fullscreen
-	check(not gs.windowed and gs.fullscreen, "Toggle OFF flips back to fullscreen")
+	check(not gs.windowed and gs.fullscreen, "Toggle OFF flips to fullscreen")
 	check(fs_check.text == "Off", "Toggle label reads Off in fullscreen mode")
+	fs_check.button_pressed = true # ON = windowed
+	check(gs.windowed and not gs.fullscreen, "Toggle ON flips back to windowed")
+	check(fs_check.text == "On", "Toggle label reads On in windowed mode")
 
 	# Check Visual tab row plates
 	var vis_panel = menu.get_node("Content/TabVisualPanel")

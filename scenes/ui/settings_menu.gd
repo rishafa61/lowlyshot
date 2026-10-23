@@ -118,6 +118,7 @@ func _on_mic_changed(val: float) -> void:
 func _on_fullscreen_toggled(on: bool) -> void:
 	# "Windowed" toggle: ON = windowed, OFF = fullscreen
 	GlobalSettings.set_windowed(on)
+	GlobalSettings.save_settings()
 	check_fullscreen.text = "On" if on else "Off"
 
 
