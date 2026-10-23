@@ -36,6 +36,7 @@ var snd_team: String = "" # "attackers"/"defenders" — stamped by the match man
 var last_attacker: String = ""
 var last_attacker_faction: String = ""
 var last_weapon: String = ""
+var last_hit_part: String = ""
 var available_operators = [
 	preload("res://scripts/enemy_operators/assault.gd"),
 	preload("res://scripts/enemy_operators/breacher.gd"),
@@ -807,6 +808,7 @@ func receive_damage(base_dmg: float, part: String = "upper", attacker_name: Stri
 		last_attacker_faction = attacker_faction if attacker_faction != "" else "Enemy"
 	if weapon_name != "":
 		last_weapon = weapon_name
+	last_hit_part = part
 
 	var multi = 1.0
 	if part == "head":
@@ -839,7 +841,7 @@ func die():
 	var victim = bot_name if bot_name != "" else "Ally"
 	# Puppets never self-register: only the host owns kill scoring
 	if not is_net_puppet:
-		GlobalData.register_kill(killer, k_faction, gun, victim, "Ally")
+		GlobalData.register_kill(killer, k_faction, gun, victim, "Ally", last_hit_part == "head")
 		# Replicate death visual to clients
 		var mgr = get_tree().current_scene
 		if mgr is MultiplayerManager and net_id >= 0:

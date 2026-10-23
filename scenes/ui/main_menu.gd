@@ -86,6 +86,112 @@ func _ready():
 	set_play_mode("Practice")
 	_init_party_system()
 	_init_version_label()
+	_init_profile_frame()
+	_init_wallet_labels()
+
+## Top-left profile frame: click opens the player card (stats, history, wallet).
+func _init_profile_frame() -> void:
+	var frame := Button.new()
+	frame.name = "ProfileFrame"
+	frame.custom_minimum_size = Vector2(240, 64)
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = Color(0.09, 0.1, 0.12, 0.9)
+	sb.corner_radius_top_left = 8
+	sb.corner_radius_top_right = 8
+	sb.corner_radius_bottom_left = 8
+	sb.corner_radius_bottom_right = 8
+	sb.border_width_left = 2
+	sb.border_width_top = 2
+	sb.border_width_right = 2
+	sb.border_width_bottom = 2
+	sb.border_color = UI_ORANGE
+	frame.add_theme_stylebox_override("normal", sb)
+	var hover := sb.duplicate()
+	hover.bg_color = UI_PLATE_HOVER
+	frame.add_theme_stylebox_override("hover", hover)
+	var pressed := sb.duplicate()
+	pressed.bg_color = Color(0.07, 0.08, 0.1)
+	frame.add_theme_stylebox_override("pressed", pressed)
+	frame.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
+
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 10)
+	row.set_anchors_preset(Control.PRESET_FULL_RECT)
+	row.offset_left = 10
+	row.offset_right = -10
+	row.offset_top = 8
+	row.offset_bottom = -8
+	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	frame.add_child(row)
+
+	var badge := Label.new()
+	var pname: String = "Player"
+	var ss = get_node_or_null("/root/SteamSync")
+	if ss and ss.get("persona_name") != null and str(ss.persona_name) != "":
+		pname = str(ss.persona_name)
+	badge.text = "★"
+	badge.add_theme_font_size_override("font_size", 30)
+	badge.modulate = UI_ORANGE
+	badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	row.add_child(badge)
+
+	var name_box := VBoxContainer.new()
+	name_box.add_theme_constant_override("separation", 0)
+	name_box.alignment = BoxContainer.ALIGNMENT_CENTER
+	name_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	row.add_child(name_box)
+
+	var name_lbl := Label.new()
+	name_lbl.text = pname.to_upper()
+	name_lbl.add_theme_font_size_override("font_size", 16)
+	name_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	name_box.add_child(name_lbl)
+
+	var sub_lbl := Label.new()
+	sub_lbl.text = "VIEW PROFILE"
+	sub_lbl.add_theme_font_size_override("font_size", 10)
+	sub_lbl.modulate = Color(1, 1, 1, 0.5)
+	sub_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	name_box.add_child(sub_lbl)
+
+	add_child(frame)
+	frame.anchor_left = 0.0
+	frame.anchor_top = 0.0
+	frame.anchor_right = 0.0
+	frame.anchor_bottom = 0.0
+	frame.offset_left = 60
+	frame.offset_top = 20
+	frame.offset_right = 300
+	frame.offset_bottom = 80
+	frame.pressed.connect(_on_profile_pressed)
+
+func _on_profile_pressed() -> void:
+	var existing = get_node_or_null("ProfileCardLayer")
+	if existing != null:
+		return
+	var dialog_script = load("res://scenes/ui/player_card_dialog.gd")
+	var layer := CanvasLayer.new()
+	layer.name = "ProfileCardLayer"
+	layer.set_script(dialog_script)
+	add_child(layer)
+
+## Live Cash / Gold pills in the right panel, fed by PlayerProfile.
+func _prof() -> Node:
+	return get_node_or_null("/root/PlayerProfile")
+
+func _init_wallet_labels() -> void:
+	var coin := get_node_or_null("RightPanel/VBoxContainer/CurrencyHBox/CoinPanel/Label") as Label
+	var gem := get_node_or_null("RightPanel/VBoxContainer/CurrencyHBox/GemPanel/Label") as Label
+	if coin == null or gem == null:
+		return
+	var prof := _prof()
+	if prof == null:
+		return
+	var refresh := func():
+		coin.text = "CASH: %d" % prof.cash
+		gem.text = "GOLD: %d" % prof.gold
+	refresh.call()
+	prof.wallet_changed.connect(refresh)
 
 func _init_version_label() -> void:
 	var updater = get_node_or_null("/root/Updater")

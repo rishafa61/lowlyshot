@@ -45,7 +45,11 @@ signal combat_logged(msg: String)
 func log_combat(msg: String) -> void:
 	combat_logged.emit(msg)
 
-func register_kill(killer: String, killer_faction: String, weapon: String, victim: String, victim_faction: String) -> void:
+var _last_kill_headshot: bool = false
+
+func register_kill(killer: String, killer_faction: String, weapon: String, victim: String, victim_faction: String, was_headshot: bool = false) -> void:
+	# Read by PlayerProfile right after the signal fires (synchronous connect).
+	_last_kill_headshot = was_headshot
 	kill_occurred.emit(killer, killer_faction, weapon, victim, victim_faction)
 	combat_logged.emit("%s kill (%s) %s" % [killer, weapon, victim])
 

@@ -138,6 +138,12 @@ func _ready() -> void:
 		timer_node.start()
 		set_state(MatchState.WARMUP)
 		call_deferred("_fill_bots")
+	# Start profile career tracking for this multiplayer match
+	if GlobalData.is_networked():
+		var prof = get_node_or_null("/root/PlayerProfile")
+		if prof:
+			var m_title = mode_title if "mode_title" in self and str(self.mode_title) != "" else "Multiplayer"
+			prof.start_match_tracking(m_title)
 
 func _process(delta: float) -> void:
 	if not is_multiplayer_authority() or not GlobalData.is_networked():

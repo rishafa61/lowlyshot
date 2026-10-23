@@ -18,6 +18,7 @@ var btn_defenders: Button
 var match_end_overlay: Control
 var match_end_title: Label
 var match_end_score: Label
+var match_end_payroll: VBoxContainer
 var lbl_team_full: Label
 var match_end_return: Button
 var att_score_label: Label
@@ -394,6 +395,11 @@ func _build_ui() -> void:
 	match_end_score.add_theme_font_size_override("font_size", 22)
 	end_box.add_child(match_end_score)
 
+	match_end_payroll = VBoxContainer.new()
+	match_end_payroll.add_theme_constant_override("separation", 4)
+	match_end_payroll.alignment = BoxContainer.ALIGNMENT_CENTER
+	end_box.add_child(match_end_payroll)
+
 	match_end_return = Button.new()
 	match_end_return.text = "RETURN TO LOBBY"
 	match_end_return.custom_minimum_size = Vector2(240, 48)
@@ -720,8 +726,40 @@ func _show_match_end_screen() -> void:
 		match_end_title.modulate = Color(0.95, 0.3, 0.3)
 
 	match_end_score.text = "Attackers %d  —  %d Defenders" % [a, d]
+	_show_payroll("win" if is_win else ("draw" if is_draw else "loss"))
 	scoreboard.visible = true
 	match_end_overlay.visible = true
+
+## Pays out and displays the post-match payroll (multiplayer matches only).
+func _show_payroll(result: String) -> void:
+	for c in match_end_payroll.get_children():
+		c.queue_free()
+	if not GlobalData.is_networked():
+		return
+	var prof = get_node_or_null("/root/PlayerProfile")
+	if prof == null or not prof.is_tracking():
+		return
+	var payroll: Dictionary = prof.finish_match(result)
+	var title := Label.new()
+	title.text = "— MATCH PAYROLL (%s) —" % str(payroll.get("mode", "MATCH"))
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.add_theme_font_size_override("font_size", 16)
+	title.modulate = Color(1.0, 0.8, 0.3)
+	match_end_payroll.add_child(title)
+	for line in payroll.get("lines", []):
+		if int(line[1]) == 0 and int(line[2]) == 0:
+			continue
+		var row := Label.new()
+		row.text = "%s   +%d CASH%s" % [line[0], int(line[1]), ("  +%d GOLD" % int(line[2])) if int(line[2]) > 0 else ""]
+		row.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		row.add_theme_font_size_override("font_size", 15)
+		match_end_payroll.add_child(row)
+	var total := Label.new()
+	total.text = "TOTAL:  +%d CASH   +%d GOLD" % [int(payroll.get("cash", 0)), int(payroll.get("gold", 0))]
+	total.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	total.add_theme_font_size_override("font_size", 19)
+	total.modulate = Color(1.0, 0.85, 0.2)
+	match_end_payroll.add_child(total)
 
 func _physics_process(_delta: float) -> void:
 	# Flag ownership changes don't fire sync signals — poll for a live header
