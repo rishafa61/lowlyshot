@@ -71,6 +71,22 @@ func _run() -> void:
 		local_p.take_damage(50.0, "Bot", "m700", "Enemy")
 		check(local_p.hp == orig_hp, "spawn protection prevents damage while active")
 
+	# 5b. Bot-vs-bot combat: LOS ray must hit bot hitbox areas + shots must land
+	var bots: Array = root.get_tree().get_nodes_in_group("enemy")
+	check(bots.size() >= 2, "at least 2 FFA bots on the field (found %d)" % bots.size())
+	if bots.size() >= 2:
+		var ba = bots[0]
+		var bb = bots[1]
+		ba.global_position = Vector3(0, 1, 0)
+		bb.global_position = Vector3(0, 1, 10)
+		ba.target = bb
+		await process_frame
+		check(ba.can_see_target(), "bot LOS ray detects other bots (hitbox areas)")
+		bb.spawn_protect_timer = 0.0
+		var bb_hp = bb.health
+		ba.shoot()
+		check(bb.health < bb_hp, "bot bullets damage other bots")
+
 	# 6. Loadout lock: primary is forced to m700
 	var primary_dict: Dictionary = gd.get_equipped_primary()
 	check(primary_dict.get("id") == "m700", "get_equipped_primary() returns m700 regardless of loadout selection")

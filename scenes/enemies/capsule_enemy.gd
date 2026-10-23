@@ -356,7 +356,8 @@ func _physics_process(delta):
 	# Spawn protection countdown: cancelled once the bot actually moves
 	if spawn_protect_timer > 0.0:
 		spawn_protect_timer -= delta
-		if global_position.distance_to(_spawn_protect_origin) > 0.5:
+		var planar := Vector2(global_position.x - _spawn_protect_origin.x, global_position.z - _spawn_protect_origin.z).length()
+		if planar > 0.5:
 			spawn_protect_timer = 0.0
 
 	if is_dead:
@@ -738,20 +739,17 @@ func can_see_target() -> bool:
 		excludes.append(b.get_rid())
 	query.exclude = excludes
 	
-	query.collide_with_areas = false # Player is a body, not an area. Prevents hitting enemy's own areas.
+	query.collide_with_areas = true
 	query.collide_with_bodies = true
 	
 	var result = space_state.intersect_ray(query)
 	if result:
 		var c = result.collider
-		if c == target:
-			return true
-		if c is Node:
-			var p = c.get_parent()
-			if p == target:
+		var curr: Node = c if c is Node else null
+		while curr != null:
+			if curr == target:
 				return true
-			if p != null and p.get_parent() == target:
-				return true
+			curr = curr.get_parent()
 	return false
 
 func shoot():

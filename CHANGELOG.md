@@ -5,6 +5,20 @@ Format: version — date — Added / Changed / Fixed. Newest first.
 
 ---
 
+## v0.05.1 — 2026-10-23
+
+Flying Scoutsman combat + spawn protection fixes.
+
+### Fixed
+- **AI never shot each other**: bot-vs-bot line-of-sight rays passed straight through other bots — bot bodies are `collision_layer = 0` (script-driven movement) and only hitbox `Area3D`s are hittable, but the LOS raycast had `collide_with_areas = false`. Enabled area hits in `capsule_enemy.gd` / `capsule_ally.gd` `can_see_target()` (own hitboxes stay excluded) so bots now detect, chase, and snipe each other; hit→owner resolution walks the full parent chain.
+- **Respawn invincibility lost instantly**: player spawn protection was cancelled by any movement/fall/jump input; at moon gravity the post-respawn drop exceeded the 0.5 m cancel threshold within ~1 s. Player protection is now a flat 5 s invulnerability on every spawn/respawn (timer-only). Bots keep move-cancel, but vertical settle no longer counts (XZ-plane distance).
+
+### Test Status
+- `test_flying_scoutsman.gd` now also verifies bot-vs-bot LOS detection and bot bullet damage (21 checks PASS)
+- Regression suites PASS (Search & Destroy, Ground War, Multiplayer Issues, PlayerSpawner)
+
+---
+
 ## v0.05 — 2026-10-23
 
 New game mode: Flying Scoutsman (multiplayer free-for-all).

@@ -196,7 +196,7 @@ func _ready() -> void:
 	weapon_holder.position = WEAPON_POS_HIP
 	weapon_holder.visible = true
 	if sniper_scope_ui: sniper_scope_ui.hide()
-	# Spawn protection (CS style): invulnerable for 5s or until movement
+	# Spawn protection: 5s invulnerability on spawn/respawn (FFA modes)
 	if GlobalData.is_ffa_mode():
 		spawn_protect_timer = 5.0
 		_spawn_protect_origin = global_position
@@ -1505,13 +1505,9 @@ func _physics_process(delta: float) -> void:
 		return
 	if GlobalData.is_networked():
 		_net_send_state()
-	# Spawn protection countdown: cancelled on movement (CS rule)
+	# Spawn protection countdown: 5 seconds invulnerability on spawn/respawn (FFA)
 	if spawn_protect_timer > 0.0:
 		spawn_protect_timer -= delta
-		var moved_dist := global_position.distance_to(_spawn_protect_origin)
-		var wants_move := Input.get_vector("move_left", "move_right", "move_forward", "move_backward").length() > 0.1
-		if moved_dist > 0.5 or wants_move or Input.is_action_pressed("jump"):
-			spawn_protect_timer = 0.0
 	# Aircraft has control: suspend all character simulation / input
 	if is_piloting:
 		return
