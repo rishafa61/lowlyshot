@@ -16,9 +16,13 @@ Flying Scoutsman AI combat, moon jumping, map roaming, and spawn protection.
 - **FFA random respawn**: bots no longer respawn onto static `start_pos`; every respawn picks a random arena spawn point with small jitter.
 - **Sniper engagement spacing**: FFA combat range widened from 5-12 m to 10-30 m so bots don't crowd into point-blank retreat shuffles.
 
+### Changed
+- **Multiplayer bandwidth**: `_net_send_state` dedupes idle ticks — a player standing still or holding an angle no longer streams 30 state RPCs/s; packets go out only on position/rotation/weapon change plus a ~2 Hz heartbeat for loss recovery. Cuts idle-peer upstream traffic ~80-90%.
+
 ### Fixed
 - **AI never shot each other**: bot-vs-bot line-of-sight rays passed straight through other bots — bot bodies are `collision_layer = 0` (script-driven movement) and only hitbox `Area3D`s are hittable, but the LOS raycast had `collide_with_areas = false`. Enabled area hits in `capsule_enemy.gd` / `capsule_ally.gd` `can_see_target()` (own hitboxes stay excluded) so bots now detect, chase, and snipe each other; hit→owner resolution walks the full parent chain.
 - **Respawn invincibility lost instantly**: player spawn protection was cancelled by any movement/fall/jump input; at moon gravity the post-respawn drop exceeded the 0.5 m cancel threshold within ~1 s. Player protection is now a flat 5 s invulnerability on every spawn/respawn (timer-only). Bots keep move-cancel, but vertical settle no longer counts (XZ-plane distance).
+- **GDScript reload warnings**: integer division in `main_menu.gd` level formula (`xp / 1000.0`), unused local `mgr` variable in `player.gd` `_net_apply_damage`.
 
 ### Test Status
 - `test_flying_scoutsman.gd`: 28/28 checks PASS (incl. bot-vs-bot LOS, bullet damage, and `_try_ffa_jump` impulse)

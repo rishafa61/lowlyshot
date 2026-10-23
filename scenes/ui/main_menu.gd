@@ -162,7 +162,7 @@ func _init_profile_frame() -> void:
 	var prof = _prof()
 	var s: Dictionary = prof.stats if prof else {}
 	var xp: int = int(s.get("kills", 0)) * 100 + int(s.get("headshots", 0)) * 50 + int(s.get("wins", 0)) * 500 + int(s.get("matches", 0)) * 100
-	var lvl: int = 1 + int(xp / 1000)
+	var lvl: int = 1 + int(xp / 1000.0)
 	lvl_lbl.text = "L%d" % lvl
 	lvl_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	lvl_lbl.add_theme_font_size_override("font_size", 11)

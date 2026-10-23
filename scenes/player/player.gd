@@ -385,6 +385,11 @@ var _net_target_pos: Vector3 = Vector3.ZERO
 var _net_target_yaw: float = 0.0
 var _net_target_pitch: float = 0.0
 var _net_tick: int = 0
+var _net_last_pos: Vector3 = Vector3.INF
+var _net_last_yaw: float = INF
+var _net_last_pitch: float = INF
+var _net_last_weapon: String = ""
+var _net_idle_ticks: int = 0
 var _puppet_body: Node3D = null
 var _puppet_gun_holder: Node3D = null
 var _net_weapon_path: String = ""
@@ -470,6 +475,20 @@ func _net_send_state() -> void:
 	var weapon_path := ""
 	if active_slot >= 0 and active_slot < weapons.size():
 		weapon_path = str(weapons[active_slot].get("scene_path", ""))
+	# Bandwidth: skip the RPC while idle (standing still / holding angle);
+	# heartbeat every ~0.5 s keeps puppets convergent after packet loss
+	var changed := _net_last_pos.distance_squared_to(global_position) > 0.0004 \
+		or absf(rotation.y - _net_last_yaw) > 0.005 \
+		or absf(head.rotation.x - _net_last_pitch) > 0.005 \
+		or weapon_path != _net_last_weapon
+	_net_idle_ticks += 1
+	if not changed and _net_idle_ticks < 15:
+		return
+	_net_idle_ticks = 0
+	_net_last_pos = global_position
+	_net_last_yaw = rotation.y
+	_net_last_pitch = head.rotation.x
+	_net_last_weapon = weapon_path
 	var mgr = get_tree().current_scene
 	if mgr is MultiplayerManager:
 		mgr.send_local_player_state(int(str(name)), global_position, rotation.y, head.rotation.x, weapon_path)
@@ -484,7 +503,6 @@ func _net_apply_damage(amount: float, attacker_name: String, weapon_name: String
 	# Spawn protection applies on the owning peer too
 	if spawn_protect_timer > 0.0:
 		return
-	var mgr = get_tree().current_scene
 	var my_faction: String = "Ally" if team == "attackers" else "Enemy"
 	# FFA: everyone is hostile — skip the friendly-fire gate
 	if attacker_faction != "" and attacker_faction == my_faction \
