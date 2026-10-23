@@ -50,7 +50,7 @@ func set_windowed(on: bool) -> void:
 		if scr_size.x > 0 and scr_size.y > 0 and (win_size.x >= scr_size.x or win_size.y >= scr_size.y):
 			win_size = Vector2i(int(scr_size.x * 0.8), int(scr_size.y * 0.8))
 		DisplayServer.window_set_size(win_size)
-		var center_pos = (scr_size - win_size) / 2
+		var center_pos = Vector2i(int((scr_size.x - win_size.x) / 2.0), int((scr_size.y - win_size.y) / 2.0))
 		DisplayServer.window_set_position(center_pos)
 	else:
 		DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_FULLSCREEN)

@@ -10,6 +10,7 @@ Format: version — date — Added / Changed / Fixed. Newest first.
 Windowed-mode toggle replaces fullscreen toggle; default is now windowed (1280x720 centered).
 
 ### Fixed
+- Fixed GDScript `INTEGER_DIVISION` warning in `global_settings.gd` center position calculation.
 - Windowed mode now actually resizes to a 1280x720 decorated window centered on screen (`window_set_size`, `window_set_position`, `WINDOW_FLAG_BORDERLESS = false`) instead of retaining screen dimensions.
 - Default mode set to windowed (`window/size/mode=0` with `1280x720` override in `project.godot`).
 - Settings immediately persist on toggle.
