@@ -62,8 +62,16 @@ func _build_player(data: Dictionary) -> Node3D:
 	player.set_multiplayer_authority(peer_id)
 	if "team" in player:
 		player.team = t
-	if "player_name" in player and peer_id != 1:
-		player.player_name = str(peer_id)
+	# Display name: the registry name for this peer (killfeed / scoreboard key),
+	# falling back to the peer id string.
+	var display_name := str(peer_id)
+	var mgr = get_parent()
+	if mgr and mgr.get("players_data") != null and mgr.players_data.has(peer_id):
+		var rn = mgr.players_data[peer_id].get("name", "")
+		if str(rn).strip_edges() != "":
+			display_name = str(rn)
+	if "player_name" in player:
+		player.player_name = display_name
 	if t == "attackers":
 		player.add_to_group("ally")
 	elif t == "defenders":

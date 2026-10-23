@@ -1192,7 +1192,9 @@ func pick_side(team: String) -> void:
 		if not is_ffa and manager.players_data.has(my_id) and manager.players_data[my_id].get("team", "") == team:
 			toggle_side_picker()
 			return
-		manager.request_join_team.rpc_id(1, team)
+		var ss = get_node_or_null("/root/SteamSync")
+		var my_name := str(ss.get("persona_name")) if ss != null else ""
+		manager.request_join_team.rpc_id(1, team, my_name)
 	else:
 		manager.request_join_team_local(team)
 	has_joined_match = true

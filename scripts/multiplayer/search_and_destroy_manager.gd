@@ -42,6 +42,7 @@ var bomb_timer: int = 0
 var is_halftime_swapped: bool = false
 var round_winner: String = ""
 var round_win_reason: String = "" # "elimination", "defused", "detonated", "time"
+var _wipe_announced: bool = false # post-plant attacker wipe notice printed once per round
 
 # Action tracking (plant / defuse in progress)
 var current_action_peer: int = 0
@@ -232,6 +233,7 @@ func net_return_to_lobby() -> void:
 func _prepare_new_round() -> void:
 	round_winner = ""
 	round_win_reason = ""
+	_wipe_announced = false
 	current_bomb_state = BombState.CARRIED
 	bomb_carrier_peer = 0
 	bomb_carrier_name = ""
@@ -351,6 +353,22 @@ func _on_kill_occurred(killer: String, killer_faction: String, weapon: String, v
 		if act_name == victim:
 			_cancel_bomb_action()
 
+	# Mark victim player puppet dead immediately so elimination checks don't race
+	# the separate report_player_death RPC arriving afterwards.
+	for p_node in get_tree().get_nodes_in_group("player"):
+		if is_instance_valid(p_node):
+			var is_vic := false
+			if p_node.name == victim or p_node.get("player_name") == victim:
+				is_vic = true
+			elif victim == "Player" and p_node.name == "1":
+				is_vic = true
+			else:
+				var pid = int(str(p_node.name))
+				if players_data.has(pid) and players_data[pid].get("name") == victim:
+					is_vic = true
+			if is_vic:
+				p_node.set("is_dead", true)
+
 	# Check elimination win conditions
 	_check_elimination_win()
 
@@ -392,7 +410,9 @@ func _check_elimination_win() -> void:
 	if living_att <= 0:
 		if current_bomb_state == BombState.PLANTED or current_bomb_state == BombState.DEFUSING:
 			# Bomb is planted! Defenders must still defuse it or wait for detonation.
-			print("[S&D] All attackers eliminated, but bomb is planted! Defenders must defuse.")
+			if not _wipe_announced:
+				_wipe_announced = true
+				print("[S&D] All attackers eliminated, but bomb is planted! Defenders must defuse.")
 		else:
 			# Pre-plant elimination -> Defenders win
 			end_round("defenders", "elimination")
@@ -403,8 +423,9 @@ func _count_living_team(team: String) -> int:
 	# Human players
 	var group := "ally" if team == "attackers" else "enemy"
 	for p in get_tree().get_nodes_in_group("player"):
-		if is_instance_valid(p) and p.is_in_group(group):
-			if not bool(p.get("is_dead")):
+		if is_instance_valid(p):
+			var on_team := p.is_in_group(group) or str(p.get("snd_team")) == team or str(p.get("team")) == team
+			if on_team and not bool(p.get("is_dead")):
 				count += 1
 	# Bots
 	for b in team_bots.get(team, []):

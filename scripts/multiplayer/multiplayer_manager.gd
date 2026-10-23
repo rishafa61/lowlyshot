@@ -518,7 +518,7 @@ func can_join_team(team: String) -> bool:
 	return humans < team_size
 
 @rpc("any_peer", "call_local", "reliable")
-func request_join_team(team: String) -> void:
+func request_join_team(team: String, pname: String = "") -> void:
 	if not is_multiplayer_authority():
 		return
 	var peer = multiplayer.get_remote_sender_id()
@@ -531,15 +531,30 @@ func request_join_team(team: String) -> void:
 		team = "ffa_%d" % peer
 	elif players_data.has(peer) and players_data[peer].get("team", "") != team and not can_join_team(team):
 		team = "defenders" if team == "attackers" else "attackers"
-	
+
 	if not players_data.has(peer):
 		# Name MUST match the match_stats key below ("Player" for the host),
-		# otherwise halftime swap / kill stats can't find this player's entry
-		players_data[peer] = { "name": "Player" if peer == 1 else str(peer), "team": team, "kills": 0, "deaths": 0, "ping": 0 }
+		# otherwise halftime swap / kill stats can't find this player's entry.
+		# pname is the client's Steam persona name; fall back to peer id when
+		# missing/anonymous so two "Player"s can never share one stat entry.
+		var joined_name := "Player" if peer == 1 else str(peer)
+		var clean := pname.strip_edges().left(24)
+		if peer != 1 and clean != "" and clean != "Player":
+			joined_name = clean
+		players_data[peer] = { "name": joined_name, "team": team, "kills": 0, "deaths": 0, "ping": 0 }
 	else:
+		# Rejoin / late name arrival: adopt the Steam persona name once known
+		var old_name: String = str(players_data[peer].get("name", ""))
+		var clean2 := pname.strip_edges().left(24)
+		if peer != 1 and clean2 != "" and clean2 != "Player" and clean2 != old_name:
+			players_data[peer]["name"] = clean2
+			if match_stats.has(old_name):
+				var carried = match_stats[old_name]
+				match_stats.erase(old_name)
+				match_stats[clean2] = carried
 		players_data[peer]["team"] = team
-	
-	var p_name = "Player" if peer == 1 else str(peer)
+
+	var p_name = str(players_data[peer].get("name", str(peer)))
 	if not match_stats.has(p_name):
 		match_stats[p_name] = {"kills": 0, "deaths": 0, "team": team}
 	else:
@@ -549,7 +564,10 @@ func request_join_team(team: String) -> void:
 	
 	if is_multiplayer_authority():
 		spawner.despawn_player(peer)
-		spawner.spawn_player(peer, team)
+		var p_node = spawner.spawn_player(peer, team)
+		# Spawned node must carry the registry name (killfeed / damage sender)
+		if p_node and "player_name" in p_node:
+			p_node.player_name = str(players_data[peer].get("name", str(peer)))
 		_fill_bots()
 
 @rpc("authority", "call_local", "reliable")
@@ -907,6 +925,11 @@ func _broadcast_player_death(pid: int) -> void:
 	net_player_died(pid)
 	for p in ready_peers:
 		net_player_died.rpc_id(p, pid)
+	# The kill RPC (report_kill) reaches the host BEFORE the death RPC, so the
+	# kill-time elimination check still counted the victim alive. Re-evaluate
+	# now that net_play_death() has flagged the host-side puppet is_dead.
+	if has_method("_check_elimination_win"):
+		call("_check_elimination_win")
 
 @rpc("authority", "call_remote", "reliable")
 func net_player_died(pid: int) -> void:

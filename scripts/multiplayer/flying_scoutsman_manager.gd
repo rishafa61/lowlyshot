@@ -47,11 +47,21 @@ func _exit_tree() -> void:
 func _spawn_local_ffa_player() -> void:
 	if not is_inside_tree() or spawner == null:
 		return
-	if players_data.has(1):
-		return # already joined
 	var gd = _get_global_data()
 	var is_net: bool = gd != null and gd.has_method("is_networked") and bool(gd.is_networked())
 	var my_peer := multiplayer.get_unique_id() if is_net else 1
+	if players_data.has(my_peer):
+		return # already joined
+	if is_net and not multiplayer.is_server():
+		# Client: the host owns registration. request_join_team stamps a unique
+		# FFA team, spawns us on the host (replicating a node whose authority is
+		# our peer — it becomes our local player here, a targeted puppet there)
+		# and puts us in match_stats so bots / killfeed / scoreboard treat us as
+		# a player instead of an unregistered ghost.
+		var ss = get_node_or_null("/root/SteamSync")
+		var my_name := str(ss.get("persona_name")) if ss != null else ""
+		request_join_team.rpc_id(1, "all", my_name)
+		return
 	var my_team := "ffa_%d" % my_peer
 	players_data[my_peer] = {
 		"name": "Player" if my_peer == 1 else str(my_peer),

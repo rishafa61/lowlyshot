@@ -162,6 +162,13 @@ func _ready() -> void:
 	if is_puppet:
 		_setup_puppet()
 		return
+	# Real local player: resolve display name from SteamSync or peer id
+	var ss_local = get_node_or_null("/root/SteamSync")
+	if ss_local and ss_local.get("persona_name") != null and str(ss_local.get("persona_name")).strip_edges() != "":
+		player_name = str(ss_local.get("persona_name")).strip_edges()
+	elif GlobalData.is_networked() and multiplayer != null:
+		var local_pid := multiplayer.get_unique_id()
+		player_name = "Player" if local_pid == 1 else str(local_pid)
 	camera.make_current() # tscn current was stripped pre-add (puppet hijack fix); always reclaim the view
 	Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
 	
