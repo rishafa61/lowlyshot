@@ -5,6 +5,21 @@ Format: version — date — Added / Changed / Fixed. Newest first.
 
 ---
 
+## v0.04 — 2026-10-23
+
+Windowed-mode toggle replaces the fullscreen toggle; game still boots fullscreen by default.
+
+### Changed
+- Settings → Visual: **Fullscreen** toggle is now a **Windowed** toggle (ON = windowed, OFF = fullscreen). Default stays fullscreen.
+- `GlobalSettings`: new `windowed` flag + `set_windowed()`; old `fullscreen` config key is migrated automatically and `set_fullscreen()` still works as a wrapper.
+- `project.godot`: boot window mode set to exclusive fullscreen (`mode=3`) so the launch mode and the in-game default agree.
+
+### Test Status
+- `test_settings_styling.gd` 15/15 PASS (new: Windowed label, toggle ON/OFF semantics, default fullscreen)
+- All regression suites PASS (currency/profile 40, multiplayer 13, S&D 33, team/turret 9, killfeed 6)
+
+---
+
 ## v0.03 — 2026-10-23
 
 Profile panel restyled as a tactical military dossier (player card + main menu frame).

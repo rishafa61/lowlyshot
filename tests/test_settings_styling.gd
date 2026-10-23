@@ -23,6 +23,27 @@ func _initialize() -> void:
 	var vig = menu.get_node_or_null("SettingsVignette")
 	check(vig is TextureRect, "Settings vignette exists")
 
+	# Windowed toggle (inverted fullscreen): label + semantics
+	var fs_check = menu.get("check_fullscreen") as CheckButton
+	check(fs_check != null, "Windowed CheckButton exists")
+	var fs_label: Label = null
+	for lbl in menu.find_children("*", "Label", true, false):
+		if lbl.text == "Windowed":
+			fs_label = lbl
+			break
+	check(fs_label != null and fs_label.text == "Windowed", "Visual tab shows Windowed toggle")
+	var gs = root.get_node("GlobalSettings")
+	gs.set_windowed(false)
+	check(not gs.windowed and gs.fullscreen, "Default launches fullscreen (windowed=false)")
+	# Drive through the toggle itself (set_pressed emits toggled -> _on_fullscreen_toggled)
+	fs_check.set_pressed_no_signal(false)
+	fs_check.button_pressed = true # ON = windowed
+	check(gs.windowed and not gs.fullscreen, "Toggle ON flips to windowed")
+	check(fs_check.text == "On", "Toggle label reads On in windowed mode")
+	fs_check.button_pressed = false # OFF = fullscreen
+	check(not gs.windowed and gs.fullscreen, "Toggle OFF flips back to fullscreen")
+	check(fs_check.text == "Off", "Toggle label reads Off in fullscreen mode")
+
 	# Check Visual tab row plates
 	var vis_panel = menu.get_node("Content/TabVisualPanel")
 	var vis_plates := 0

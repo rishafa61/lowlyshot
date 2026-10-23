@@ -12,7 +12,7 @@ var scope_sensitivity_mult = 0.5
 # Visual
 var graphics_quality = 2 # 0: Low, 1: Med, 2: High
 var fps_limit = 0 # 0=60, 1=120, etc
-var fullscreen: bool = false
+var windowed: bool = false # false = fullscreen (default), true = windowed
 
 # Navigation
 var previous_scene: String = "res://scenes/ui/main_menu.tscn"
@@ -34,14 +34,24 @@ func _ready() -> void:
 		scope_sensitivity_mult = cfg.get_value("gameplay", "scope", scope_sensitivity_mult)
 		graphics_quality = cfg.get_value("visual", "quality", graphics_quality)
 		fps_limit = cfg.get_value("visual", "fps", fps_limit)
-		fullscreen = cfg.get_value("visual", "fullscreen", fullscreen)
+		if cfg.has_section_key("visual", "fullscreen"):
+			windowed = not cfg.get_value("visual", "fullscreen", not windowed) # migrate old key
+		else:
+			windowed = cfg.get_value("visual", "windowed", windowed)
 		online_bots_enabled = cfg.get_value("multiplayer", "bots", online_bots_enabled)
-	set_fullscreen(fullscreen)
+	set_windowed(windowed)
+
+func set_windowed(on: bool) -> void:
+	windowed = on
+	DisplayServer.window_set_mode(
+		DisplayServer.WINDOW_MODE_WINDOWED if on else DisplayServer.WINDOW_MODE_FULLSCREEN)
+
+var fullscreen: bool:
+	get: return not windowed
+	set(val): set_windowed(not val)
 
 func set_fullscreen(on: bool) -> void:
-	fullscreen = on
-	DisplayServer.window_set_mode(
-		DisplayServer.WINDOW_MODE_FULLSCREEN if on else DisplayServer.WINDOW_MODE_WINDOWED)
+	set_windowed(not on)
 
 func save_settings() -> void:
 	var cfg := ConfigFile.new()
@@ -52,6 +62,6 @@ func save_settings() -> void:
 	cfg.set_value("gameplay", "scope", scope_sensitivity_mult)
 	cfg.set_value("visual", "quality", graphics_quality)
 	cfg.set_value("visual", "fps", fps_limit)
-	cfg.set_value("visual", "fullscreen", fullscreen)
+	cfg.set_value("visual", "windowed", windowed)
 	cfg.set_value("multiplayer", "bots", online_bots_enabled)
 	cfg.save(SETTINGS_PATH)
