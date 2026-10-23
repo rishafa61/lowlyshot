@@ -94,6 +94,9 @@ func _ready() -> void:
 ## Game-mode weapon lock (Flying Scoutsman): when set, the primary slot
 ## always returns this weapon id regardless of the chosen loadout.
 var force_primary_id: String = ""
+## Game-mode operator lock (Flying Scoutsman): when set, everyone spawns as
+## this operator (Vanguard = the only one with a heal skill).
+var force_operator: String = ""
 
 func get_weapon_by_id(id: String) -> Dictionary:
 	for category in weapons:
@@ -137,6 +140,9 @@ func get_equipped_heavy() -> Dictionary:
 
 
 func get_equipped_operator_script() -> Script:
+	if force_operator != "":
+		# Weapon/operator-locked mode: only Vanguard (has the heal skill)
+		return load("res://scenes/operators/assault_operator.gd")
 	if equipped_operator == "Vanguard" or equipped_operator == "Assault":
 		return load("res://scenes/operators/assault_operator.gd")
 	elif equipped_operator == "Ghost" or equipped_operator == "Recon":
@@ -150,6 +156,23 @@ func get_equipped_operator_script() -> Script:
 	elif equipped_operator == "Sentry":
 		return load("res://scenes/operators/sentry_operator.gd")
 	return load("res://scenes/operators/assault_operator.gd")
+
+## True when the active scene or root manager is running an FFA mode
+func is_ffa_mode() -> bool:
+	if force_operator != "" or force_primary_id != "":
+		return true
+	var tree := get_tree()
+	if not tree: return false
+	var scn = tree.current_scene
+	if scn != null:
+		var v = scn.get("ffa_target_kills")
+		if v != null and int(v) > 0:
+			return true
+	for c in tree.root.get_children():
+		var v = c.get("ffa_target_kills")
+		if v != null and int(v) > 0:
+			return true
+	return false
 
 ## True only during a real online match. multiplayer.has_multiplayer_peer() is always true in Godot 4
 ## (default OfflineMultiplayerPeer), so never use it for this.

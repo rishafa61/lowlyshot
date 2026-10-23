@@ -12,7 +12,7 @@ var scope_sensitivity_mult = 0.5
 # Visual
 var graphics_quality = 2 # 0: Low, 1: Med, 2: High
 var fps_limit = 0 # 0=60, 1=120, etc
-var windowed: bool = true # windowed by default; false = fullscreen
+var windowed: bool = false # fullscreen by default; true = windowed
 
 # Navigation
 var previous_scene: String = "res://scenes/ui/main_menu.tscn"
@@ -34,7 +34,7 @@ func _ready() -> void:
 		scope_sensitivity_mult = cfg.get_value("gameplay", "scope", scope_sensitivity_mult)
 		graphics_quality = cfg.get_value("visual", "quality", graphics_quality)
 		fps_limit = cfg.get_value("visual", "fps", fps_limit)
-		windowed = cfg.get_value("visual", "windowed", true)
+		windowed = cfg.get_value("visual", "windowed", false)
 		online_bots_enabled = cfg.get_value("multiplayer", "bots", online_bots_enabled)
 	set_windowed(windowed)
 

@@ -166,9 +166,11 @@ func _ready() -> void:
 	Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
 	
 	# Load Operator
-	var op_script = GlobalData.get_equipped_operator_script()
-	active_operator = Node.new()
-	active_operator.set_script(op_script)
+	var op_script: Script = GlobalData.get_equipped_operator_script()
+	if op_script != null:
+		active_operator = op_script.new()
+	else:
+		active_operator = Node.new()
 	add_child(active_operator)
 	
 	# Wire health through the shared component
@@ -194,6 +196,12 @@ func _ready() -> void:
 	weapon_holder.position = WEAPON_POS_HIP
 	weapon_holder.visible = true
 	if sniper_scope_ui: sniper_scope_ui.hide()
+	# Spawn protection (CS style): invulnerable for 5s or until movement
+	if GlobalData.is_ffa_mode():
+		spawn_protect_timer = 5.0
+		_spawn_protect_origin = global_position
+		if hud:
+			hud.print_to_console("Spawn protection active (5s)")
 	if hud:
 		hud.update_stats(hp, max_hp, armor, max_armor, stamina, max_stamina)
 		hud.update_minimap(global_position, head.rotation.y)
@@ -368,6 +376,8 @@ func _update_spectate_camera() -> void:
 var team: String = "attackers"
 var player_name: String = "Player"
 var last_attacker_faction: String = ""
+var spawn_protect_timer: float = 0.0
+var _spawn_protect_origin: Vector3 = Vector3.ZERO
 
 # ---------------- Online play ----------------
 var is_puppet: bool = false
@@ -471,11 +481,14 @@ func _net_send_state() -> void:
 func _net_apply_damage(amount: float, attacker_name: String, weapon_name: String, attacker_faction: String, attacker_pos: Vector3 = Vector3.INF) -> void:
 	if is_puppet or is_dead:
 		return
+	# Spawn protection applies on the owning peer too
+	if spawn_protect_timer > 0.0:
+		return
 	var mgr = get_tree().current_scene
 	var my_faction: String = "Ally" if team == "attackers" else "Enemy"
 	# FFA: everyone is hostile — skip the friendly-fire gate
 	if attacker_faction != "" and attacker_faction == my_faction \
-			and not (mgr != null and int(mgr.get("ffa_target_kills")) > 0):
+			and not GlobalData.is_ffa_mode():
 		return # no friendly fire
 	take_damage(amount, attacker_name, weapon_name, attacker_faction, attacker_pos)
 
@@ -509,6 +522,9 @@ func take_damage(amount: float, attacker_name: String = "", weapon_name: String 
 		_net_apply_damage.rpc_id(get_multiplayer_authority(), amount, attacker_name, weapon_name, attacker_faction, attacker_pos)
 		return amount
 	if is_dead: return 0.0
+	# Spawn protection: invulnerable until the timer lapses or we move
+	if spawn_protect_timer > 0.0:
+		return 0.0
 	var final = health_component.apply_damage(amount)
 	if attacker_name != "":
 		last_attacker = attacker_name
@@ -609,6 +625,12 @@ func respawn():
 	# Move back to initial spawn point
 	global_position = spawn_point
 	velocity = Vector3.ZERO
+	# Re-armed spawn protection on respawn (FFA modes)
+	if GlobalData.is_ffa_mode():
+		spawn_protect_timer = 5.0
+		_spawn_protect_origin = global_position
+		if hud:
+			hud.print_to_console("Spawn protection active (5s)")
 
 func _unhandled_input(event: InputEvent) -> void:
 	if is_puppet: return
@@ -1483,6 +1505,13 @@ func _physics_process(delta: float) -> void:
 		return
 	if GlobalData.is_networked():
 		_net_send_state()
+	# Spawn protection countdown: cancelled on movement (CS rule)
+	if spawn_protect_timer > 0.0:
+		spawn_protect_timer -= delta
+		var moved_dist := global_position.distance_to(_spawn_protect_origin)
+		var wants_move := Input.get_vector("move_left", "move_right", "move_forward", "move_backward").length() > 0.1
+		if moved_dist > 0.5 or wants_move or Input.is_action_pressed("jump"):
+			spawn_protect_timer = 0.0
 	# Aircraft has control: suspend all character simulation / input
 	if is_piloting:
 		return

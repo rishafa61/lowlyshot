@@ -6,7 +6,11 @@ extends MultiplayerManager
 ## ffa_target_kills wins. Every combatant gets a unique team so nobody is
 ## "friendly" — bots target and shoot anyone who isn't themselves.
 
-const FLOAT_GRAVITY := 2.94 # ~30% of default 9.8 — the "70% float" moon feel
+func _init() -> void:
+	ffa_target_kills = 40
+	target_kills = 40
+
+const FLOAT_GRAVITY := 1.6 # ~16% base gravity — true floaty moon feel
 const BASE_GRAVITY := 9.8
 
 @export_group("Flying Scoutsman Settings")
@@ -25,16 +29,47 @@ func _ready() -> void:
 	var gd = _get_global_data()
 	if gd:
 		gd.set("force_primary_id", forced_weapon_id)
+		gd.set("force_operator", "Vanguard")
 	_original_gravity = ProjectSettings.get_setting("physics/3d/default_gravity")
 	ProjectSettings.set_setting("physics/3d/default_gravity", FLOAT_GRAVITY)
 	super()
+	call_deferred("_spawn_local_ffa_player")
 
 func _exit_tree() -> void:
 	# Restore world state so other modes keep normal gravity + loadouts
 	var gd = _get_global_data()
 	if gd:
 		gd.set("force_primary_id", "")
+		gd.set("force_operator", "")
 	ProjectSettings.set_setting("physics/3d/default_gravity", _original_gravity)
+
+## FFA has no sides to pick: drop the local player straight into the arena
+func _spawn_local_ffa_player() -> void:
+	if not is_inside_tree() or spawner == null:
+		return
+	if players_data.has(1):
+		return # already joined
+	var gd = _get_global_data()
+	var is_net: bool = gd != null and gd.has_method("is_networked") and bool(gd.is_networked())
+	var my_peer := multiplayer.get_unique_id() if is_net else 1
+	var my_team := "ffa_%d" % my_peer
+	players_data[my_peer] = {
+		"name": "Player" if my_peer == 1 else str(my_peer),
+		"team": my_team,
+		"kills": 0,
+		"deaths": 0,
+		"ping": 0
+	}
+	var p_name = "Player" if my_peer == 1 else str(my_peer)
+	if not match_stats.has(p_name):
+		match_stats[p_name] = {"kills": 0, "deaths": 0, "team": my_team}
+	spawner.despawn_player(my_peer)
+	var p_node = spawner.spawn_player(my_peer, my_team)
+	if p_node and my_peer == 1:
+		var cam: Camera3D = p_node.get_node_or_null("Head/Camera3D")
+		if cam:
+			cam.current = true
+	_sync_match_data()
 
 func _fill_bots() -> void:
 	if _bots_kicked_by_admin:

@@ -37,12 +37,33 @@ var snd_round_banner: Label
 var _snd_banner_until: float = 0.0
 
 func _ready() -> void:
-	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	_build_ui()
-	btn_attackers.pressed.connect(func(): pick_side("attackers"))
-	btn_defenders.pressed.connect(func(): pick_side("defenders"))
+	var ffa := _is_ffa()
+	if ffa:
+		# FFA (Flying Scoutsman): no sides exist — destroy the picker outright
+		if side_picker != null:
+			side_picker.queue_free()
+			side_picker = null
+		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+	else:
+		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+		btn_attackers.pressed.connect(func(): pick_side("attackers"))
+		btn_defenders.pressed.connect(func(): pick_side("defenders"))
 	if get_parent() is MultiplayerManager:
 		setup(get_parent() as MultiplayerManager)
+
+## FFA detection that works before the manager's _ready() runs (children ready
+## first): either the manager is the Flying Scoutsman type or the FFA export
+## was pre-set in _init().
+func _is_ffa() -> bool:
+	var mgr := get_parent()
+	if mgr is FlyingScoutsmanManager:
+		return true
+	if mgr != null:
+		var v = mgr.get("ffa_target_kills")
+		if v != null and int(v) > 0:
+			return true
+	return false
 
 func _build_ui() -> void:
 	# Top-center match header: score plate / mode plate / timer plate (tactical)
@@ -521,8 +542,6 @@ func setup(mgr: MultiplayerManager) -> void:
 		mgr.round_ended.connect(_on_snd_round_ended)
 	refresh_scoreboard()
 	update_header()
-	if int(mgr.get("ffa_target_kills")) > 0:
-		call_deferred("pick_side", "all")
 
 func _on_scoreboard_sync(_d: Dictionary, _s: Dictionary, _m: Dictionary = {}) -> void:
 	refresh_scoreboard()
@@ -537,6 +556,8 @@ func _input(event: InputEvent) -> void:
 		if scoreboard.visible:
 			refresh_scoreboard()
 	elif event.keycode == KEY_M and event.pressed:
+		if manager and int(manager.ffa_target_kills) > 0:
+			return # No sides in FFA
 		toggle_side_picker()
 	elif event.keycode == KEY_ESCAPE and event.pressed and side_picker != null and side_picker.visible and has_joined_match:
 		toggle_side_picker()
@@ -715,7 +736,7 @@ func _show_match_end_screen() -> void:
 		local_team = manager.match_stats["Player"].get("team", "attackers")
 
 	# Free-for-all: win is determined by who reached target_kills (ffa_winner_name)
-	var is_ffa: bool = int(manager.get("ffa_target_kills")) > 0
+	var is_ffa: bool = manager != null and int(manager.ffa_target_kills) > 0
 	var is_win: bool = false
 	var is_draw: bool = false
 
@@ -724,7 +745,7 @@ func _show_match_end_screen() -> void:
 		var winner: String = str(manager.get("ffa_winner_name"))
 		is_win = (winner != "" and (winner == my_name or winner == "Player"))
 		if winner != "":
-			match_end_score.text = "%s won with %d kills!" % [winner, int(manager.get("ffa_target_kills"))]
+			match_end_score.text = "%s won with %d kills!" % [winner, int(manager.ffa_target_kills)]
 		else:
 			match_end_score.text = "Match complete"
 	else:
@@ -820,7 +841,7 @@ func update_header() -> void:
 			elif f.get("owner_team") == "defenders":
 				flag_status = "HELD BY DEFENDERS"
 		objective_label.text = "FLAG: %s (Cap: %d)" % [flag_status, manager.score_limit]
-	elif int(manager.get("ffa_target_kills")) > 0:
+	elif manager and int(manager.ffa_target_kills) > 0:
 		att_score_label.text = ""
 		def_score_label.text = ""
 		# Display the current leader
@@ -834,7 +855,7 @@ func update_header() -> void:
 				leader = str(k)
 		if leader_k > 0:
 			att_score_label.text = "LEAD: %s (%d)" % [leader, leader_k]
-		objective_label.text = "First to %d Kills" % int(manager.get("ffa_target_kills"))
+		objective_label.text = "First to %d Kills" % int(manager.ffa_target_kills)
 	elif _is_snd():
 		objective_label.text = "ROUND %d" % manager.current_round
 	else:
@@ -849,9 +870,9 @@ func refresh_scoreboard() -> void:
 		return
 	var a = manager.team_scores.get("attackers", 0)
 	var d = manager.team_scores.get("defenders", 0)
-	var is_ffa_sb: bool = int(manager.get("ffa_target_kills")) > 0
+	var is_ffa_sb: bool = int(manager.ffa_target_kills) > 0
 	if is_ffa_sb:
-		scoreboard_title.text = "%s   —   FIRST TO %d KILLS" % [manager.mode_title, int(manager.get("ffa_target_kills"))]
+		scoreboard_title.text = "%s   —   FIRST TO %d KILLS" % [manager.mode_title, int(manager.ffa_target_kills)]
 	else:
 		scoreboard_title.text = "%s   —   ATTACKERS %d : %d DEFENDERS" % [manager.mode_title, a, d]
 	var ally_names: Array = []
@@ -983,21 +1004,22 @@ func _is_combatant_name(name_str: String) -> bool:
 func pick_side(team: String) -> void:
 	if not manager:
 		return
-	if int(manager.get("ffa_target_kills")) > 0:
-		# FFA: no sides to pick — join outright (team is assigned per peer)
+	var is_ffa := int(manager.ffa_target_kills) > 0
+	if is_ffa:
 		team = "all"
-	elif multiplayer.has_multiplayer_peer():
+	if multiplayer.has_multiplayer_peer():
 		# Cap humans at team_size per side: full team stays on picker with notice
-		if not manager.can_join_team(team):
+		if not is_ffa and not manager.can_join_team(team):
 			lbl_team_full.text = "%s IS FULL (%d MAX) — PICK OTHER SIDE" % [team.to_upper(), manager.team_size]
 			return
 		# Already on this side? Just close — no pointless respawn.
 		var my_id = multiplayer.get_unique_id()
-		if manager.players_data.has(my_id) and manager.players_data[my_id].get("team", "") == team:
+		if not is_ffa and manager.players_data.has(my_id) and manager.players_data[my_id].get("team", "") == team:
 			toggle_side_picker()
 			return
 		manager.request_join_team.rpc_id(1, team)
 	else:
 		manager.request_join_team_local(team)
 	has_joined_match = true
-	toggle_side_picker()
+	if side_picker and side_picker.visible:
+		toggle_side_picker()

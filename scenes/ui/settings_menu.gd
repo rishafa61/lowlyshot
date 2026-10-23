@@ -29,8 +29,8 @@ func _ready():
 	btn_back.pressed.connect(_on_back_pressed)
 	btn_back.focus_mode = Control.FOCUS_NONE
 
-	check_fullscreen.button_pressed = GlobalSettings.windowed
-	check_fullscreen.text = "On" if GlobalSettings.windowed else "Off"
+	check_fullscreen.button_pressed = GlobalSettings.fullscreen
+	check_fullscreen.text = "On" if GlobalSettings.fullscreen else "Off"
 	check_fullscreen.toggled.connect(_on_fullscreen_toggled)
 	
 	tabs["Visual"].pressed.connect(func(): set_tab("Visual"))
@@ -116,8 +116,8 @@ func _on_mic_changed(val: float) -> void:
 
 
 func _on_fullscreen_toggled(on: bool) -> void:
-	# "Windowed" toggle: ON = windowed, OFF = fullscreen
-	GlobalSettings.set_windowed(on)
+	# Fullscreen toggle: ON = fullscreen, OFF = windowed
+	GlobalSettings.set_fullscreen(on)
 	GlobalSettings.save_settings()
 	check_fullscreen.text = "On" if on else "Off"
 

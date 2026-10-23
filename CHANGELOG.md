@@ -12,23 +12,27 @@ New game mode: Flying Scoutsman (multiplayer free-for-all).
 ### Added
 - **Flying Scoutsman game mode** (`scenes/levels/flying_scoutsman.tscn`, `scripts/multiplayer/flying_scoutsman_manager.gd`):
   - Free-for-all deathmatch: first combatant (player or bot) to reach 40 kills wins outright.
-  - Forced loadout: locks player and AI strictly to the `m700` sniper rifle regardless of loadout selection; weapon switching to other slots disabled during the mode.
-  - Moon gravity / float physics: sets global gravity to 2.94 m/s² (~30% base / 70% float) for lofty aerial sniper duels; restores base 9.8 m/s² on level exit.
-  - Random arena spawning: 18 distributed spawn points across the arena bounds ensuring random player and bot spawn placement.
-  - Dedicated HUD header, leader tracker, single-column FFA scoreboard, and winner announcement overlay.
-  - Registered in Multiplayer maps catalog in the main menu.
-  - Test suite `tests/test_flying_scoutsman.gd` validating weapon lock, moon gravity, FFA win rules, and spawner distribution.
+  - Forced loadout: locks player and AI strictly to the `m700` sniper rifle; weapon switching disabled during mode.
+  - Vanguard operator lock: forces player and bots to `Vanguard` (`GlobalData.force_operator`), enabling adrenaline healing skill.
+  - True float moon gravity: reduced gravity further from 2.94 m/s² down to 1.6 m/s² (~16% of base gravity) for floaty aerial combat; cleanly restored on level exit.
+  - CS-style spawn protection: player and AI bots receive 5-second invulnerability upon spawn/respawn, immediately cancelled when horizontal movement or jump input occurs.
+  - Active bot FFA combat & roaming: bots actively hunt live targets across long ranges (up to 150m sniper engagement) instead of remaining at spawn.
+  - Random arena spawning: 18 distributed spawn points across arena bounds.
+  - Auto-joining arena entry: side picker overlay is completely removed in FFA mode, automatically spawning player with captured cursor.
+  - Default display mode switched from windowed to fullscreen (`project.godot` `mode=3`, `GlobalSettings.windowed = false`, fixed inverted settings toggle).
+  - Test suite `tests/test_flying_scoutsman.gd` validating weapon lock, Vanguard lock, 1.6 gravity, spawn invulnerability, FFA win rules, and spawner distribution.
 
 ### Changed
 - `MultiplayerManager`: added `ffa_target_kills` and `ffa_winner_name` with per-kill FFA win conditions bypassing team scores when `ffa_target_kills > 0`.
-- `MultiplayerHUD`: added dynamic FFA header (leader tracker), FFA end-screen messaging, and auto-joining side assignment (`pick_side("all")`).
-- `capsule_enemy.gd` & `capsule_ally.gd`: FFA hostility bypass allowing bots to target and damage any living combatant (`pt != self`).
-- `player.gd`: friendly-fire bypass and weapon switch restriction during weapon-locked modes.
-- `GlobalData`: added `force_primary_id` override mechanism and `get_weapon_by_id()` helper.
+- `MultiplayerHUD`: removed side picker overlay in FFA (`_is_ffa()`), preventing team select card obstruction; fixed M key toggle.
+- `capsule_enemy.gd` & `capsule_ally.gd`: added spawn protection, dynamic long-range sniper engagement range, and live-target roaming for FFA.
+- `player.gd`: added spawn protection, Vanguard operator auto-lock, and friendly-fire bypass for FFA.
+- `GlobalData`: added `force_primary_id`, `force_operator`, and safe `is_ffa_mode()` helper.
+- `GlobalSettings` & `settings_menu`: default to fullscreen, corrected inverted CheckButton label/action ("Fullscreen: On/Off").
 
 ### Test Status
-- `test_flying_scoutsman.gd` 14/14 PASS
-- All regression suites PASS (Search & Destroy 33, Ground War 19)
+- `test_flying_scoutsman.gd` 18/18 PASS
+- All regression suites PASS (Search & Destroy, Ground War, Team Select, Multiplayer Issues, PlayerSpawner)
 
 ---
 

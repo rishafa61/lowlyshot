@@ -5,13 +5,16 @@ const MAX_DURATION: float = 5.0
 const SPEED_BONUS: float = 0.25 # +25% base movement speed
 var player_ref: CharacterBody3D = null
 
-func _ready():
+func _init():
 	op_name = "Vanguard"
 	max_health = 120
 	max_armor = 50
 	speed_mult = 1.0
 	skill_name = "Adrenaline"
 	skill_cooldown = 30.0
+
+func _ready():
+	pass
 
 func _process(delta):
 	# Handle base cooldown

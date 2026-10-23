@@ -33,6 +33,8 @@ var current_speed_mult = 1.0
 var active_operator: EnemyOperator = null
 var bot_name: String = ""
 var snd_team: String = "" # "attackers"/"defenders" — stamped by the match manager
+var spawn_protect_timer: float = 0.0
+var _spawn_protect_origin: Vector3 = Vector3.ZERO
 var last_attacker: String = ""
 var last_attacker_faction: String = ""
 var last_weapon: String = ""
@@ -167,8 +169,16 @@ func _ready():
 	if is_net_puppet:
 		_setup_puppet_bot()
 		return
-	# Assign a random operator to this enemy
-	var op_script = available_operators.pick_random()
+	# Assign an operator: manager-locked mode forces Vanguard (the healer)
+	var forced_op := str(GlobalData.get("force_operator"))
+	var op_script = null
+	if forced_op != "":
+		for cand in available_operators:
+			if cand.new().op_name == forced_op:
+				op_script = cand
+				break
+	if op_script == null:
+		op_script = available_operators.pick_random()
 	active_operator = op_script.new()
 	add_child(active_operator)
 	active_operator.setup(self)
@@ -189,6 +199,7 @@ func _ready():
 	var players = get_tree().get_nodes_in_group("player")
 	if players.size() > 0:
 		target = players[0]
+	_arm_spawn_protect()
 	
 	_equip_random_primary()
 
@@ -216,8 +227,7 @@ func _snd_side_of(n: Node) -> String:
 	return ""
 
 func _find_nearest_target() -> void:
-	var mgr = get_tree().current_scene
-	var is_ffa: bool = mgr != null and int(mgr.get("ffa_target_kills")) > 0
+	var is_ffa: bool = GlobalData.is_ffa_mode()
 	var my_team := str(get("snd_team"))
 	var potential_targets = get_tree().get_nodes_in_group("player") \
 		+ get_tree().get_nodes_in_group("ally") + get_tree().get_nodes_in_group("enemy")
@@ -342,6 +352,12 @@ func _physics_process(delta):
 		velocity.z = move_toward(velocity.z, 0, delta * 15.0)
 		_soft_move(delta)
 		return
+
+	# Spawn protection countdown: cancelled once the bot actually moves
+	if spawn_protect_timer > 0.0:
+		spawn_protect_timer -= delta
+		if global_position.distance_to(_spawn_protect_origin) > 0.5:
+			spawn_protect_timer = 0.0
 
 	if is_dead:
 		if can_respawn:
@@ -535,7 +551,20 @@ func process_ai(delta):
 				# Objective play: rush the flag via the north ramp and fight over it
 				random_pos = flag.global_position + Vector3(randf_range(-3.0, 3.0), 0.0, randf_range(5.0, 15.0))
 			else:
-				random_pos = start_pos + Vector3(randf_range(-8, 8), 0, randf_range(-8, 8))
+				if GlobalData.is_ffa_mode():
+					# FFA: hunt a random live combatant so fights actually happen
+					var cands := get_tree().get_nodes_in_group("player") \
+						+ get_tree().get_nodes_in_group("enemy")
+					var alive: Array = []
+					for c in cands:
+						if c != self and c is Node3D and not c.get("is_dead"):
+							alive.append(c)
+					if not alive.is_empty():
+						random_pos = (alive.pick_random() as Node3D).global_position
+					else:
+						random_pos = start_pos + Vector3(randf_range(-8, 8), 0, randf_range(-8, 8))
+				else:
+					random_pos = start_pos + Vector3(randf_range(-8, 8), 0, randf_range(-8, 8))
 			_set_nav_goal(random_pos)
 			roam_timer = randf_range(3.0, 6.0)
 		# Sprint to the objective, walk once on it
@@ -595,8 +624,11 @@ func process_ai(delta):
 			is_crouching = true # Take cover/crouch while reloading
 			move_along_path(WALK_SPEED * current_speed_mult, false)
 		else:
-			# Shoot anytime within effective firing range (25m)
-			if dist <= 25.0 and fire_cooldown <= 0:
+			# Shoot within effective range — snipers engage far out in FFA modes
+			var shoot_range := 25.0
+			if GlobalData.is_ffa_mode() and equipped_primary:
+				shoot_range = clampf(float(equipped_primary.get("rng", 25.0)), 25.0, 150.0)
+			if dist <= shoot_range and fire_cooldown <= 0:
 				shoot()
 
 			if dist > 12.0:
@@ -710,8 +742,16 @@ func can_see_target() -> bool:
 	query.collide_with_bodies = true
 	
 	var result = space_state.intersect_ray(query)
-	if result and result.collider == target:
-		return true
+	if result:
+		var c = result.collider
+		if c == target:
+			return true
+		if c is Node:
+			var p = c.get_parent()
+			if p == target:
+				return true
+			if p != null and p.get_parent() == target:
+				return true
 	return false
 
 func shoot():
@@ -768,8 +808,7 @@ func shoot():
 			w_name = equipped_primary["id"]
 		# Hostile check: teammate on same team is friendly (FFA: nobody is friendly)
 		var hit_body = hit.get_parent() if hit is Area3D else hit
-		var mgr = get_tree().current_scene
-		var is_ffa: bool = mgr != null and int(mgr.get("ffa_target_kills")) > 0
+		var is_ffa: bool = GlobalData.is_ffa_mode()
 		var my_team := str(get("snd_team"))
 		var friendly: bool = false
 		if not is_ffa:
@@ -820,6 +859,9 @@ func take_damage(amount: float, attacker_name: String = "", weapon_name: String 
 
 func receive_damage(base_dmg: float, part: String = "upper", attacker_name: String = "", weapon_name: String = "", attacker_faction: String = "") -> float:
 	if is_dead:
+		return 0.0
+	# Spawn protection (CS style): invulnerable until timer lapses or we move
+	if spawn_protect_timer > 0.0:
 		return 0.0
 	# Replicated puppet: route the hit to the host's authoritative bot
 	if is_net_puppet:
@@ -886,6 +928,13 @@ func die():
 	tween.tween_property(visuals, "rotation:x", deg_to_rad(-90), 0.5).set_trans(Tween.TRANS_BOUNCE)
 	tween.tween_property(visuals, "position:y", -0.5, 0.5)
 
+## CS-style spawn protection: 5s or until we move (FFA modes only)
+func _arm_spawn_protect() -> void:
+	if not GlobalData.is_ffa_mode():
+		return
+	spawn_protect_timer = 5.0
+	_spawn_protect_origin = global_position
+
 func respawn():
 	is_dead = false
 	health_component.reset()
@@ -898,6 +947,7 @@ func respawn():
 	# Force position immediately
 	global_position = start_pos
 	velocity = Vector3.ZERO
+	_arm_spawn_protect()
 	
 	for box in hitbox_shapes:
 		box.set_deferred("disabled", false)
