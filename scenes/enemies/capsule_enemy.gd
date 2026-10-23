@@ -97,6 +97,7 @@ var _los_cache: bool = false
 var _hitbox_base_y: Array[float] = []
 # Soft mover state: shapecast sweep + ray floor snap (no move_and_slide)
 var _grounded: bool = false
+var _hop_cd: float = 0.0
 var _blocked: bool = false
 var _block_normal: Vector3 = Vector3.ZERO
 var _move_accum: float = 0.0
@@ -359,6 +360,8 @@ func _physics_process(delta):
 		var planar := Vector2(global_position.x - _spawn_protect_origin.x, global_position.z - _spawn_protect_origin.z).length()
 		if planar > 0.5:
 			spawn_protect_timer = 0.0
+	if _hop_cd > 0.0:
+		_hop_cd -= delta
 
 	if is_dead:
 		if can_respawn:
@@ -502,6 +505,11 @@ func _step_up_if_needed() -> void:
 	# Mantle assist over spawn cliff (1.18 m) when blocked by a high ledge
 	if not _blocked:
 		return
+	if GlobalData.is_ffa_mode() and _grounded and _hop_cd <= 0.0:
+		velocity.y = randf_range(5.5, 7.5)
+		_grounded = false
+		_hop_cd = 1.5
+		return
 	var fwd := -global_transform.basis.z
 	var space := get_world_3d().direct_space_state
 	var step_target := global_position + Vector3.UP * 1.35 + fwd * 0.4
@@ -553,21 +561,27 @@ func process_ai(delta):
 				random_pos = flag.global_position + Vector3(randf_range(-3.0, 3.0), 0.0, randf_range(5.0, 15.0))
 			else:
 				if GlobalData.is_ffa_mode():
-					# FFA: hunt a random live combatant so fights actually happen
-					var cands := get_tree().get_nodes_in_group("player") \
-						+ get_tree().get_nodes_in_group("enemy")
-					var alive: Array = []
-					for c in cands:
-						if c != self and c is Node3D and not c.get("is_dead"):
-							alive.append(c)
-					if not alive.is_empty():
-						random_pos = (alive.pick_random() as Node3D).global_position
+					# FFA: 50/50 — sweep a random spawn area (map coverage) or
+					# hunt a live combatant so fights actually happen
+					var sps := get_tree().get_nodes_in_group("spawn_points")
+					if randf() < 0.5 and not sps.is_empty():
+						random_pos = (sps.pick_random() as Node3D).global_position
 					else:
-						random_pos = start_pos + Vector3(randf_range(-8, 8), 0, randf_range(-8, 8))
+						var cands := get_tree().get_nodes_in_group("player") \
+							+ get_tree().get_nodes_in_group("enemy")
+						var alive: Array = []
+						for c in cands:
+							if c != self and c is Node3D and not c.get("is_dead"):
+								alive.append(c)
+						if not alive.is_empty():
+							random_pos = (alive.pick_random() as Node3D).global_position
+						else:
+							random_pos = start_pos + Vector3(randf_range(-8, 8), 0, randf_range(-8, 8))
 				else:
 					random_pos = start_pos + Vector3(randf_range(-8, 8), 0, randf_range(-8, 8))
 			_set_nav_goal(random_pos)
 			roam_timer = randf_range(3.0, 6.0)
+		_try_ffa_jump(0.02)
 		# Sprint to the objective, walk once on it
 		var spd := RUN_SPEED if (flag != null and global_position.distance_to(flag.global_position) > 15.0) else WALK_SPEED
 		# Occasional slide while sprinting: burst of speed
@@ -632,7 +646,13 @@ func process_ai(delta):
 			if dist <= shoot_range and fire_cooldown <= 0:
 				shoot()
 
-			if dist > 12.0:
+			var chase_dist := 12.0
+			var retreat_dist := 5.0
+			if GlobalData.is_ffa_mode():
+				# Snipers hold a long band: back off when crowded, re-close past 30 m
+				chase_dist = 30.0
+				retreat_dist = 10.0
+			if dist > chase_dist:
 				# CHASE - close the distance to optimal range
 				is_crouching = false
 				_set_nav_goal(target.global_position)
@@ -644,7 +664,7 @@ func process_ai(delta):
 					
 				var base_spd = SLIDE_SPEED if is_sliding else RUN_SPEED
 				move_along_path(base_spd * current_speed_mult, false)
-			elif dist < 5.0:
+			elif dist < retreat_dist:
 				# RETREAT - step back slightly if player crowds
 				is_crouching = false
 				var retreat_dir = (global_position - target.global_position).normalized()
@@ -652,12 +672,25 @@ func process_ai(delta):
 				velocity.x = retreat_dir.x * (WALK_SPEED * current_speed_mult)
 				velocity.z = retreat_dir.z * (WALK_SPEED * current_speed_mult)
 			else:
-				# OPTIMAL COMBAT RANGE (5-12m) - hold position, strafe or crouch
+				# OPTIMAL COMBAT RANGE - hold position, strafe or crouch
 				velocity.x = move_toward(velocity.x, 0, delta * 20.0)
 				velocity.z = move_toward(velocity.z, 0, delta * 20.0)
 				
 				# Randomly crouch for evasion
 				if randf() < 0.02: is_crouching = !is_crouching
+			_try_ffa_jump(0.012)
+
+## Moon-gravity float jumps: bots hop into the air periodically during roam/combat
+func _try_ffa_jump(chance: float) -> void:
+	if not GlobalData.is_ffa_mode():
+		return
+	if not _grounded or _hop_cd > 0.0:
+		return
+	if randf() < chance:
+		# Jump height ~3-5m in 1.6 gravity — lofty float with aerial control
+		velocity.y = randf_range(5.0, 7.5)
+		_grounded = false
+		_hop_cd = randf_range(2.0, 5.0)
 
 # Snap any goal onto the navmesh — off-mesh targets (crate/roof/air) make the
 # path corridor query fail with "not find the most reachable polygons" spam.
@@ -942,8 +975,17 @@ func respawn():
 	is_reloading = false
 	current_speed_mult = active_operator.speed_mult if active_operator else 1.0
 	
-	# Force position immediately
-	global_position = start_pos
+	# Force position immediately; FFA respawns at a random spawn marker so bots
+	# don't keep fighting in the same spawn cluster
+	if GlobalData.is_ffa_mode():
+		var sps := get_tree().get_nodes_in_group("spawn_points")
+		if not sps.is_empty():
+			var sp := sps.pick_random() as Node3D
+			global_position = sp.global_position + Vector3(randf_range(-2, 2), 0.3, randf_range(-2, 2))
+		else:
+			global_position = start_pos
+	else:
+		global_position = start_pos
 	velocity = Vector3.ZERO
 	_arm_spawn_protect()
 	

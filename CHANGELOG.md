@@ -7,14 +7,21 @@ Format: version — date — Added / Changed / Fixed. Newest first.
 
 ## v0.05.1 — 2026-10-23
 
-Flying Scoutsman combat + spawn protection fixes.
+Flying Scoutsman AI combat, moon jumping, map roaming, and spawn protection.
+
+### Added
+- **Bot moon jumps**: bots in Flying Scoutsman periodically launch floaty hops into the air (impulse 5.0-7.5 m/s, ~3-5 m apex at 1.6 gravity) while roaming and strafing, matching the floaty feel of the mode; obstacle-blocked bots hop to clear ledges.
+- **Arena-wide roaming**: roam goal selection in FFA now alternates 50/50 between sweeping a random arena spawn point (covers the entire map) and hunting a live combatant, preventing the spawn-cluster camping pattern.
+- **FFA random respawn**: bots no longer respawn onto static `start_pos`; every respawn picks a random arena spawn point with small jitter.
+- **Sniper engagement spacing**: FFA combat range widened from 5-12 m to 10-30 m so bots don't crowd into point-blank retreat shuffles.
 
 ### Fixed
 - **AI never shot each other**: bot-vs-bot line-of-sight rays passed straight through other bots — bot bodies are `collision_layer = 0` (script-driven movement) and only hitbox `Area3D`s are hittable, but the LOS raycast had `collide_with_areas = false`. Enabled area hits in `capsule_enemy.gd` / `capsule_ally.gd` `can_see_target()` (own hitboxes stay excluded) so bots now detect, chase, and snipe each other; hit→owner resolution walks the full parent chain.
 - **Respawn invincibility lost instantly**: player spawn protection was cancelled by any movement/fall/jump input; at moon gravity the post-respawn drop exceeded the 0.5 m cancel threshold within ~1 s. Player protection is now a flat 5 s invulnerability on every spawn/respawn (timer-only). Bots keep move-cancel, but vertical settle no longer counts (XZ-plane distance).
 
 ### Test Status
-- `test_flying_scoutsman.gd` now also verifies bot-vs-bot LOS detection and bot bullet damage (21 checks PASS)
+- `test_flying_scoutsman.gd`: 28/28 checks PASS (incl. bot-vs-bot LOS, bullet damage, and `_try_ffa_jump` impulse)
+- Headless 20 s simulation verified: 15 hops sampled across 7 bots, displacement up to 45.9 m across arena
 - Regression suites PASS (Search & Destroy, Ground War, Multiplayer Issues, PlayerSpawner)
 
 ---

@@ -87,6 +87,12 @@ func _run() -> void:
 		ba.shoot()
 		check(bb.health < bb_hp, "bot bullets damage other bots")
 
+		# 5c. Bot jumps in moon gravity
+		ba._hop_cd = 0.0
+		ba._grounded = true
+		ba._try_ffa_jump(1.0)
+		check(ba.velocity.y >= 5.0 and not ba._grounded, "bot _try_ffa_jump launches into air with float impulse")
+
 	# 6. Loadout lock: primary is forced to m700
 	var primary_dict: Dictionary = gd.get_equipped_primary()
 	check(primary_dict.get("id") == "m700", "get_equipped_primary() returns m700 regardless of loadout selection")
