@@ -492,6 +492,8 @@ var _los_cache: bool = false
 var _hitbox_base_y: Array[float] = []
 
 func process_ai(delta):
+	if not is_inside_tree():
+		return
 	# Periodically update target in case current target dies or gets out of range
 	if randf() < 0.05:
 		_find_nearest_enemy()
@@ -672,7 +674,7 @@ func process_stance(delta):
 			hitboxes[i].position.y = _hitbox_base_y[i] * current_scale
 
 func can_see_target() -> bool:
-	if not target or target.get("is_dead"): return false
+	if not is_inside_tree() or not is_instance_valid(target) or not target.is_inside_tree() or target.get("is_dead"): return false
 	var space_state = get_world_3d().direct_space_state
 	var query = PhysicsRayQueryParameters3D.create(eyes.global_position, target.global_position + Vector3(0, 1.0, 0))
 	
