@@ -1,0 +1,107 @@
+[gd_scene load_steps=11 format=3]
+
+[ext_resource type="Script" path="res://scenes/weapons/skills/hunter_drone.gd" id="1_drone"]
+
+[sub_resource type="StandardMaterial3D" id="Mat_body"]
+albedo_color = Color(0.18, 0.2, 0.24, 1)
+metallic = 0.6
+roughness = 0.35
+
+[sub_resource type="BoxMesh" id="BoxMesh_body"]
+material = SubResource("Mat_body")
+size = Vector3(0.24, 0.06, 0.34)
+
+[sub_resource type="BoxMesh" id="BoxMesh_arm"]
+material = SubResource("Mat_body")
+size = Vector3(0.02, 0.02, 0.46)
+
+[sub_resource type="StandardMaterial3D" id="Mat_rotor"]
+albedo_color = Color(0.08, 0.08, 0.09, 1)
+roughness = 0.5
+
+[sub_resource type="BoxMesh" id="BoxMesh_blade"]
+material = SubResource("Mat_rotor")
+size = Vector3(0.16, 0.005, 0.02)
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_hub"]
+material = SubResource("Mat_rotor")
+top_radius = 0.02
+bottom_radius = 0.02
+height = 0.03
+
+[sub_resource type="StandardMaterial3D" id="Mat_beam"]
+transparency = 1
+shading_mode = 0
+albedo_color = Color(1, 0.2, 0.2, 0.45)
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_beam"]
+material = SubResource("Mat_beam")
+top_radius = 0.015
+bottom_radius = 0.015
+height = 1.0
+
+[node name="HunterDrone" type="Node3D"]
+script = ExtResource("1_drone")
+
+[node name="Body" type="MeshInstance3D" parent="."]
+mesh = SubResource("BoxMesh_body")
+
+[node name="ArmDiag1" type="MeshInstance3D" parent="."]
+transform = Transform3D(0.707107, 0, 0.707107, 0, 1, 0, -0.707107, 0, 0.707107, 0, 0.02, 0)
+mesh = SubResource("BoxMesh_arm")
+
+[node name="ArmDiag2" type="MeshInstance3D" parent="."]
+transform = Transform3D(0.707107, 0, -0.707107, 0, 1, 0, 0.707107, 0, 0.707107, 0, 0.02, 0)
+mesh = SubResource("BoxMesh_arm")
+
+[node name="RotorFL" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.16, 0.04, -0.16)
+
+[node name="Hub" type="MeshInstance3D" parent="RotorFL"]
+mesh = SubResource("CylinderMesh_hub")
+
+[node name="Blade" type="MeshInstance3D" parent="RotorFL"]
+mesh = SubResource("BoxMesh_blade")
+
+[node name="RotorFR" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.16, 0.04, -0.16)
+
+[node name="Hub" type="MeshInstance3D" parent="RotorFR"]
+mesh = SubResource("CylinderMesh_hub")
+
+[node name="Blade" type="MeshInstance3D" parent="RotorFR"]
+mesh = SubResource("BoxMesh_blade")
+
+[node name="RotorBL" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.16, 0.04, 0.16)
+
+[node name="Hub" type="MeshInstance3D" parent="RotorBL"]
+mesh = SubResource("CylinderMesh_hub")
+
+[node name="Blade" type="MeshInstance3D" parent="RotorBL"]
+mesh = SubResource("BoxMesh_blade")
+
+[node name="RotorBR" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.16, 0.04, 0.16)
+
+[node name="Hub" type="MeshInstance3D" parent="RotorBR"]
+mesh = SubResource("CylinderMesh_hub")
+
+[node name="Blade" type="MeshInstance3D" parent="RotorBR"]
+mesh = SubResource("BoxMesh_blade")
+
+[node name="StatusLight" type="OmniLight3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.06, -0.17)
+light_color = Color(0.55, 1, 0.7, 1)
+light_energy = 2.0
+omni_range = 1.2
+
+[node name="ZapLight" type="OmniLight3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.05, 0)
+light_color = Color(0.3, 0.85, 1, 1)
+light_energy = 0.0
+omni_range = 4.0
+
+[node name="LockBeam" type="MeshInstance3D" parent="."]
+visible = false
+mesh = SubResource("CylinderMesh_beam")

@@ -91,6 +91,10 @@ func spawn_player(peer_id: int = 1, team: String = "") -> Node3D:
 	if player == null:
 		return null
 	_get_container().add_child(player)
+	# add_child ran _ready(), which re-resolves player_name from SteamSync on
+	# authority-owned nodes and would clobber the registry name — kill
+	# attribution breaks after any respawn. Reapply AFTER _ready.
+	_apply_registry_name(player, peer_id)
 	if sp:
 		player.global_position = sp.global_position
 	spawned_data[peer_id] = data
@@ -123,6 +127,20 @@ func build_replica(data: Dictionary) -> void:
 	var player := _build_player(data)
 	if player:
 		_get_container().add_child(player)
+		_apply_registry_name(player, peer_id)
+
+## Registry name lookup, applied after add_child — see spawn_player comment.
+func _apply_registry_name(player: Node3D, peer_id: int) -> void:
+	if player == null or not is_instance_valid(player):
+		return
+	var display_name := str(peer_id)
+	var mgr = get_parent()
+	if mgr and mgr.get("players_data") != null and mgr.players_data.has(peer_id):
+		var rn = mgr.players_data[peer_id].get("name", "")
+		if str(rn).strip_edges() != "":
+			display_name = str(rn)
+	if "player_name" in player:
+		player.player_name = display_name
 
 func remove_replica(peer_id: int) -> void:
 	_remove_local(peer_id)

@@ -1,10 +1,14 @@
-[gd_scene load_steps=4 format=3 uid="uid://yuoyd2re7fye"]
+[gd_scene load_steps=5 format=3 uid="uid://yuoyd2re7fye"]
 
 [ext_resource type="PackedScene" uid="uid://cb4a3b8u7c8a" path="res://scenes/player/player.tscn" id="1_ig7tw"]
 
 [sub_resource type="NavigationMesh" id="NavigationMesh_7dm0k"]
 
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_floor"]
+albedo_color = Color(0.2, 0.2, 0.25, 1)
+
 [sub_resource type="BoxMesh" id="BoxMesh_ig7tw"]
+material = SubResource("StandardMaterial3D_floor")
 
 [node name="Main" type="Node3D"]
 

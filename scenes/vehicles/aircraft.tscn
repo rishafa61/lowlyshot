@@ -1,6 +1,7 @@
 [gd_scene format=3 uid="uid://dcpsvq81ixwgl"]
 
 [ext_resource type="Script" uid="uid://bqtoih46mlq72" path="res://scripts/vehicles/aircraft_controller.gd" id="1_script"]
+[ext_resource type="PackedScene" uid="uid://bmh7ec6suau31" path="res://assets/models/vehicles/Aircraft.glb" id="2_glb"]
 
 [sub_resource type="PhysicsMaterial" id="PhysicsMaterial_a10"]
 friction = 0.6
@@ -17,106 +18,7 @@ size = Vector3(6.5, 2.2, 2)
 [sub_resource type="SphereShape3D" id="SphereShape3D_interact"]
 radius = 4.2
 
-[sub_resource type="StandardMaterial3D" id="Mat_Airframe"]
-albedo_color = Color(0.68, 0.71, 0.74, 1)
-metallic = 0.2
-roughness = 0.65
-
-[sub_resource type="BoxMesh" id="Mesh_Fuselage"]
-material = SubResource("Mat_Airframe")
-size = Vector3(1.7, 0.9772461, 10.015625)
-
-[sub_resource type="CylinderMesh" id="Mesh_Nose"]
-material = SubResource("Mat_Airframe")
-top_radius = 0.35
-bottom_radius = 0.85
-height = 3.2
-
-[sub_resource type="StandardMaterial3D" id="Mat_BlackMetal"]
-albedo_color = Color(0.12, 0.12, 0.14, 1)
-metallic = 0.85
-roughness = 0.4
-
-[sub_resource type="CylinderMesh" id="Mesh_Cannon"]
-material = SubResource("Mat_BlackMetal")
-top_radius = 0.14
-bottom_radius = 0.14
-height = 1.6
-
-[sub_resource type="StandardMaterial3D" id="Mat_Canopy"]
-albedo_color = Color(0.08, 0.12, 0.15, 0.85)
-metallic = 0.8
-roughness = 0.15
-
-[sub_resource type="BoxMesh" id="Mesh_Canopy"]
-material = SubResource("Mat_Canopy")
-size = Vector3(1.1, 0.75, 2.6)
-
-[sub_resource type="BoxMesh" id="Mesh_WingMain"]
-material = SubResource("Mat_Airframe")
-size = Vector3(16.5, 0.28, 2.8)
-
-[sub_resource type="StandardMaterial3D" id="Mat_DarkGray"]
-albedo_color = Color(0.38, 0.41, 0.44, 1)
-metallic = 0.3
-roughness = 0.6
-
-[sub_resource type="BoxMesh" id="Mesh_WingFlap"]
-material = SubResource("Mat_DarkGray")
-size = Vector3(16, 0.18, 0.8)
-
-[sub_resource type="BoxMesh" id="Mesh_GearPod"]
-material = SubResource("Mat_Airframe")
-size = Vector3(0.7, 0.7, 2.8)
-
-[sub_resource type="BoxMesh" id="Mesh_TailPylon"]
-material = SubResource("Mat_Airframe")
-size = Vector3(2.4, 0.45, 1.2)
-
-[sub_resource type="CylinderMesh" id="Mesh_Engine"]
-material = SubResource("Mat_DarkGray")
-top_radius = 0.75
-bottom_radius = 0.75
-height = 3.6
-
-[sub_resource type="StandardMaterial3D" id="Mat_Intake"]
-albedo_color = Color(0.05, 0.05, 0.06, 1)
-metallic = 0.4
-roughness = 0.9
-
-[sub_resource type="CylinderMesh" id="Mesh_Intake"]
-material = SubResource("Mat_Intake")
-top_radius = 0.65
-bottom_radius = 0.65
-height = 0.25
-
-[sub_resource type="CylinderMesh" id="Mesh_Exhaust"]
-material = SubResource("Mat_BlackMetal")
-top_radius = 0.55
-bottom_radius = 0.65
-height = 0.5
-
-[sub_resource type="BoxMesh" id="Mesh_HTail"]
-material = SubResource("Mat_Airframe")
-size = Vector3(6.2, 0.22, 1.8)
-
-[sub_resource type="BoxMesh" id="Mesh_VTail"]
-material = SubResource("Mat_Airframe")
-size = Vector3(0.2, 2.1, 1.6)
-
-[sub_resource type="CylinderMesh" id="Mesh_Strut"]
-material = SubResource("Mat_BlackMetal")
-top_radius = 0.08
-bottom_radius = 0.08
-height = 1.1
-
-[sub_resource type="CylinderMesh" id="Mesh_Wheel"]
-material = SubResource("Mat_Intake")
-top_radius = 0.4
-bottom_radius = 0.4
-height = 0.35
-
-[node name="Aircraft" type="RigidBody3D" unique_id=1752026872 groups=["aircraft", "vehicles"]]
+[node name="Aircraft2" type="RigidBody3D" unique_id=1602822331 groups=["aircraft", "vehicles"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.4755468, 3.346283)
 mass = 2200.0
 physics_material_override = SubResource("PhysicsMaterial_a10")
@@ -126,189 +28,43 @@ linear_damp = 0.2
 angular_damp = 1.5
 script = ExtResource("1_script")
 
-[node name="ColFuselage" type="CollisionShape3D" parent="." unique_id=1441943837]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -0.5)
+[node name="ColFuselage" type="CollisionShape3D" parent="." unique_id=1970000164]
+transform = Transform3D(1, 0, 0, 0, 1.3867817, 0, 0, 0, 1, 0, 0, -0.5)
 shape = SubResource("BoxShape3D_fuselage")
 
-[node name="ColWings" type="CollisionShape3D" parent="." unique_id=610661934]
+[node name="ColWings" type="CollisionShape3D" parent="." unique_id=1666083464]
 transform = Transform3D(1.0160555, 0, 0, 0, 1, 0, 0, 0, 0.86262816, 0, 0.9755341, 1.0142386)
 shape = SubResource("BoxShape3D_wings")
 
-[node name="ColTail" type="CollisionShape3D" parent="." unique_id=1524826268]
+[node name="ColTail" type="CollisionShape3D" parent="." unique_id=811095550]
 transform = Transform3D(0.67713356, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.6, 5.8)
 shape = SubResource("BoxShape3D_tail")
 
-[node name="PilotSeat" type="Marker3D" parent="." unique_id=1164243379]
+[node name="PilotSeat" type="Marker3D" parent="." unique_id=1738906770]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.1, -5.3530693)
 
-[node name="InteractArea" type="Area3D" parent="." unique_id=2026462063]
+[node name="InteractArea" type="Area3D" parent="." unique_id=656878122]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.8, -3)
 collision_layer = 0
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="InteractArea" unique_id=872892855]
+[node name="CollisionShape3D" type="CollisionShape3D" parent="InteractArea" unique_id=1702997321]
 shape = SubResource("SphereShape3D_interact")
 
-[node name="ChasePivot" type="Node3D" parent="." unique_id=1634683355]
+[node name="ChasePivot" type="Node3D" parent="." unique_id=955707869]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.94936275, -1.9709961)
 
-[node name="ChaseArm" type="SpringArm3D" parent="ChasePivot" unique_id=1594117967]
+[node name="ChaseArm" type="SpringArm3D" parent="ChasePivot" unique_id=1963755871]
 transform = Transform3D(1, 0, 0, 0, 0.994522, 0.104528, 0, -0.104528, 0.994522, 0, 1.2, 0)
 spring_length = 24.0
 margin = 0.4
 
-[node name="ChaseCamera" type="Camera3D" parent="ChasePivot/ChaseArm" unique_id=1195846396]
+[node name="ChaseCamera" type="Camera3D" parent="ChasePivot/ChaseArm" unique_id=1625656358]
 far = 1400.0
 
-[node name="Model" type="Node3D" parent="." unique_id=716223941]
+[node name="Model" type="Node3D" parent="." unique_id=995629244]
 
-[node name="Fuselage" type="MeshInstance3D" parent="Model" unique_id=2055863628]
-transform = Transform3D(0.85723346, 0, 0, 0, 0.9942657, 0, 0, 0, 1.2633879, 0, 1.109481, -0.68828076)
-mesh = SubResource("Mesh_Fuselage")
+[node name="AircraftMesh" parent="Model" unique_id=1818769834 instance=ExtResource("2_glb")]
+transform = Transform3D(-0.8, 0, -6.9938224e-08, 0, 0.8, 0, 6.9938224e-08, 0, -0.8, 0, 0.87, 0)
 
-[node name="Fuselage3" type="MeshInstance3D" parent="Model" unique_id=182477147]
-transform = Transform3D(0.85723346, 0, 0, 0, 0.9942657, 0, 0, 0, 1.2398598, 0, 0.4519762, -1.1037116)
-mesh = SubResource("Mesh_Fuselage")
-
-[node name="Fuselage2" type="MeshInstance3D" parent="Model" unique_id=1988337450]
-transform = Transform3D(0.8870223, 0, 0, 0, 0.6492351, 0, 0, 0, 0.51028544, 0, 1.5675342, 0.5)
-mesh = SubResource("Mesh_Fuselage")
-
-[node name="Nose" type="MeshInstance3D" parent="Model" unique_id=577612736]
-transform = Transform3D(0.7385052, 0, 0, 0, -4.4871964e-08, 1.2211773, 0, -1.0265507, -5.337937e-08, 0, 0.7, -8.209655)
-mesh = SubResource("Mesh_Nose")
-
-[node name="Nose2" type="MeshInstance3D" parent="Model" unique_id=1843158358]
-transform = Transform3D(0.90253866, 0, 0, 0, -2.7373082e-08, 0.9784527, 0, -0.62622297, -4.2769535e-08, 0, 0.7, -8.209655)
-mesh = SubResource("Mesh_Nose")
-
-[node name="GAU8_Cannon" type="MeshInstance3D" parent="Model" unique_id=1293151293]
-transform = Transform3D(1, 0, 0, 0, -4.37114e-08, 1, 0, -1, -4.37114e-08, -0.54439044, 0.048042327, -7.858122)
-mesh = SubResource("Mesh_Cannon")
-
-[node name="Canopy" type="MeshInstance3D" parent="Model" unique_id=1177243936]
-transform = Transform3D(1, 0, 0, 0, 0.83057773, 0.18480049, 0, -0.14645307, 1.0480571, 0, 1.7211752, -5.6514072)
-mesh = SubResource("Mesh_Canopy")
-
-[node name="Canopy2" type="MeshInstance3D" parent="Model" unique_id=1273563444]
-transform = Transform3D(1, 0, 0, 0, 2.382928, 0.24540204, 0, -0.7485936, 0.78116524, 0, 1.55, -4.5388784)
-mesh = SubResource("Mesh_Canopy")
-
-[node name="Canopy3" type="MeshInstance3D" parent="Model" unique_id=1107082061]
-transform = Transform3D(1, 0, 0, 0, 2.239255, -0.38631564, 0, 0.72648835, 1.1907406, 0, 1.4343207, -2.5408013)
-mesh = SubResource("Mesh_Canopy")
-
-[node name="WingMain" type="MeshInstance3D" parent="Model" unique_id=1440740106]
-transform = Transform3D(0.9755905, 0, 0, 0, 0.9875305, 0.10528691, 0, -0.15742728, 0.6604576, 0, 1.0800313, 1.2993634)
-mesh = SubResource("Mesh_WingMain")
-
-[node name="WingMain2" type="MeshInstance3D" parent="Model" unique_id=1609447833]
-transform = Transform3D(0.5953715, 0, 0, 0, 0.98547137, 0.06418242, 0, -0.1698417, 0.37240517, 0, 1.259189, 0.5671537)
-mesh = SubResource("Mesh_WingMain")
-
-[node name="WingFlap" type="MeshInstance3D" parent="Model" unique_id=1817614633]
-transform = Transform3D(0.65773624, 0, 0, 0, 0.9746015, 0.22394621, 0, -0.22394621, 0.9746015, 0, 1.0392251, -0.34322643)
-mesh = SubResource("Mesh_WingFlap")
-
-[node name="WingFlap2" type="MeshInstance3D" parent="Model" unique_id=1870664982]
-transform = Transform3D(0.2511924, 0, 0, 0, 1, 0, 0, 0, 7.5270605, 0, 1.0392251, -1.7561307)
-mesh = SubResource("Mesh_WingFlap")
-
-[node name="WingFlap3" type="MeshInstance3D" parent="Model" unique_id=252434341]
-transform = Transform3D(0.17393862, 0, 0, 0, 5.286012, 0.52183324, 0, -1.1429279, 2.4134648, 0, 1.2679794, -1.7101402)
-mesh = SubResource("Mesh_WingFlap")
-
-[node name="WingFlap4" type="MeshInstance3D" parent="Model" unique_id=353924620]
-transform = Transform3D(0.15448357, 0, 0, 0, 5.334907, -0.033550322, 0, 0.054451585, 3.2871118, 0, 1.1431632, -3.7569513)
-mesh = SubResource("Mesh_WingFlap")
-
-[node name="WingFlap6" type="MeshInstance3D" parent="Model" unique_id=1656815687]
-transform = Transform3D(0.118228085, 0, 0, 0, 5.3124537, -0.019715857, 0, 0.054222412, 1.9316722, 0, 1.1431632, -5.774113)
-mesh = SubResource("Mesh_WingFlap")
-
-[node name="WingFlap5" type="MeshInstance3D" parent="Model" unique_id=760640259]
-transform = Transform3D(0.15448357, 0, 0, 0, 2.3907714, -0.089269534, 0, 0.024401791, 8.746232, 0, 0.39488554, -3.7569513)
-mesh = SubResource("Mesh_WingFlap")
-
-[node name="GearPodL" type="MeshInstance3D" parent="Model" unique_id=350409490]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.6, 0.66524535, 1.2460153)
-mesh = SubResource("Mesh_GearPod")
-
-[node name="GearPodR" type="MeshInstance3D" parent="Model" unique_id=46841510]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.6, 0.66524535, 1.2460153)
-mesh = SubResource("Mesh_GearPod")
-
-[node name="EnginePylon" type="MeshInstance3D" parent="Model" unique_id=360314395]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.7, 2.4)
-mesh = SubResource("Mesh_TailPylon")
-
-[node name="EngineL" type="MeshInstance3D" parent="Model" unique_id=1946784480]
-transform = Transform3D(1, 0, 0, 0, 0.10032791, 0.9949544, 0, -0.9949544, 0.10032791, -1.35, 1.9679923, 2.4)
-mesh = SubResource("Mesh_Engine")
-
-[node name="IntakeL" type="MeshInstance3D" parent="Model/EngineL" unique_id=1018072400]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.7, 0)
-mesh = SubResource("Mesh_Intake")
-
-[node name="ExhaustL" type="MeshInstance3D" parent="Model/EngineL" unique_id=1168299780]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -1.75, 0)
-mesh = SubResource("Mesh_Exhaust")
-
-[node name="EngineR" type="MeshInstance3D" parent="Model" unique_id=906434318]
-transform = Transform3D(1, 0, 0, 0, 0.10032791, 0.9949544, 0, -0.9949544, 0.10032791, 1.35, 1.9679923, 2.4)
-mesh = SubResource("Mesh_Engine")
-
-[node name="IntakeR" type="MeshInstance3D" parent="Model/EngineR" unique_id=116073394]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.7, 0)
-mesh = SubResource("Mesh_Intake")
-
-[node name="ExhaustR" type="MeshInstance3D" parent="Model/EngineR" unique_id=1902061081]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -1.75, 0)
-mesh = SubResource("Mesh_Exhaust")
-
-[node name="EngineBack" type="MeshInstance3D" parent="Model" unique_id=1278410335]
-transform = Transform3D(0.5504682, 0, 0, 0, -0.019658169, 0.5887514, 0, -0.98585457, -0.011739825, 0, 0.623, 3.904512)
-mesh = SubResource("Mesh_Engine")
-
-[node name="IntakeR" type="MeshInstance3D" parent="Model/EngineBack" unique_id=1092229502]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.7, 0)
-mesh = SubResource("Mesh_Intake")
-
-[node name="ExhaustR" type="MeshInstance3D" parent="Model/EngineBack" unique_id=1892696314]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -1.75, 0)
-mesh = SubResource("Mesh_Exhaust")
-
-[node name="HTail" type="MeshInstance3D" parent="Model" unique_id=1408154767]
-transform = Transform3D(0.71950364, 0, 0, 0, 0.9769781, 0.10684526, 0, -0.21333945, 0.4892929, 0, 1.55, 5.8)
-mesh = SubResource("Mesh_HTail")
-
-[node name="VTailL" type="MeshInstance3D" parent="Model" unique_id=1067870257]
-transform = Transform3D(0.71756923, 0, 0, 0, 0.96305025, 0.13331196, 0, -0.2693217, 0.47670168, -2.1885862, 1.7, 5.8)
-mesh = SubResource("Mesh_VTail")
-
-[node name="VTailR" type="MeshInstance3D" parent="Model" unique_id=1759416157]
-transform = Transform3D(0.71756923, 0, 0, 0, 0.96305025, 0.13331196, 0, -0.2693217, 0.47670168, 2.1885862, 1.7, 5.8)
-mesh = SubResource("Mesh_VTail")
-
-[node name="NoseGearStrut" type="MeshInstance3D" parent="Model" unique_id=1661528503]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.2016325, -6.6530695)
-mesh = SubResource("Mesh_Strut")
-
-[node name="NoseWheel" type="MeshInstance3D" parent="Model" unique_id=504594301]
-transform = Transform3D(-4.37114e-08, -1, 0, 1, -4.37114e-08, 0, 0, 0, 1, 0, -0.7516322, -6.6530695)
-mesh = SubResource("Mesh_Wheel")
-
-[node name="MainGearLStrut" type="MeshInstance3D" parent="Model" unique_id=1047016883]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.6, -0.12524605, 2.4401388)
-mesh = SubResource("Mesh_Strut")
-
-[node name="MainWheelL" type="MeshInstance3D" parent="Model" unique_id=560829069]
-transform = Transform3D(-4.37114e-08, -1, 0, 1, -4.37114e-08, 0, 0, 0, 1, -2.6, -0.67524576, 2.5075264)
-mesh = SubResource("Mesh_Wheel")
-
-[node name="MainGearRStrut" type="MeshInstance3D" parent="Model" unique_id=354907192]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.6, -0.12524605, 2.4401388)
-mesh = SubResource("Mesh_Strut")
-
-[node name="MainWheelR" type="MeshInstance3D" parent="Model" unique_id=1624520546]
-transform = Transform3D(-4.37114e-08, -1, 0, 1, -4.37114e-08, 0, 0, 0, 1, 2.6, -0.67524576, 2.5075264)
-mesh = SubResource("Mesh_Wheel")
+[node name="GAU8_Cannon" type="Node3D" parent="Model" unique_id=2139722488]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.14831364, -9.185595)

@@ -11,4 +11,5 @@ rng = 60.0
 owned = true
 equipped = true
 scene_path = "res://scenes/weapons/main/ak47.tscn"
+viewmodel_scene = "res://scenes/weapons/viewmodels/ak47_viewmodel.tscn"
 viewmodel_position = Vector3(0.05, 0.03, 0.1)

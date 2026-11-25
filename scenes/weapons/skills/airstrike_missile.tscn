@@ -10,7 +10,12 @@ height = 1.5
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_missile"]
 albedo_color = Color(0.2, 0.2, 0.2, 1)
 
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_boom"]
+transparency = 1
+albedo_color = Color(1, 0.5, 0.1, 0.7)
+
 [sub_resource type="SphereMesh" id="SphereMesh_boom"]
+material = SubResource("StandardMaterial3D_boom")
 radius = 5.0
 height = 10.0
 

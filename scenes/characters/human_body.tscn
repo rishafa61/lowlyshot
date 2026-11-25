@@ -6,5 +6,5 @@
 [node name="HumanBody" type="Node3D" unique_id=1006670987]
 script = ExtResource("1_script")
 
-[node name="PlayerModel" parent="." instance=ExtResource("2_body_tscn")]
-transform = Transform3D(-0.2375, 0, 0, 0, 0.2375, 0, 0, 0, -0.2375, 0, 1.2907, 0)
+[node name="PlayerModel" parent="." unique_id=150274642 instance=ExtResource("2_body_tscn")]
+transform = Transform3D(-0.2375, 0, -2.076291e-08, 0, 0.2375, 0, 2.076291e-08, 0, -0.2375, 0, 0, 0)

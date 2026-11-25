@@ -62,6 +62,24 @@ func _run() -> void:
 	check(grenade.owner_name == "Player", "Grenade carries owner_name")
 	grenade.queue_free()
 
+	# 5. Respawn keeps registry name — player._ready() re-resolves the name
+	# from SteamSync ("RioTest"), which silently dropped all post-respawn
+	# kills: killer string never matched match_stats keys ("Player").
+	var ss_stub = GDScript.new()
+	ss_stub.source_code = "extends Node\nvar persona_name: String = \"RioTest\"\n"
+	ss_stub.reload()
+	var ss_node = Node.new()
+	ss_node.name = "SteamSync"
+	ss_node.set_script(ss_stub)
+	root.add_child(ss_node)
+	mgr.players_data[1] = {"name": "Player", "team": "attackers", "kills": 0, "deaths": 0, "ping": 0}
+	var respawnee = mgr.spawner.spawn_player(1, "attackers")
+	check(respawnee != null and str(respawnee.get("player_name")) == "Player",
+		"respawned player keeps registry name (not Steam persona)")
+	if respawnee:
+		respawnee.queue_free()
+	ss_node.queue_free()
+
 	mgr.queue_free()
 	await process_frame
 

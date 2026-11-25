@@ -264,22 +264,22 @@ mesh = SubResource("Mesh_BipodMount")
 surface_material_override/0 = SubResource("Mat_steel_dark")
 
 [node name="BipodLegL" type="MeshInstance3D" parent="." unique_id=564086112]
-transform = Transform3D(1, 0, 0, 0, 0, -1.0265762, 0, 1.212309, 0, -0.022, 0.05862945, -0.3985725)
+transform = Transform3D(0.99639004, -0.09123918, 0.040318884, 0, -0.56087023, -0.9101038, 0.084892295, 1.0708842, -0.4732271, -0.0062453686, 0.012754537, -0.38733017)
 mesh = SubResource("Mesh_BipodLeg")
 surface_material_override/0 = SubResource("Mat_steel_dark")
 
 [node name="BipodLegR" type="MeshInstance3D" parent="." unique_id=2145502183]
-transform = Transform3D(1, 0, 0, 0, 0, -1.0265762, 0, 1.212309, 0, 0.022, 0.05862945, -0.3985725)
+transform = Transform3D(0.9969605, 0.08373228, -0.03700155, 0, -0.56087005, -0.91010374, -0.0779076, 1.0714973, -0.47349793, 0.0067188437, 0.012754537, -0.38736886)
 mesh = SubResource("Mesh_BipodLeg")
 surface_material_override/0 = SubResource("Mat_steel_dark")
 
 [node name="BipodFootL" type="MeshInstance3D" parent="." unique_id=1350133299]
-transform = Transform3D(1, 0, 0, 0, 1.0265762, 0, 0, 0, 1.212309, -0.022, 0.048363686, -0.24097234)
+transform = Transform3D(0.99639004, -0.040318884, -0.09123918, 0, 0.9101038, -0.56087023, 0.084892295, 0.4732271, 1.0708842, -0.017754631, -0.056741677, -0.2522447)
 mesh = SubResource("Mesh_BipodFoot")
 surface_material_override/0 = SubResource("Mat_steel_dark")
 
 [node name="BipodFootR" type="MeshInstance3D" parent="." unique_id=1298168348]
-transform = Transform3D(1, 0, 0, 0, 1.0265762, 0, 0, 0, 1.212309, 0.022, 0.048363686, -0.24097234)
+transform = Transform3D(0.9969606, 0.037001558, 0.08373228, 0, 0.9101038, -0.5608702, -0.0779076, 0.47349808, 1.0714972, 0.017281156, -0.056741677, -0.25220603)
 mesh = SubResource("Mesh_BipodFoot")
 surface_material_override/0 = SubResource("Mat_steel_dark")
 

@@ -131,7 +131,7 @@ func _run() -> void:
 	check(tank.occupants[0] == p1 and tank.occupants[1] == null, "Player 1 switched back to tank Seat 0 (Driver)")
 
 	# 3b. Tank turret gunner dedicated FPS camera on CommanderHatch
-	var gunner_cam: Camera3D = tank.get_node_or_null("Model/Turret/CommanderHatch/GunnerCam")
+	var gunner_cam: Camera3D = tank.get_node_or_null("Model/CommanderHatch/GunnerCam")
 	check(gunner_cam != null, "Tank has GunnerCam under CommanderHatch")
 	check(gunner_cam.current == false, "GunnerCam inactive while driving")
 	tank.net_sync_exit(0)

@@ -1,6 +1,6 @@
-[gd_scene load_steps=9 format=3]
+[gd_scene format=3 uid="uid://76ia2l24qmru"]
 
-[ext_resource type="Script" path="res://scripts/objects/bomb_item.gd" id="1_script"]
+[ext_resource type="Script" uid="uid://1aurdfdk436a" path="res://scripts/objects/bomb_item.gd" id="1_script"]
 
 [sub_resource type="BoxMesh" id="box_body"]
 size = Vector3(0.35, 0.18, 0.25)
@@ -9,16 +9,6 @@ size = Vector3(0.35, 0.18, 0.25)
 albedo_color = Color(0.12, 0.12, 0.13, 1)
 metallic = 0.6
 roughness = 0.4
-
-[sub_resource type="SphereMesh" id="sphere_light"]
-radius = 0.05
-height = 0.1
-
-[sub_resource type="StandardMaterial3D" id="mat_light"]
-albedo_color = Color(1.0, 0.1, 0.1, 1)
-emission_enabled = true
-emission = Color(1.0, 0.1, 0.1, 1)
-emission_energy_multiplier = 1.5
 
 [sub_resource type="CylinderMesh" id="cyl_panel"]
 top_radius = 0.18
@@ -30,35 +20,44 @@ albedo_color = Color(0.85, 0.6, 0.1, 1)
 metallic = 0.3
 roughness = 0.6
 
+[sub_resource type="SphereMesh" id="sphere_light"]
+radius = 0.05
+height = 0.1
+
+[sub_resource type="StandardMaterial3D" id="mat_light"]
+albedo_color = Color(1, 0.1, 0.1, 1)
+emission_enabled = true
+emission = Color(1, 0.1, 0.1, 1)
+emission_energy_multiplier = 1.5
+
 [sub_resource type="SphereShape3D" id="shape_interact"]
 radius = 1.2
 
-[node name="BombItem" type="Node3D"]
+[node name="BombItem" type="Node3D" unique_id=379148575]
 script = ExtResource("1_script")
 
-[node name="Body" type="MeshInstance3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.09, 0)
+[node name="Body" type="MeshInstance3D" parent="." unique_id=131092112]
+transform = Transform3D(1, 0, 0, 0, 0.6186285, 0, 0, 0, 1, 0, 0.055998266, 0)
 mesh = SubResource("box_body")
 surface_material_override/0 = SubResource("mat_body")
 
-[node name="Panel" type="MeshInstance3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.185, 0)
+[node name="Panel" type="MeshInstance3D" parent="." unique_id=2066257398]
+transform = Transform3D(0.274146, 0, 0, 0, 1, 0, 0, 0, 0.5018282, 0.09710379, 0.10617778, 0)
 mesh = SubResource("cyl_panel")
 surface_material_override/0 = SubResource("mat_panel")
 
-[node name="LightOrb" type="MeshInstance3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.12, 0.2, 0)
+[node name="LightOrb" type="MeshInstance3D" parent="." unique_id=1930708030]
+transform = Transform3D(0.5, 0, 0, 0, 0.5, 0, 0, 0, 0.5, 0.14831299, 0.097600445, 0.08987039)
 mesh = SubResource("sphere_light")
 surface_material_override/0 = SubResource("mat_light")
 
-[node name="BlinkLight" type="OmniLight3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.3, 0)
+[node name="BlinkLight" type="OmniLight3D" parent="." unique_id=25306938]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.22117779, 0)
 light_color = Color(1, 0.15, 0.1, 1)
-light_energy = 1.0
 omni_range = 3.5
 
-[node name="InteractArea" type="Area3D" parent="."]
+[node name="InteractArea" type="Area3D" parent="." unique_id=447343715]
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="InteractArea"]
+[node name="CollisionShape3D" type="CollisionShape3D" parent="InteractArea" unique_id=1007928178]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.6, 0)
 shape = SubResource("shape_interact")

@@ -32,6 +32,7 @@ _surfaces = [{
 }]
 
 [sub_resource type="CylinderMesh" id="CylinderMesh_ory3k"]
+material = SubResource("StandardMaterial3D_composite")
 
 [node name="SonarBow" type="Node3D" unique_id=2084080258]
 

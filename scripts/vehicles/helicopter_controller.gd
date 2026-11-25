@@ -143,6 +143,7 @@ func _ready() -> void:
 	contact_monitor = true
 	max_contacts_reported = 4
 	can_sleep = false ## forces drive flight; a sleeping body would ignore them mid-hover
+	reset_physics_interpolation() # never glide from origin on the first rendered frame
 	body_entered.connect(_on_impact)
 	hp = max_hp
 	for mg in mg_nodes:
@@ -160,6 +161,9 @@ func _ready() -> void:
 		interact_area.collision_mask |= 1
 		interact_area.body_entered.connect(_on_body_entered)
 		interact_area.body_exited.connect(_on_body_exited)
+	if chase_pivot != null:
+		chase_pivot.top_level = true # camera state lives outside the tumbling airframe
+	_setup_anim()
 
 func _setup_seats() -> void:
 	var seats_node := get_node_or_null("Seats")
@@ -220,7 +224,23 @@ func _on_body_exited(body: Node3D) -> void:
 				hud.hide_hover_name()
 
 func _unhandled_input(event: InputEvent) -> void:
+	# Mouse wheel: chase-cam zoom for any seated local player (pilot/passenger
+	# view; door-gunner cams have their own fixed view and ignore it)
+	if event is InputEventMouseButton and event.pressed \
+			and chase_cam != null and chase_cam.current and chase_arm != null \
+			and _local_seat_idx() != -1:
+		if event.button_index == MOUSE_BUTTON_WHEEL_UP:
+			chase_arm.spring_length = clampf(chase_arm.spring_length * 0.85, 5.0, 30.0)
+			return
+		if event.button_index == MOUSE_BUTTON_WHEEL_DOWN:
+			chase_arm.spring_length = clampf(chase_arm.spring_length * 1.18, 5.0, 30.0)
+			return
 	if event is InputEventKey and event.pressed and not event.echo:
+		# X: toggle the cabin door (any seated local player)
+		if event.keycode == KEY_X:
+			if _local_seat_idx() != -1:
+				_toggle_door()
+			return
 		# CTRL + 1..9: switch to that seat (if free)
 		var target := -1
 		if (event.ctrl_pressed or Input.is_key_pressed(KEY_CTRL)) and event.keycode >= KEY_1 and event.keycode <= KEY_9:
@@ -441,6 +461,7 @@ func _exit(idx: int) -> void:
 
 func _process(delta: float) -> void:
 	_animate_rotors(delta)
+	_update_anim()
 	_update_camera(delta)
 	_process_door_mgs(delta)
 	_update_hud()
@@ -558,11 +579,169 @@ func _animate_rotors(delta: float) -> void:
 	if rotor_rear != null:
 		rotor_rear.rotation.y = -rotor_angle
 
+# --- Airframe animation state machine (Helicopter.glb clips) ---
+# Loops: Idle (engine off, grounded), Idle_Rotor (engine on, grounded), Fly,
+# OD_Idle (grounded with door open). One-shots: Start_Rotor (engine started),
+# End_Rotor (engine shut down), O_Door / C_Door (X key toggle).
+const HELI_LOOPS: Array[String] = ["Idle", "Idle_Rotor", "Fly", "OD_Idle"]
+const HELI_ONE_SHOTS: Array[String] = ["Start_Rotor", "End_Rotor", "O_Door", "C_Door"]
+
+var _anim: AnimationPlayer = null
+var _door_anim: AnimationPlayer = null ## door-only swing player; main player keeps the rotor clip looping underneath
+var _anim_current := ""
+var _anim_oneshot := ""      ## one-shot currently playing (door swing or engine); blocks re-trigger/interrupt
+var _door_open := false
+var _door_collision: CollisionShape3D = null ## user-placed shape; enabled only while the door is open
+var _was_engine_on := false  ## edge latch: spool-up fires Start_Rotor, power loss fires End_Rotor
+
+func _setup_anim() -> void:
+	# Door hitbox: any node named DoorCollision* under the body (user-placed).
+	# Disabled while the door is closed; enabled only while toggled open.
+	for n in find_children("DoorCollision*", "", true, false):
+		var cs := n as CollisionShape3D
+		if cs == null and n.get_child_count() > 0:
+			for c in n.find_children("*", "CollisionShape3D", true, false):
+				cs = c as CollisionShape3D
+				if cs != null:
+					break
+		if cs != null:
+			_door_collision = cs
+			break
+	_set_door_collision(_door_open)
+	var players := find_children("*", "AnimationPlayer", true, false)
+	if players.is_empty():
+		return
+	_anim = players[0]
+	var lib := AnimationLibrary.new()
+	var door_lib := AnimationLibrary.new()
+	for clip: String in HELI_LOOPS + HELI_ONE_SHOTS:
+		if not _anim.has_animation(clip):
+			continue
+		var a: Animation = _anim.get_animation(clip).duplicate()
+		a.loop_mode = Animation.LOOP_LINEAR if clip in HELI_LOOPS else Animation.LOOP_NONE
+		# Door bone is animated ONLY by the door player (cut built below), so the
+		# swing-end pose persists after the one-shot releases — the baked
+		# closed-door keyframes in these clips would snap the door shut again.
+		for i in range(a.get_track_count() - 1, -1, -1):
+			if String(a.track_get_path(i)).contains("door"):
+				a.remove_track(i)
+		lib.add_animation(clip, a)
+		if clip == "O_Door" or clip == "C_Door":
+			# Door-only cut for the swing player: rotor/body tracks stripped so
+			# the main player keeps spinning the rotors underneath the swing.
+			var d: Animation = _anim.get_animation(clip).duplicate()
+			for i in range(d.get_track_count() - 1, -1, -1):
+				if not String(d.track_get_path(i)).contains("door"):
+					d.remove_track(i)
+			door_lib.add_animation(clip, d)
+	if lib.get_animation_list().is_empty():
+		_anim = null
+		return
+	if _anim.has_animation_library(""):
+		_anim.remove_animation_library("")
+	_anim.add_animation_library("", lib)
+	_anim.animation_finished.connect(_on_anim_finished)
+	if not door_lib.get_animation_list().is_empty():
+		_door_anim = AnimationPlayer.new()
+		_door_anim.root_node = _anim.root_node
+		_anim.get_parent().add_child(_door_anim) # after _anim in tree order: its door-bone pose wins
+		_door_anim.add_animation_library("", door_lib)
+		_door_anim.animation_finished.connect(_on_door_anim_finished)
+	_was_engine_on = engine_power > 0.1
+	_play_anim(_base_anim())
+
+func _base_anim() -> String:
+	if _anim == null:
+		return ""
+	if not is_grounded():
+		return "Fly"
+	return "Idle_Rotor" if engine_power > 0.1 else "Idle"
+
+func _play_anim(clip: String) -> void:
+	if _anim == null or clip == "" or _anim_current == clip:
+		return
+	_anim_current = clip
+	_anim.play(clip, 0.2)
+
+func _play_oneshot(clip: String) -> void:
+	if _anim == null or _anim_oneshot != "" or not _anim.has_animation(clip):
+		return
+	_anim_oneshot = clip
+	_anim_current = clip
+	_anim.play(clip, 0.2)
+
+func _on_anim_finished(anim_name: StringName) -> void:
+	# Only clips duplicated with LOOP_NONE will ever "finish"; the guard
+	# ignores stale/unrelated finishes.
+	if str(anim_name) != _anim_oneshot:
+		return
+	_anim_oneshot = ""
+	_play_anim(_post_oneshot_anim())
+
+func _post_oneshot_anim() -> String:
+	# OD_Idle is the grounded door-open pose; airborne keeps Fly. Main-player
+	# clips carry no door-bone tracks, so the last swing pose persists either way.
+	if _door_open and is_grounded():
+		return "OD_Idle"
+	return _base_anim()
+
+func _update_anim() -> void:
+	if _anim == null:
+		return
+	var engine_on := engine_power > 0.1
+	if engine_on and not _was_engine_on and _anim_oneshot == "":
+		_play_oneshot("Start_Rotor")
+	elif not engine_on and _was_engine_on and _anim_oneshot == "" and is_grounded():
+		_play_oneshot("End_Rotor")
+	_was_engine_on = engine_on
+	if _anim_oneshot != "":
+		return
+	_play_anim(_post_oneshot_anim())
+
+## X key: any seated local player toggles the cabin door.
+func _toggle_door() -> void:
+	if _anim == null or _anim_oneshot != "":
+		return # never interrupt a door swing / rotor spin-up halfway
+	_door_open = not _door_open
+	_set_door_collision(_door_open) # hitbox exists only while the door is open
+	var swing := "O_Door" if _door_open else "C_Door"
+	# ponytail: door state is cosmetic-only, not networked — other peers won't see it
+	if _door_anim != null and _door_anim.has_animation(swing):
+		_anim_oneshot = swing
+		_door_anim.play(swing, 0.2) # main player keeps its rotor loop running underneath
+	else:
+		_play_anim(_post_oneshot_anim()) # no door clips wired: keep base state valid
+
+func _set_door_collision(open: bool) -> void:
+	if _door_collision != null:
+		_door_collision.set_deferred("disabled", not open)
+
+func _on_door_anim_finished(anim_name: StringName) -> void:
+	if str(anim_name) != _anim_oneshot:
+		return
+	_anim_oneshot = ""
+	_play_anim(_post_oneshot_anim())
+
+var _cam_pos := Vector3.ZERO ## lagged chase pivot position (world space)
+
 func _update_camera(delta: float) -> void:
 	if chase_pivot == null or chase_arm == null or chase_cam == null:
 		return
+	var pos_target: Vector3 = global_position + Basis(Vector3.UP, _yaw) * Vector3(0.0, 8.4176, 4.4891)
+	# offset rides the HEADING only, not pitch/roll — tilt shouldn't swing the
+	# chase pivot around the airframe (that read as stutter while hovering-tilting)
 	if not chase_cam.current:
+		# Camera not driven: snap to the airframe so the next occupant starts clean
+		_cam_pos = pos_target
+		chase_pivot.global_position = _cam_pos
+		chase_pivot.global_rotation = Vector3(0.0, _yaw, 0.0)
 		return
+	# Hover/movement delay: while moving the pivot trails the drift — lag deepens
+	# with speed so the airframe feels weighty; parked/hovering follows tight.
+	var speed_t := clampf(linear_velocity.length() / 24.0, 0.0, 1.0)
+	var w_pos := 1.0 - exp(-lerpf(12.0, 4.0, speed_t) * delta)
+	_cam_pos = _cam_pos.lerp(pos_target, w_pos)
+	chase_pivot.global_position = _cam_pos
 	# ALT released: ease camera back behind the heli so the pilot faces forward
 	if not Input.is_action_pressed("camera_freelook"):
 		_cam_yaw = lerp_angle(_cam_yaw, 0.0, minf(delta * 3.0, 1.0))
@@ -575,8 +754,10 @@ func _update_camera(delta: float) -> void:
 	elif Input.is_action_pressed("lean_right"): # E
 		target_yaw = PI * 0.5
 		target_pitch = -0.1
-	var w: float = minf(delta * 9.0, 1.0)
-	chase_pivot.rotation.y = lerp_angle(chase_pivot.rotation.y, target_yaw, w)
+	var w := 1.0 - exp(-lerpf(9.0, 5.0, speed_t) * delta)
+	# top-level pivot: yaw is GLOBAL — body heading + camera offset (ALT orbit/lean)
+	var cy := lerp_angle(chase_pivot.global_rotation.y, wrapf(_yaw + target_yaw, -PI, PI), w)
+	chase_pivot.global_rotation = Vector3(0.0, cy, 0.0)
 	chase_arm.rotation.x = lerp(chase_arm.rotation.x, target_pitch, w)
 
 func net_set_target(pos: Vector3, rot: Vector3, vel: Vector3, eng: float) -> void:

@@ -1,0 +1,17 @@
+[gd_scene format=3 uid="uid://ca2hve8c1ma4r"]
+
+[ext_resource type="PackedScene" uid="uid://dr013krq8kqmk" path="res://assets/models/weapons/ak_viewmodel.glb" id="1_arms"]
+[ext_resource type="PackedScene" uid="uid://bi0pon61lnmld" path="res://assets/models/weapons/ak47.glb" id="2_gun"]
+
+[node name="AK47Viewmodel" type="Node3D" unique_id=369575822]
+transform = Transform3D(1.5, 0, 0, 0, 1.5, 0, 0, 0, 1.5, 0.10208464, 0, 0.56749845)
+
+[node name="Rig" type="Node3D" parent="." unique_id=307765375]
+transform = Transform3D(-0.1133, 0, 0, 0, 0.1133, 0, 0, 0, -0.1133, -0.4, 0.1, 0.4)
+
+[node name="Arms" parent="Rig" unique_id=1499178942 instance=ExtResource("1_arms")]
+
+[node name="Gun" parent="Rig" unique_id=156240261 instance=ExtResource("2_gun")]
+
+[node name="Muzzle" type="Marker3D" parent="." unique_id=1023976960]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.085, 0.1, -0.81)

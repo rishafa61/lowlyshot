@@ -27,6 +27,7 @@ extends Resource
 @export var equipped: bool = false
 @export var price: int = 0
 @export var scene_path: String = ""
+@export var viewmodel_scene: String = "" # first-person model scene (anim-capable); "" = reuse scene_path
 
 @export var viewmodel_position: Vector3 = Vector3.ZERO
 @export var viewmodel_rotation: Vector3 = Vector3.ZERO
@@ -64,6 +65,7 @@ func to_dict() -> Dictionary:
 		"equipped": equipped,
 		"price": price,
 		"scene_path": scene_path,
+		"viewmodel_scene": viewmodel_scene,
 		"viewmodel_position": viewmodel_position,
 		"viewmodel_rotation": viewmodel_rotation,
 		"viewmodel_scale": viewmodel_scale,
@@ -100,6 +102,7 @@ static func from_dict(d: Dictionary) -> WeaponData:
 	w.equipped = bool(d.get("equipped", false))
 	w.price = int(d.get("price", 0))
 	w.scene_path = d.get("scene_path", "")
+	w.viewmodel_scene = d.get("viewmodel_scene", "")
 	w.viewmodel_position = d.get("viewmodel_position", Vector3.ZERO)
 	w.viewmodel_rotation = d.get("viewmodel_rotation", Vector3.ZERO)
 	w.viewmodel_scale = d.get("viewmodel_scale", Vector3.ONE)

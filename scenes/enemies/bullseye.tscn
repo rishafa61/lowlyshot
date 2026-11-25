@@ -19,6 +19,9 @@ bottom_radius = 0.25
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_red"]
 albedo_color = Color(1, 0, 0, 1)
 
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_white"]
+albedo_color = Color(0.9, 0.9, 0.9, 1)
+
 [node name="Bullseye" type="StaticBody3D"]
 script = ExtResource("1_script")
 
@@ -29,6 +32,7 @@ shape = SubResource("CylinderShape3D_b")
 [node name="WhiteBase" type="MeshInstance3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, -4.37114e-08, -1, 0, 1, -4.37114e-08, 0, 0, 0)
 mesh = SubResource("CylinderMesh_white")
+surface_material_override/0 = SubResource("StandardMaterial3D_white")
 
 [node name="RedCenter" type="MeshInstance3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, -4.37114e-08, -1, 0, 1, -4.37114e-08, 0, 0, 0)

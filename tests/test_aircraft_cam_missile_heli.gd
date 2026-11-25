@@ -65,6 +65,60 @@ func _run() -> void:
 	check(absf(plane.chase_pivot.global_basis.z.dot(plane.global_basis.z) - 1.0) < 0.01,
 		"Camera forward stays aligned (orthonormal basis)")
 
+	# --- 1b. Fluid camera: lag deepens while accelerating or turning over ---
+	plane.global_rotation = Vector3.ZERO
+	await physics_frame
+	plane.linear_velocity = Vector3.ZERO
+	plane.angular_velocity = Vector3.ZERO
+	var pos_target: Vector3 = plane.global_position + plane.global_basis * Vector3(0, 5.2, 0)
+	# Steady flight: camera closes most of a 10m gap in one frame
+	plane._accel_smooth = 0.0
+	plane._last_vel = Vector3.ZERO
+	plane._cam_pos = pos_target + plane.global_basis * Vector3(0, 0, 10)
+	plane.chase_pivot.global_position = plane._cam_pos
+	plane._update_camera_lag(1.0 / 60.0)
+	var gap_steady: float = plane._cam_pos.distance_to(pos_target)
+	# Hard acceleration (~30 m/s^2 smoothed): same 10m gap, slower close
+	plane._accel_smooth = 30.0
+	plane._cam_pos = pos_target + plane.global_basis * Vector3(0, 0, 10)
+	plane.chase_pivot.global_position = plane._cam_pos
+	plane._update_camera_lag(1.0 / 60.0)
+	var gap_accel: float = plane._cam_pos.distance_to(pos_target)
+	check(gap_accel > gap_steady + 0.5,
+		"Camera trails harder while accelerating (gap %.2f vs steady %.2f)" % [gap_accel, gap_steady])
+	# Turning over: same instant bank, deeper lag with high roll rate.
+	# Freeze the body (a rolled plane tumbles under physics) and realign the
+	# camera to the unrolled airframe first — otherwise the pivot starts the
+	# run still lagging from section 1's roll and the comparison is diluted.
+	plane._accel_smooth = 0.0
+	plane.freeze = true
+	plane.global_rotation = Vector3.ZERO
+	await physics_frame
+	plane.angular_velocity = Vector3.ZERO
+	plane._cam_fwd = -plane.global_basis.z
+	plane._cam_up = plane.global_basis.y
+	plane.chase_pivot.global_basis = plane.global_basis
+	plane.global_rotation = Vector3(0, 0, deg_to_rad(60.0))
+	await physics_frame
+	for i in 8:
+		plane._update_camera_lag(1.0 / 60.0)
+	var dot_steady_turn: float = plane.chase_pivot.global_basis.x.dot(plane.global_basis.x)
+	plane.global_rotation = Vector3.ZERO
+	await physics_frame
+	plane.angular_velocity = Vector3(0, 0, 5.0) # hard roll rate
+	plane._cam_fwd = -plane.global_basis.z
+	plane._cam_up = plane.global_basis.y
+	plane.chase_pivot.global_basis = plane.global_basis
+	plane.global_rotation = Vector3(0, 0, deg_to_rad(60.0))
+	await physics_frame
+	for i in 8:
+		plane._update_camera_lag(1.0 / 60.0)
+	var dot_hard_turn: float = plane.chase_pivot.global_basis.x.dot(plane.global_basis.x)
+	plane.freeze = false # restore physics for later sections
+	check(dot_hard_turn < dot_steady_turn - 0.1,
+		"Camera lags deeper while rolling over (dot %.3f vs %.3f steady)" % [dot_hard_turn, dot_steady_turn])
+	plane.angular_velocity = Vector3.ZERO
+
 	# --- 2. Missile lock-on mechanism (AT4-style) ---
 	check(plane.LOCK_MAX_PIXEL_DIST == 240.0, "Lock cone matches AT4 launcher (240px)")
 	check(plane.LOCK_HOLD_TIME > 0.0, "Lock hold time configured (%.1fs)" % plane.LOCK_HOLD_TIME)

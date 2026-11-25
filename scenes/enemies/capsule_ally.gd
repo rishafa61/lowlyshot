@@ -62,6 +62,10 @@ func net_set_target(pos: Vector3, yaw: float) -> void:
 	_net_target_pos = pos
 	_net_target_yaw = yaw
 
+const DEFAULT_WEAPON_HOLDER_POS := Vector3(0.22, 1.2, -0.4)
+const DEFAULT_WEAPON_HOLDER_ROT := Vector3.ZERO
+var _weapon_drop_tween: Tween = null
+
 func net_play_death() -> void:
 	if not is_net_puppet or is_dead:
 		return
@@ -69,9 +73,8 @@ func net_play_death() -> void:
 	for box in hitbox_shapes:
 		box.set_deferred("disabled", true)
 	collision_shape.set_deferred("disabled", true)
-	var tween = create_tween().set_parallel(true)
-	tween.tween_property(visuals, "rotation:x", deg_to_rad(-90), 0.5).set_trans(Tween.TRANS_BOUNCE)
-	tween.tween_property(visuals, "position:y", -0.5, 0.5)
+	body.play_anim("Death")
+	_drop_weapon()
 
 ## Host bot respawned: restore this puppet's visuals/collision (Ground War etc.)
 func net_play_respawn() -> void:
@@ -83,6 +86,8 @@ func net_play_respawn() -> void:
 	collision_shape.set_deferred("disabled", false)
 	visuals.rotation.x = 0
 	visuals.position.y = 0
+	body.clear_death()
+	_reset_weapon_holder()
 
 # Weapon Stats
 var ammo = 30
@@ -943,9 +948,8 @@ func die():
 		box.set_deferred("disabled", true)
 	collision_shape.set_deferred("disabled", true)
 	
-	var tween = create_tween().set_parallel(true)
-	tween.tween_property(visuals, "rotation:x", deg_to_rad(-90), 0.5).set_trans(Tween.TRANS_BOUNCE)
-	tween.tween_property(visuals, "position:y", -0.5, 0.5)
+	body.play_anim("Death")
+	_drop_weapon()
 
 ## CS-style spawn protection: 5s or until we move (FFA modes only)
 func _arm_spawn_protect() -> void:
@@ -984,6 +988,8 @@ func respawn():
 	visuals.rotation.x = 0
 	visuals.position.y = 0
 	visuals.scale.y = 1.0
+	body.clear_death()
+	_reset_weapon_holder()
 	is_crouching = false
 	is_sliding = false
 	
@@ -994,3 +1000,43 @@ func respawn():
 			mgr.broadcast_bot_respawned(net_id)
 	
 	print("Enemy Respawned!")
+
+## Drops the held weapon to the floor when dead instead of floating in midair
+func _drop_weapon() -> void:
+	if not is_instance_valid(weapon_holder):
+		return
+	if _weapon_drop_tween and _weapon_drop_tween.is_valid():
+		_weapon_drop_tween.kill()
+
+	var floor_y: float = global_position.y + 0.04
+	var space := get_world_3d().direct_space_state if is_inside_tree() else null
+	if space:
+		var ray_from: Vector3 = weapon_holder.global_position
+		var ray_to: Vector3 = ray_from + Vector3.DOWN * 10.0
+		var query := PhysicsRayQueryParameters3D.create(ray_from, ray_to)
+		query.collision_mask = 1
+		query.exclude = [get_rid()]
+		var hit := space.intersect_ray(query)
+		if hit and hit.has("position"):
+			floor_y = float(hit.position.y) + 0.04
+
+	var parent_node := weapon_holder.get_parent() as Node3D
+	var target_local_y: float = 0.04
+	if parent_node:
+		target_local_y = parent_node.to_local(Vector3(weapon_holder.global_position.x, floor_y, weapon_holder.global_position.z)).y
+
+	_weapon_drop_tween = create_tween().set_parallel(true)
+	_weapon_drop_tween.tween_property(weapon_holder, "position:y", target_local_y, 0.35)\
+		.set_trans(Tween.TRANS_BOUNCE).set_ease(Tween.EASE_OUT)
+	_weapon_drop_tween.tween_property(weapon_holder, "rotation:z", deg_to_rad(85.0), 0.3)\
+		.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	_weapon_drop_tween.tween_property(weapon_holder, "rotation:x", deg_to_rad(randf_range(-10.0, 10.0)), 0.3)
+	_weapon_drop_tween.tween_property(weapon_holder, "rotation:y", deg_to_rad(randf_range(-20.0, 20.0)), 0.3)
+
+func _reset_weapon_holder() -> void:
+	if _weapon_drop_tween and _weapon_drop_tween.is_valid():
+		_weapon_drop_tween.kill()
+	if is_instance_valid(weapon_holder):
+		weapon_holder.position = DEFAULT_WEAPON_HOLDER_POS
+		weapon_holder.rotation = DEFAULT_WEAPON_HOLDER_ROT
+		weapon_holder.visible = true

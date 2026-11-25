@@ -46,7 +46,7 @@ func _initialize() -> void:
 	check(player._puppet_body.position.is_equal_approx(player.SEAT_BODY_OFFSETS["Pass2"]),
 		"Model shifted to bench cushion: %s" % player._puppet_body.position)
 	var hb: HumanBody = player._puppet_body as HumanBody
-	check(hb != null and hb.get_current_anim() == "Crouch", "Model playing Crouch seated animation")
+	check(hb != null and hb.get_current_anim() == "Idle_Rifle", "Model playing Idle_Rifle seated animation")
 
 	print("--- TEST 3: Switch through Seats 4, 5, 6 -> Model Tracks Each Bench ---")
 	# Seat 4 (Pass3)
@@ -92,11 +92,11 @@ func _initialize() -> void:
 	check(puppet._puppet_body.position.is_equal_approx(puppet.SEAT_BODY_OFFSETS["Pass2"]),
 		"Puppet body attached to bench")
 	var phb: HumanBody = puppet._puppet_body as HumanBody
-	check(phb != null and phb.get_current_anim() == "Crouch", "Puppet playing Crouch seated pose")
+	check(phb != null and phb.get_current_anim() == "Idle_Rifle", "Puppet playing Idle_Rifle seated pose")
 
 	puppet.exit_aircraft(Vector3(-10, 0, 10), Vector3.FORWARD)
 	check(puppet._puppet_body.visible, "Puppet body visible on foot after exit")
-	check(phb.get_current_anim() == "Idle", "Puppet back to Idle on foot")
+	check(phb.get_current_anim() == "Idle_Rifle", "Puppet back to Idle_Rifle on foot")
 
 	heli.queue_free()
 	player.queue_free()

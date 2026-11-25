@@ -59,7 +59,86 @@ func _ready():
 
 	set_tab("Visual")
 	_build_controls_guide()
+	_build_debug_mode()
 	_apply_settings_style()
+
+func _open_viewmodel_offset(tuner_mode: String, wid: String = "ak47", wname: String = "AK47") -> void:
+	# Spawn as a sibling overlay so the game/settings behind stay intact;
+	# the tuner handles its own save/cancel and frees itself.
+	var overlay := (load("res://scenes/ui/viewmodel_offset.tscn") as PackedScene).instantiate()
+	overlay.mode = tuner_mode
+	overlay.weapon_id = wid
+	overlay.weapon_name = wname
+	get_parent().add_child(overlay)
+	visible = false
+	overlay.tree_exiting.connect(func(): visible = true)
+
+# ---------------- Debug Mode (dev-only): per-weapon viewmodel offset tuning ----------------
+
+var _dm_rows := [] # [{name: String, row: Control}] — filterable weapon rows
+
+## Lists every weapon from the catalog (id, display name) in catalog order.
+func _dm_weapons() -> Array:
+	var out: Array = []
+	for category in GlobalData.weapons:
+		for w in GlobalData.weapons[category]:
+			var wid := str(w.get("id", ""))
+			if wid != "" and not out.any(func(e: Array) -> bool: return e[0] == wid):
+				out.append([wid, str(w.get("name", wid))])
+	return out
+
+func _build_debug_mode() -> void:
+	var panel: VBoxContainer = $Content/TabVisualPanel
+	var title := Label.new()
+	title.text = "DEBUG MODE"
+	panel.add_child(title)
+	var sep := HSeparator.new()
+	panel.add_child(sep)
+
+	var search := LineEdit.new()
+	search.placeholder_text = "Search weapons..."
+	search.custom_minimum_size = Vector2(0, 44)
+	search.clear_button_enabled = true
+	panel.add_child(search)
+
+	var scroll := ScrollContainer.new()
+	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	panel.add_child(scroll)
+	var list := VBoxContainer.new()
+	list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	list.add_theme_constant_override("separation", 10)
+	scroll.add_child(list)
+
+	for entry in _dm_weapons():
+		var wid: String = entry[0]
+		var wname: String = entry[1]
+		var row := HBoxContainer.new()
+		row.add_theme_constant_override("separation", 14)
+		list.add_child(row)
+		var name_lbl := _cg_label(wname, 20, CG_TEXT, true)
+		name_lbl.custom_minimum_size = Vector2(220, 0)
+		name_lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		row.add_child(name_lbl)
+		for mode_pair in [["ads", "Set ADS Offset (%s)" % wname], ["hip", "Set Hipfire Offset (%s)" % wname]]:
+			var b := Button.new()
+			b.text = mode_pair[1]
+			b.custom_minimum_size = Vector2(260, 44)
+			b.focus_mode = Control.FOCUS_NONE
+			b.add_theme_font_size_override("font_size", 17)
+			b.pressed.connect(_open_viewmodel_offset.bind(mode_pair[0], wid, wname))
+			row.add_child(b)
+		_wrap_plate(row)
+		_dm_rows.append({"name": wname.to_lower(), "row": row})
+
+	search.text_changed.connect(_on_debug_search)
+	_on_debug_search("") # apply initial (no-op) filter state
+
+func _on_debug_search(query: String) -> void:
+	var q := query.to_lower().strip_edges()
+	for r in _dm_rows:
+		(r["row"] as Control).get_parent().visible = q == "" or (r["name"] as String).contains(q)
+
 
 func set_tab(tab_name: String):
 	for k in panels.keys():

@@ -242,6 +242,16 @@ func _prepare_new_round() -> void:
 	_cancel_bomb_action()
 	_clear_world_bomb()
 
+	# Clean up any deployable boxes from prior round
+	for box in get_tree().get_nodes_in_group("ammo_supply_boxes"):
+		if is_instance_valid(box):
+			box.queue_free()
+
+	# Clean up any active hunter drones from prior round
+	for drone in get_tree().get_nodes_in_group("hunter_drones"):
+		if is_instance_valid(drone):
+			drone.queue_free()
+
 	# Despawn and respawn all living/dead players and bots to start afresh
 	_respawn_all_participants()
 	_sync_match_data()

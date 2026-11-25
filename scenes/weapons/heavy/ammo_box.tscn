@@ -1,0 +1,180 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scenes/weapons/heavy/ammo_box.gd" id="1_script"]
+[ext_resource type="FontFile" path="res://addons/GD-Sync/UI/Fonts/Outfit-Regular.ttf" id="2_font"]
+
+[sub_resource type="BoxShape3D" id="BoxShape_col"]
+size = Vector3(0.64, 0.36, 0.42)
+
+[sub_resource type="SphereShape3D" id="SphereShape_prox"]
+radius = 3.0
+
+[sub_resource type="StandardMaterial3D" id="Mat_Tan"]
+albedo_color = Color(0.72, 0.62, 0.44, 1)
+metallic = 0.1
+roughness = 0.6
+
+[sub_resource type="StandardMaterial3D" id="Mat_DarkTrim"]
+albedo_color = Color(0.16, 0.16, 0.18, 1)
+metallic = 0.25
+roughness = 0.75
+
+[sub_resource type="StandardMaterial3D" id="Mat_Interior"]
+albedo_color = Color(0.12, 0.12, 0.14, 1)
+roughness = 0.85
+
+[sub_resource type="StandardMaterial3D" id="Mat_LED"]
+albedo_color = Color(0.2, 0.9, 0.35, 1)
+emission_enabled = true
+emission = Color(0.2, 0.9, 0.35, 1)
+emission_energy_multiplier = 2.0
+
+[sub_resource type="BoxMesh" id="Mesh_Body"]
+material = SubResource("Mat_Tan")
+size = Vector3(0.6, 0.28, 0.38)
+
+[sub_resource type="BoxMesh" id="Mesh_Corner"]
+material = SubResource("Mat_DarkTrim")
+size = Vector3(0.05, 0.3, 0.05)
+
+[sub_resource type="BoxMesh" id="Mesh_BottomRim"]
+material = SubResource("Mat_DarkTrim")
+size = Vector3(0.64, 0.04, 0.42)
+
+[sub_resource type="BoxMesh" id="Mesh_MidBand"]
+material = SubResource("Mat_DarkTrim")
+size = Vector3(0.62, 0.03, 0.4)
+
+[sub_resource type="BoxMesh" id="Mesh_HandleBracket"]
+material = SubResource("Mat_DarkTrim")
+size = Vector3(0.03, 0.08, 0.14)
+
+[sub_resource type="CylinderMesh" id="Mesh_HandleGrip"]
+material = SubResource("Mat_DarkTrim")
+top_radius = 0.012
+bottom_radius = 0.012
+height = 0.12
+
+[sub_resource type="BoxMesh" id="Mesh_Clasp"]
+material = SubResource("Mat_DarkTrim")
+size = Vector3(0.04, 0.07, 0.02)
+
+[sub_resource type="BoxMesh" id="Mesh_Divider"]
+material = SubResource("Mat_Interior")
+size = Vector3(0.56, 0.12, 0.02)
+
+[sub_resource type="BoxMesh" id="Mesh_LidPlate"]
+material = SubResource("Mat_Tan")
+size = Vector3(0.62, 0.04, 0.4)
+
+[sub_resource type="BoxMesh" id="Mesh_LidBorder"]
+material = SubResource("Mat_DarkTrim")
+size = Vector3(0.64, 0.045, 0.42)
+
+[sub_resource type="BoxMesh" id="Mesh_LED"]
+material = SubResource("Mat_LED")
+size = Vector3(0.08, 0.02, 0.02)
+
+[node name="AmmoSupplyBox" type="StaticBody3D" groups=["ammo_supply_boxes", "interactable"]]
+collision_layer = 1
+collision_mask = 3
+script = ExtResource("1_script")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.18, 0)
+shape = SubResource("BoxShape_col")
+
+[node name="ProximityArea" type="Area3D" parent="."]
+collision_layer = 0
+collision_mask = 7
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="ProximityArea"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.2, 0)
+shape = SubResource("SphereShape_prox")
+
+[node name="Base" type="Node3D" parent="."]
+
+[node name="Body" type="MeshInstance3D" parent="Base"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.14, 0)
+mesh = SubResource("Mesh_Body")
+
+[node name="CornerFL" type="MeshInstance3D" parent="Base"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.28, 0.15, 0.17)
+mesh = SubResource("Mesh_Corner")
+
+[node name="CornerFR" type="MeshInstance3D" parent="Base"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.28, 0.15, 0.17)
+mesh = SubResource("Mesh_Corner")
+
+[node name="CornerBL" type="MeshInstance3D" parent="Base"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.28, 0.15, -0.17)
+mesh = SubResource("Mesh_Corner")
+
+[node name="CornerBR" type="MeshInstance3D" parent="Base"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.28, 0.15, -0.17)
+mesh = SubResource("Mesh_Corner")
+
+[node name="BottomRim" type="MeshInstance3D" parent="Base"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.02, 0)
+mesh = SubResource("Mesh_BottomRim")
+
+[node name="MidBand" type="MeshInstance3D" parent="Base"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.15, 0)
+mesh = SubResource("Mesh_MidBand")
+
+[node name="HandleL" type="MeshInstance3D" parent="Base"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.31, 0.16, 0)
+mesh = SubResource("Mesh_HandleBracket")
+
+[node name="GripL" type="MeshInstance3D" parent="Base"]
+transform = Transform3D(1, 0, 0, 0, -4.37114e-08, -1, 0, 1, -4.37114e-08, -0.33, 0.16, 0)
+mesh = SubResource("Mesh_HandleGrip")
+
+[node name="HandleR" type="MeshInstance3D" parent="Base"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.31, 0.16, 0)
+mesh = SubResource("Mesh_HandleBracket")
+
+[node name="GripR" type="MeshInstance3D" parent="Base"]
+transform = Transform3D(1, 0, 0, 0, -4.37114e-08, -1, 0, 1, -4.37114e-08, 0.33, 0.16, 0)
+mesh = SubResource("Mesh_HandleGrip")
+
+[node name="ClaspL" type="MeshInstance3D" parent="Base"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.18, 0.24, 0.195)
+mesh = SubResource("Mesh_Clasp")
+
+[node name="ClaspR" type="MeshInstance3D" parent="Base"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.18, 0.24, 0.195)
+mesh = SubResource("Mesh_Clasp")
+
+[node name="Divider1" type="MeshInstance3D" parent="Base"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.22, -0.06)
+mesh = SubResource("Mesh_Divider")
+
+[node name="Divider2" type="MeshInstance3D" parent="Base"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.22, 0.06)
+mesh = SubResource("Mesh_Divider")
+
+[node name="Lid" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.29, -0.19)
+
+[node name="LidBorder" type="MeshInstance3D" parent="Lid"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.02, 0.19)
+mesh = SubResource("Mesh_LidBorder")
+
+[node name="LidPlate" type="MeshInstance3D" parent="Lid"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.025, 0.19)
+mesh = SubResource("Mesh_LidPlate")
+
+[node name="StatusLED" type="MeshInstance3D" parent="Lid"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.035, 0.395)
+mesh = SubResource("Mesh_LED")
+
+[node name="SupplyLabel" type="Label3D" parent="Lid"]
+transform = Transform3D(1, 0, 0, 0, -4.37114e-08, 1, 0, -1, -4.37114e-08, 0, 0.05, 0.19)
+pixel_size = 0.002
+text = "AMMO SUPPLY 100%"
+font = ExtResource("2_font")
+font_size = 28
+outline_size = 6
+modulate = Color(0.2, 0.9, 0.35, 1)
+outline_modulate = Color(0.08, 0.08, 0.1, 1)

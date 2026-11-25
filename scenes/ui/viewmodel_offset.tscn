@@ -1,0 +1,157 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://scenes/ui/viewmodel_offset.gd" id="1_script"]
+
+[sub_resource type="Environment" id="env"]
+background_mode = 1
+background_color = Color(0.16, 0.17, 0.2, 1)
+ambient_light_source = 2
+ambient_light_color = Color(0.8, 0.8, 0.85, 1)
+ambient_light_energy = 1.2
+
+[sub_resource type="CameraAttributesPractical" id="camattr"]
+
+[node name="ViewmodelOffset" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_script")
+
+[node name="World" type="Node3D" parent="."]
+[node name="Env" type="WorldEnvironment" parent="World"]
+environment = SubResource("env")
+[node name="Cam" type="Camera3D" parent="World"]
+attributes = SubResource("camattr")
+fov = 70.0
+[node name="Holder" type="Node3D" parent="World"]
+
+[node name="Crosshair" type="ColorRect" parent="."]
+layout_mode = 1
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -2.0
+offset_top = -2.0
+offset_right = 2.0
+offset_bottom = 2.0
+color = Color(1, 1, 1, 1)
+
+[node name="Hint" type="Label" parent="."]
+layout_mode = 1
+anchor_left = 0.5
+anchor_top = 0.0
+anchor_right = 0.5
+anchor_bottom = 0.0
+offset_left = -420.0
+offset_top = 24.0
+offset_right = 420.0
+offset_bottom = 48.0
+horizontal_alignment = 1
+text = "Drag sliders to fit the scoped viewmodel under the crosshair"
+
+[node name="SliderRot" type="HSlider" parent="."]
+layout_mode = 1
+anchor_left = 0.35
+anchor_top = 0.0
+anchor_right = 0.65
+anchor_bottom = 0.0
+offset_top = 60.0
+offset_bottom = 80.0
+min_value = -90.0
+max_value = 90.0
+step = 0.5
+
+[node name="LabelRot" type="Label" parent="."]
+layout_mode = 1
+anchor_left = 0.35
+anchor_top = 0.0
+anchor_right = 0.65
+anchor_bottom = 0.0
+offset_top = 84.0
+offset_bottom = 106.0
+horizontal_alignment = 1
+text = "Y Rotation"
+
+[node name="LabelX" type="Label" parent="."]
+layout_mode = 1
+anchor_left = 0.3
+anchor_top = 1.0
+anchor_right = 0.7
+anchor_bottom = 1.0
+offset_top = -100.0
+offset_bottom = -78.0
+horizontal_alignment = 1
+text = "Horizontal (left / right)"
+
+[node name="SliderX" type="HSlider" parent="."]
+layout_mode = 1
+anchor_left = 0.3
+anchor_top = 1.0
+anchor_right = 0.7
+anchor_bottom = 1.0
+offset_top = -70.0
+offset_bottom = -50.0
+min_value = -0.3
+max_value = 0.3
+step = 0.005
+
+[node name="LabelZ" type="Label" parent="."]
+layout_mode = 1
+anchor_top = 0.78
+anchor_bottom = 0.78
+offset_left = 16.0
+offset_right = 140.0
+offset_bottom = 22.0
+text = "Depth (far / near)"
+
+[node name="SliderZ" type="VSlider" parent="."]
+layout_mode = 1
+anchor_left = 0.0
+anchor_top = 0.3
+anchor_right = 0.0
+anchor_bottom = 0.75
+offset_left = 40.0
+offset_right = 60.0
+min_value = -0.5
+max_value = 0.5
+step = 0.005
+
+[node name="LabelY" type="Label" parent="."]
+layout_mode = 1
+anchor_left = 1.0
+anchor_right = 1.0
+anchor_top = 0.78
+anchor_bottom = 0.78
+offset_left = -140.0
+offset_right = -16.0
+offset_bottom = 22.0
+horizontal_alignment = 2
+text = "Height (down / up)"
+
+[node name="SliderY" type="VSlider" parent="."]
+layout_mode = 1
+anchor_left = 1.0
+anchor_top = 0.3
+anchor_right = 1.0
+anchor_bottom = 0.75
+offset_left = -60.0
+offset_right = -40.0
+min_value = -0.3
+max_value = 0.3
+step = 0.005
+
+[node name="BtnSave" type="Button" parent="."]
+layout_mode = 1
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -240.0
+offset_top = -64.0
+offset_right = -20.0
+offset_bottom = -28.0
+text = "Save Setting"

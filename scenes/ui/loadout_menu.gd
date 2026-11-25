@@ -1,15 +1,18 @@
 extends Control
-## BF4-style loadout screen: horizontal category tabs + slot cards (left),
-## weapon list + details (middle), 3D inspectable weapon preview (right).
-## Drag preview to rotate; release snaps back to left-facing side profile.
+## Tactical Loadout Screen: 5 equipment slot cards in left panel (Primary, Secondary, Melee, Equip 01, Equip 02)
+## + 3D weapon/character standby preview on right side + Armory selector.
 
 @onready var slot_cards := {
 	"Primary": $Margin/VBox/Main/Left/SlotPrimary,
-	"Secondary": $Margin/VBox/Main/Left/SlotSecondary,
-	"Melee": $Margin/VBox/Main/Left/SlotMelee,
-	"Equip1": $Margin/VBox/Main/Left/SlotEquip1,
-	"Equip2": $Margin/VBox/Main/Left/SlotEquip2,
+	"Secondary": $Margin/VBox/Main/Left/RowMid/SlotSecondary,
+	"Melee": $Margin/VBox/Main/Left/RowMid/SlotMelee,
+	"Equip1": $Margin/VBox/Main/Left/RowBottom/SlotEquip1,
+	"Equip2": $Margin/VBox/Main/Left/RowBottom/SlotEquip2,
 }
+@onready var left_panel: VBoxContainer = $Margin/VBox/Main/Left
+@onready var overview_panel: VBoxContainer = left_panel
+@onready var mid_panel: VBoxContainer = $Margin/VBox/Main/Mid
+@onready var right_panel: VBoxContainer = $Margin/VBox/Main/Right
 @onready var group_list: HBoxContainer = $Margin/VBox/Main/Mid/GroupTabs
 @onready var cat_header: Label = $Margin/VBox/Main/Mid/CatHeader/Label
 @onready var item_name: Label = $Margin/VBox/Main/Mid/Detail/Panel/ItemName
@@ -19,13 +22,19 @@ extends Control
 @onready var weapon_list: VBoxContainer = $Margin/VBox/Main/Mid/WeaponList
 @onready var preview_wp: Node3D = $Margin/VBox/Main/Right/Preview/SubViewport/WeaponPreview
 @onready var preview_cont: SubViewportContainer = $Margin/VBox/Main/Right/Preview
+@onready var info_header: VBoxContainer = $Margin/VBox/Main/Right/InfoHeader
+@onready var info_cat: Label = $Margin/VBox/Main/Right/InfoHeader/CatLabel
+@onready var info_title: Label = $Margin/VBox/Main/Right/InfoHeader/ItemTitle
+@onready var info_desc: Label = $Margin/VBox/Main/Right/InfoHeader/ItemDesc
+@onready var btn_back: Button = $Margin/VBox/BottomBar/BtnBack
+@onready var hint_container: HBoxContainer = $Margin/VBox/BottomBar/HintContainer
 
 const SLOT_DEFS := [
-	{"key": "Primary", "cat": "Primary", "label": "Primary Weapon"},
-	{"key": "Secondary", "cat": "Secondary", "label": "Secondary Weapon"},
-	{"key": "Melee", "cat": "Melee", "label": "Melee Weapon"},
-	{"key": "Equip1", "cat": "Throwable", "label": "Equipment 01"},
-	{"key": "Equip2", "cat": "Heavy", "label": "Equipment 02"},
+	{"key": "Primary", "cat": "Primary", "label": "Primary Weapon", "max_lvl": 45},
+	{"key": "Secondary", "cat": "Secondary", "label": "Secondary Weapon", "max_lvl": 31},
+	{"key": "Melee", "cat": "Melee", "label": "Melee Weapon", "max_lvl": 30},
+	{"key": "Equip1", "cat": "Throwable", "label": "Equipment 01", "max_lvl": 0},
+	{"key": "Equip2", "cat": "Heavy", "label": "Equipment 02", "max_lvl": 0},
 ]
 
 const WEAPON_GROUPS := {
@@ -39,7 +48,7 @@ const WEAPON_GROUPS := {
 	"Secondary": {"Pistols": ["glock", "desert_hawk"]},
 	"Melee": {"Melee": ["knife"]},
 	"Throwable": {"Throwables": ["grenade", "flashbang"]},
-	"Heavy": {"Heavy Weapons": ["at4"]},
+	"Heavy": {"Heavy Weapons": ["at4", "ammo_box"]},
 }
 
 const COL_BG := Color("101318")
@@ -61,11 +70,12 @@ var weapon_rows := {}
 var preset_buttons: Array = []
 var active_preset := 0
 var _dragging := false
+var is_in_armory := false
 
 func _ready() -> void:
 	_style_panels()
 	btn_equip.pressed.connect(_on_equip_pressed)
-	$Margin/VBox/BottomBar/BtnBack.pressed.connect(_on_back_pressed)
+	btn_back.pressed.connect(_on_back_pressed)
 	preset_buttons = [
 		$Margin/VBox/TopBar/Tab01, $Margin/VBox/TopBar/Tab02,
 		$Margin/VBox/TopBar/Tab03, $Margin/VBox/TopBar/Tab04,
@@ -75,12 +85,69 @@ func _ready() -> void:
 	$Margin/VBox/TopBar/BtnLB.pressed.connect(func(): _cycle_preset(-1))
 	$Margin/VBox/TopBar/BtnRB.pressed.connect(func(): _cycle_preset(1))
 	_on_preset_pressed(preset_buttons[0])
+
+	# Setup cards in Left Column
 	for def in SLOT_DEFS:
 		var card: PanelContainer = slot_cards[def["key"]]
 		card.gui_input.connect(func(ev): _on_card_clicked(def, ev))
+
+	# Gunsmith pill button on Primary
+	var btn_gunsmith = slot_cards["Primary"].find_child("BtnGunsmith", true, false)
+	if btn_gunsmith is Button:
+		btn_gunsmith.pressed.connect(func(): _open_armory("Primary"))
+		_style_gunsmith_button(btn_gunsmith)
+
 	preview_cont.gui_input.connect(_on_preview_gui_input)
+
+	_setup_card_badges()
 	_refresh_slots()
 	_set_slot("Primary")
+	_show_overview()
+
+func _show_overview() -> void:
+	is_in_armory = false
+	left_panel.visible = true
+	mid_panel.visible = false
+	right_panel.visible = true
+	info_header.visible = true
+	btn_back.text = "< BACK"
+	_update_hints()
+	_update_preview_for_current_slot()
+
+func _open_armory(slot_key: String) -> void:
+	_set_slot(slot_key)
+	is_in_armory = true
+	left_panel.visible = false
+	mid_panel.visible = true
+	right_panel.visible = true
+	info_header.visible = false
+	btn_back.text = "< BACK TO CLASS"
+	_update_hints()
+
+func _update_hints() -> void:
+	if hint_container == null:
+		return
+	for c in hint_container.get_children():
+		c.free()
+
+	var hints = []
+	if is_in_armory:
+		hints = [["E", "Equip Selected"], ["LMB DRAG", "Rotate Preview"], ["SCROLL", "Zoom"], ["ESC", "Back to Class"]]
+	else:
+		hints = [["LMB", "Select Slot / Armory"], ["E / ENTER", "Gunsmith / Armory"], ["LB / RB", "Switch Loadout"], ["ESC", "Main Menu"]]
+
+	for hint in hints:
+		hint_container.add_child(_keycap(hint[0]))
+		var lbl := Label.new()
+		lbl.text = hint[1]
+		if _font != null:
+			lbl.add_theme_font_override("font", _font)
+		lbl.add_theme_font_size_override("font_size", 14)
+		lbl.add_theme_color_override("font_color", COL_TEXT_DIM)
+		hint_container.add_child(lbl)
+		var pad := Control.new()
+		pad.custom_minimum_size = Vector2(14, 0)
+		hint_container.add_child(pad)
 
 func _on_preset_pressed(b: Button) -> void:
 	active_preset = preset_buttons.find(b)
@@ -102,11 +169,17 @@ func _style_panels() -> void:
 	_style_title()
 	_style_preset_tabs()
 	_style_slot_cards()
+	_style_info_header()
 	_style_detail_panel()
 	_style_weapon_buttons()
 	_style_back_button()
-	_style_hints()
 	_warm_preview()
+
+func _cat_for_slot(key: String) -> String:
+	for def in SLOT_DEFS:
+		if def["key"] == key:
+			return def["cat"]
+	return "Primary"
 
 func _weapon_by_id(id: String) -> Dictionary:
 	for cat in GlobalData.weapons:
@@ -125,29 +198,67 @@ func _equipped_in(cat: String) -> Dictionary:
 func _refresh_slots() -> void:
 	for def in SLOT_DEFS:
 		var card: PanelContainer = slot_cards[def["key"]]
-		var vbox: VBoxContainer = card.get_child(0)
+		var name_lbl = card.find_child("NameLabel", true, false)
+		var sub_lbl = card.find_child("SubLabel", true, false)
 		var eq := _equipped_in(def["cat"])
-		(vbox.get_node("NameLabel") as Label).text = str(eq.get("name", "—")) if not eq.is_empty() else "—"
-		(vbox.get_node("SubLabel") as Label).text = def["label"]
+		var w_name: String = str(eq.get("name", "—")) if not eq.is_empty() else "—"
+		if name_lbl is Label:
+			name_lbl.text = w_name
+		if sub_lbl is Label:
+			var prefix: String = def["label"].to_upper()
+			sub_lbl.text = prefix
+
+		# Isolated mini weapon render inside card
+		_update_card_preview(card, eq.get("id", ""))
+
 	_update_slot_styles()
 
+func _update_card_preview(card: PanelContainer, w_id: String) -> void:
+	var pbox = card.find_child("PreviewBox", true, false)
+	if pbox == null or w_id == "":
+		return
+	var existing = pbox.get_node_or_null("MiniPreview")
+	if existing != null:
+		if existing.has_meta("w_id") and str(existing.get_meta("w_id")) == w_id:
+			return
+		pbox.remove_child(existing)
+		existing.free()
+	var preview := MiniCardPreview.new(w_id)
+	preview.name = "MiniPreview"
+	preview.set_meta("w_id", w_id)
+	preview.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	pbox.add_child(preview)
+
 func _update_slot_styles() -> void:
-	# Card states: active slot = orange border, equipped = dim orange edge, idle = dark
 	for def in SLOT_DEFS:
 		var card: PanelContainer = slot_cards[def["key"]]
-		var eq := _equipped_in(def["cat"])
-		var is_eq: bool = eq.get("equipped", false)
-		var state := "active" if def["key"] == current_slot else ("equipped" if is_eq else "idle")
-		card.add_theme_stylebox_override("panel", _slot_card_sb(state))
+		var is_active: bool = (str(def["key"]) == current_slot)
+		card.add_theme_stylebox_override("panel", _slot_card_sb(is_active))
+
+func _update_preview_for_current_slot() -> void:
+	var cat := _cat_for_slot(current_slot)
+	var eq := _equipped_in(cat)
+	var w_id: String = str(eq.get("id", ""))
+	var w_name: String = str(eq.get("name", "—"))
+	if info_header != null:
+		info_cat.text = "▶  " + cat.to_upper()
+		info_title.text = w_name.to_upper()
+		var dmg = int(eq.get("dmg", 0))
+		var rng = int(eq.get("rng", 0))
+		var mag = int(eq.get("max_mag", 0))
+		if dmg > 0:
+			info_desc.text = "%d DMG  ·  %d m RANGE  ·  %d ROUND MAG" % [dmg, rng, mag]
+		else:
+			info_desc.text = cat
+	if w_id != "" and preview_wp and preview_wp.has_method("show_weapon"):
+		preview_wp.show_weapon(w_id)
+		if preview_wp.has_method("snap_back"):
+			preview_wp.snap_back(true)
 
 func _set_slot(key: String) -> void:
 	current_slot = key
 	_update_slot_styles()
-	var cat := ""
-	for def in SLOT_DEFS:
-		if def["key"] == key:
-			cat = def["cat"]
-	# Horizontal category buttons above the weapon list
+	var cat := _cat_for_slot(key)
 	for c in group_list.get_children():
 		c.queue_free()
 	var first_group := ""
@@ -171,10 +282,7 @@ func _set_group(group: String) -> void:
 		if gb is Button:
 			_style_group_tab(gb, gb.text == group)
 
-	var cat := ""
-	for def in SLOT_DEFS:
-		if def["key"] == current_slot:
-			cat = def["cat"]
+	var cat := _cat_for_slot(current_slot)
 	var ids: Array = WEAPON_GROUPS.get(cat, {}).get(group, [])
 
 	for c in weapon_list.get_children():
@@ -207,7 +315,6 @@ func select_item(item: Dictionary) -> void:
 	selected_item = item
 	var id: String = str(item.get("id", ""))
 	item_name.text = str(item.get("name", ""))
-	# Subtitle & stat formatting matching reference dossier card
 	var sub := current_group if current_group != "" else "Weapon"
 	item_desc.text = "%s  ·  %d damage  ·  %d m range  ·  %d round mag" % [
 		sub, int(item.get("dmg", 0)), int(item.get("rng", 0)), int(item.get("max_mag", 0))
@@ -241,10 +348,7 @@ func select_item(item: Dictionary) -> void:
 func _on_equip_pressed() -> void:
 	if selected_item == null or selected_item.get("equipped", false):
 		return
-	var cat := ""
-	for def in SLOT_DEFS:
-		if def["key"] == current_slot:
-			cat = def["cat"]
+	var cat := _cat_for_slot(current_slot)
 	for w in GlobalData.weapons.get(cat, []):
 		w["equipped"] = false
 	selected_item["equipped"] = true
@@ -253,7 +357,11 @@ func _on_equip_pressed() -> void:
 
 func _on_card_clicked(def: Dictionary, ev: InputEvent) -> void:
 	if ev is InputEventMouseButton and ev.pressed and ev.button_index == MOUSE_BUTTON_LEFT:
-		_set_slot(def["key"])
+		if current_slot == def["key"]:
+			_open_armory(def["key"])
+		else:
+			_set_slot(def["key"])
+			_update_preview_for_current_slot()
 
 func _on_preview_gui_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton:
@@ -277,17 +385,23 @@ func _on_preview_gui_input(event: InputEvent) -> void:
 func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("ui_cancel"):
 		_on_back_pressed()
-	elif event is InputEventKey and event.pressed and event.physical_keycode == KEY_E:
-		_on_equip_pressed()
+	elif event is InputEventKey and event.pressed and (event.physical_keycode == KEY_E or event.physical_keycode == KEY_ENTER):
+		if is_in_armory:
+			_on_equip_pressed()
+		else:
+			_open_armory(current_slot)
 	elif event is InputEventMouseButton and not event.pressed and event.button_index == MOUSE_BUTTON_LEFT and _dragging:
 		_dragging = false
 		if preview_wp and preview_wp.has_method("snap_back"):
 			preview_wp.snap_back(false)
 
 func _on_back_pressed() -> void:
-	get_tree().change_scene_to_file("res://scenes/ui/main_menu.tscn")
+	if is_in_armory:
+		_show_overview()
+	else:
+		get_tree().change_scene_to_file("res://scenes/ui/main_menu.tscn")
 
-# ---------------- Loadout UI theme (reference: tactical plates + orange accents) ----------------
+# ---------------- Loadout UI theme (Tactical Plates + Amber Highlight) ----------------
 
 func _style_title() -> void:
 	var top: HBoxContainer = $Margin/VBox/TopBar
@@ -381,47 +495,96 @@ func _style_preset_tab(b: Button, active: bool) -> void:
 func _style_slot_cards() -> void:
 	for def in SLOT_DEFS:
 		var card: PanelContainer = slot_cards[def["key"]]
-		card.custom_minimum_size = Vector2(0, 92)
-		var vbox: VBoxContainer = card.get_child(0)
-		var name_lbl: Label = vbox.get_node("NameLabel")
-		var sub_lbl: Label = vbox.get_node("SubLabel")
-		if _font_bold != null:
-			name_lbl.add_theme_font_override("font", _font_bold)
-		name_lbl.add_theme_font_size_override("font_size", 20)
-		name_lbl.add_theme_color_override("font_color", Color.WHITE)
-		name_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
-		if _font != null:
-			sub_lbl.add_theme_font_override("font", _font)
-		sub_lbl.add_theme_font_size_override("font_size", 13)
-		sub_lbl.add_theme_color_override("font_color", COL_ACCENT)
-		sub_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+		var name_lbl = card.find_child("NameLabel", true, false)
+		var sub_lbl = card.find_child("SubLabel", true, false)
+		if name_lbl is Label:
+			if _font_bold != null:
+				name_lbl.add_theme_font_override("font", _font_bold)
+			name_lbl.add_theme_font_size_override("font_size", 20 if def["key"] == "Primary" else 15)
+			name_lbl.add_theme_color_override("font_color", Color.WHITE)
+			name_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+		if sub_lbl is Label:
+			if _font != null:
+				sub_lbl.add_theme_font_override("font", _font)
+			sub_lbl.add_theme_font_size_override("font_size", 12)
+			sub_lbl.add_theme_color_override("font_color", Color(0.72, 0.8, 0.88))
+			sub_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 
-func _slot_card_sb(state: String) -> StyleBoxFlat:
+func _style_info_header() -> void:
+	if _font != null:
+		info_cat.add_theme_font_override("font", _font)
+	info_cat.add_theme_font_size_override("font_size", 14)
+	info_cat.add_theme_color_override("font_color", COL_ACCENT)
+	if _font_bold != null:
+		info_title.add_theme_font_override("font", _font_bold)
+	info_title.add_theme_font_size_override("font_size", 38)
+	info_title.add_theme_color_override("font_color", Color.WHITE)
+	if _font != null:
+		info_desc.add_theme_font_override("font", _font)
+	info_desc.add_theme_font_size_override("font_size", 14)
+	info_desc.add_theme_color_override("font_color", COL_TEXT_DIM)
+
+func _style_gunsmith_button(b: Button) -> void:
+	b.focus_mode = Control.FOCUS_NONE
+	if _font_bold != null:
+		b.add_theme_font_override("font", _font_bold)
+	b.add_theme_font_size_override("font_size", 11)
 	var sb := StyleBoxFlat.new()
-	sb.set_corner_radius_all(8)
-	sb.content_margin_left = 18
+	sb.bg_color = Color(0.12, 0.16, 0.22, 0.85)
+	sb.set_corner_radius_all(10)
+	sb.border_width_left = 1
+	sb.border_width_top = 1
+	sb.border_width_right = 1
+	sb.border_width_bottom = 1
+	sb.border_color = Color(0.35, 0.55, 0.75, 0.6)
+	sb.content_margin_left = 8
+	sb.content_margin_right = 8
+	sb.content_margin_top = 2
+	sb.content_margin_bottom = 2
+	b.add_theme_stylebox_override("normal", sb)
+	var hsb = sb.duplicate()
+	hsb.bg_color = COL_ACCENT
+	hsb.border_color = Color.WHITE
+	b.add_theme_stylebox_override("hover", hsb)
+	b.add_theme_color_override("font_color", Color(0.9, 0.95, 1.0))
+	b.add_theme_color_override("font_hover_color", Color.WHITE)
+
+func _setup_card_badges() -> void:
+	for key in ["Primary", "Secondary", "Melee"]:
+		var badge = slot_cards[key].find_child("LevelBadge", true, false)
+		if badge:
+			for c in badge.get_children():
+				c.free()
+			var max_lvl := 45 if key == "Primary" else (31 if key == "Secondary" else 30)
+			var prog := 0.35 if key == "Primary" else 0.20
+			var col := COL_ACCENT if key == "Primary" else Color(0.2, 0.8, 0.95)
+			var c := CircleLevel.new(1, max_lvl, prog, col)
+			c.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+			badge.add_child(c)
+
+func _slot_card_sb(is_active: bool) -> StyleBoxFlat:
+	var sb := StyleBoxFlat.new()
+	sb.set_corner_radius_all(6)
+	sb.content_margin_left = 16
 	sb.content_margin_right = 16
-	sb.content_margin_top = 12
-	sb.content_margin_bottom = 12
-	if state == "active":
-		sb.bg_color = Color(COL_ACCENT.r, COL_ACCENT.g, COL_ACCENT.b, 0.16)
-		sb.set_border_width_all(2)
+	sb.content_margin_top = 10
+	sb.content_margin_bottom = 10
+	if is_active:
+		sb.bg_color = Color(0.16, 0.09, 0.05, 0.96)
+		sb.border_width_left = 4
+		sb.border_width_top = 1
+		sb.border_width_right = 1
+		sb.border_width_bottom = 1
 		sb.border_color = COL_ACCENT
-	elif state == "equipped":
-		sb.bg_color = Color(0.08, 0.09, 0.115, 0.96)
-		sb.border_width_left = 3
-		sb.border_color = Color(COL_ACCENT.r, COL_ACCENT.g, COL_ACCENT.b, 0.6)
-		sb.border_width_bottom = 2
-		sb.border_color = Color(0.18, 0.2, 0.24)
+		sb.shadow_color = Color(COL_ACCENT.r, COL_ACCENT.g, COL_ACCENT.b, 0.35)
+		sb.shadow_size = 8
 	else:
-		sb.bg_color = Color(0.07, 0.08, 0.1, 0.95)
+		sb.bg_color = Color(0.065, 0.075, 0.095, 0.95)
 		sb.border_width_bottom = 2
-		sb.border_color = Color(0.16, 0.18, 0.22)
+		sb.border_color = Color(0.18, 0.22, 0.28)
 	return sb
 
 func _add_hover_pop(b: Button) -> void:
-	# Pop-out: scale the button slightly toward the cursor; grey drop shadow
-	# lives on the hover StyleBoxFlat.
 	if b == null or b.has_meta("hover_pop"):
 		return
 	b.set_meta("hover_pop", true)
@@ -429,13 +592,11 @@ func _add_hover_pop(b: Button) -> void:
 	b.mouse_entered.connect(func():
 		b.pivot_offset = b.size / 2.0
 		var t := create_tween().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-		t.tween_property(b, "scale", Vector2.ONE * 1.03, 0.1))
+		t.tween_property(b, "scale", Vector2.ONE * 1.02, 0.08))
 	b.mouse_exited.connect(func():
 		var t := create_tween().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-		t.tween_property(b, "scale", Vector2.ONE, 0.1))
+		t.tween_property(b, "scale", Vector2.ONE, 0.08))
 
-## Hover look shared by every button here: orange fill with a soft grey shade
-## behind it, so the plate reads as lifted off the screen.
 func _orange_hover_plate(radius: int = 8) -> StyleBoxFlat:
 	var h := StyleBoxFlat.new()
 	h.bg_color = COL_ACCENT
@@ -513,7 +674,6 @@ func _style_detail_panel() -> void:
 	item_desc.add_theme_font_size_override("font_size", 15)
 	item_desc.add_theme_color_override("font_color", COL_TEXT_DIM)
 
-	# Stats block
 	for c in stats_box.get_children():
 		c.queue_free()
 	for stat in [["DAMAGE", "dmg"], ["ACCURACY", "stab"], ["RANGE", "rng"], ["FIRE RATE", "rof"]]:
@@ -567,11 +727,11 @@ func _style_weapon_buttons() -> void:
 	_add_hover_pop(btn_equip)
 
 func _style_back_button() -> void:
-	var back: Button = $Margin/VBox/BottomBar/BtnBack
+	var back: Button = btn_back
 	if _font_bold != null:
 		back.add_theme_font_override("font", _font_bold)
 	back.add_theme_font_size_override("font_size", 18)
-	back.custom_minimum_size = Vector2(150, 48)
+	back.custom_minimum_size = Vector2(160, 48)
 	back.focus_mode = Control.FOCUS_NONE
 	var sb := StyleBoxFlat.new()
 	sb.bg_color = Color(0.09, 0.1, 0.12, 0.95)
@@ -584,28 +744,6 @@ func _style_back_button() -> void:
 	back.add_theme_color_override("font_color", Color(0.9, 0.92, 0.95))
 	back.add_theme_color_override("font_hover_color", Color.WHITE)
 	_add_hover_pop(back)
-
-func _style_hints() -> void:
-	var bar: HBoxContainer = $Margin/VBox/BottomBar
-	bar.alignment = BoxContainer.ALIGNMENT_END
-	var old: Label = bar.get_node_or_null("HintEquip")
-	if old != null:
-		old.queue_free()
-	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 8)
-	bar.add_child(row)
-	for hint in [["E / ENTER", "Equip Weapon"], ["LMB DRAG", "Rotate Preview"], ["SCROLL", "Zoom"]]:
-		row.add_child(_keycap(hint[0]))
-		var lbl := Label.new()
-		lbl.text = hint[1]
-		if _font != null:
-			lbl.add_theme_font_override("font", _font)
-		lbl.add_theme_font_size_override("font_size", 14)
-		lbl.add_theme_color_override("font_color", COL_TEXT_DIM)
-		row.add_child(lbl)
-		var pad := Control.new()
-		pad.custom_minimum_size = Vector2(14, 0)
-		row.add_child(pad)
 
 func _keycap(text: String) -> Control:
 	var cap := PanelContainer.new()
@@ -642,8 +780,6 @@ func _warm_preview() -> void:
 		rim.light_color = Color(1.0, 0.75, 0.5)
 
 func _setup_background() -> void:
-	# Replace flat color with the hangar backdrop art; keep dark plate behind
-	# content for readability. Texture stretch-covers the viewport.
 	var bg := get_node_or_null("Background") as ColorRect
 	if bg == null:
 		return
@@ -656,9 +792,9 @@ func _setup_background() -> void:
 		art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
 		art.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		add_child(art)
-		move_child(art, 0)  # behind the ColorRect tint
+		move_child(art, 0)
 		art.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-		bg.color = Color(0.063, 0.075, 0.09, 0.45)  # dim veil so UI stays readable
+		bg.color = Color(0.063, 0.075, 0.09, 0.55)
 
 func _add_vignette() -> void:
 	var grad := Gradient.new()
@@ -697,3 +833,119 @@ class SlashBadge extends Control:
 				Vector2(x, h),
 			])
 			draw_colored_polygon(pts, orange)
+
+class CircleLevel extends Control:
+	var level: int = 1
+	var max_level: int = 45
+	var progress: float = 0.25
+	var accent_color: Color = Color(1.0, 0.44, 0.08)
+
+	func _init(lvl: int, m_lvl: int, prog: float, col: Color) -> void:
+		level = lvl
+		max_level = m_lvl
+		progress = prog
+		accent_color = col
+		mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+	func _draw() -> void:
+		var center := size / 2.0
+		var r := minf(size.x, size.y) * 0.42
+		draw_arc(center, r, 0.0, TAU, 32, Color(0.25, 0.3, 0.38, 0.5), 2.2, true)
+		draw_arc(center, r, -PI * 0.5, -PI * 0.5 + TAU * progress, 32, accent_color, 2.6, true)
+		var font: Font = ThemeDB.fallback_font
+		draw_string(font, center + Vector2(-4, -1), str(level), HORIZONTAL_ALIGNMENT_CENTER, -1, 11, Color.WHITE)
+		draw_string(font, center + Vector2(-9, 10), "/%d" % max_level, HORIZONTAL_ALIGNMENT_CENTER, -1, 8, Color(0.7, 0.75, 0.82))
+
+class MiniCardPreview extends Control:
+	## Isolated per-card 3D render. own_world_3d + fresh World3D prevent
+	## cross-card model merging (shared default world bug).
+	var weapon_id := ""
+
+	func _init(w_id: String) -> void:
+		weapon_id = w_id
+		mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+	func _ready() -> void:
+		var scene_path: String = WeaponPreviewScenes.SCENES.get(weapon_id, "")
+		if scene_path == "" or not ResourceLoader.exists(scene_path):
+			return
+
+		var cont := SubViewportContainer.new()
+		cont.stretch = true
+		cont.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		cont.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		add_child(cont)
+
+		var vp := SubViewport.new()
+		vp.own_world_3d = true
+		vp.world_3d = World3D.new()
+		vp.transparent_bg = true
+		vp.render_target_update_mode = SubViewport.UPDATE_ALWAYS
+		vp.size = Vector2i(420, 180)
+		cont.add_child(vp)
+
+		var env := WorldEnvironment.new()
+		var e := Environment.new()
+		e.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
+		e.ambient_light_color = Color(0.75, 0.82, 0.95)
+		e.ambient_light_energy = 2.0
+		env.environment = e
+		vp.add_child(env)
+
+		var cam := Camera3D.new()
+		cam.position = Vector3(0, 0, _get_cam_z(weapon_id))
+		vp.add_child(cam)
+
+		var light := DirectionalLight3D.new()
+		light.rotation = Vector3(-0.45, 0.65, 0.0)
+		light.light_energy = 2.2
+		vp.add_child(light)
+
+		var rim := DirectionalLight3D.new()
+		rim.rotation = Vector3(0.5, -2.5, 0.0)
+		rim.light_energy = 1.2
+		rim.light_color = Color(1.0, 0.9, 0.8)
+		vp.add_child(rim)
+
+		var model: Node3D = (load(scene_path) as PackedScene).instantiate()
+		model.rotation = Vector3(0, PI * 0.5, 0)
+		vp.add_child(model)
+
+	func _get_cam_z(id: String) -> float:
+		match id:
+			"glock", "desert_hawk":
+				return 0.30
+			"knife":
+				return 0.26
+			"grenade", "flashbang":
+				return 0.36
+			"mp5", "steyr_aug":
+				return 0.62
+			"ak47", "m4a4", "rpd":
+				return 0.66
+			"remington_870", "m700":
+				return 0.74
+			"at4":
+				return 0.76
+			"ammo_box":
+				return 0.48
+			_:
+				return 0.65
+
+class WeaponPreviewScenes:
+	const SCENES := {
+		"ak47": "res://scenes/weapons/main/ak47.tscn",
+		"m4a4": "res://scenes/weapons/main/m4a4.tscn",
+		"mp5": "res://scenes/weapons/main/mp5.tscn",
+		"steyr_aug": "res://scenes/weapons/main/SteyrAUG.tscn",
+		"rpd": "res://scenes/weapons/main/RPD.tscn",
+		"remington_870": "res://scenes/weapons/main/remington_870.tscn",
+		"m700": "res://scenes/weapons/main/m700.tscn",
+		"knife": "res://scenes/weapons/melee/Knife.tscn",
+		"at4": "res://scenes/weapons/heavy/at4.tscn",
+		"ammo_box": "res://scenes/weapons/heavy/ammo_box.tscn",
+		"glock": "res://scenes/weapons/secondary/Glock.tscn",
+		"desert_hawk": "res://scenes/weapons/secondary/desert_hawk.tscn",
+		"grenade": "res://scenes/weapons/utilities/grenade_hand.tscn",
+		"flashbang": "res://scenes/weapons/utilities/flashbang_hand.tscn",
+	}

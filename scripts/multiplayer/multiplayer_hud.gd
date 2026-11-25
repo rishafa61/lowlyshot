@@ -517,6 +517,7 @@ func _mk_team_card(select_btn: Button, team_name: String, subtitle: String, acce
 	svc.add_child(sv)
 
 	var body: Node3D = load("res://scenes/characters/human_body.tscn").instantiate()
+	body.rotation.y = PI # glb faces -Z (gameplay forward); portrait camera is on +Z
 	sv.add_child(body)
 	body.set("tint_color", tint)
 

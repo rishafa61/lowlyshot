@@ -59,6 +59,7 @@ size = Vector3(28, 0.1, 200)
 
 [node name="VehicleSpawner" parent="." unique_id=1834324255 instance=ExtResource("3_vspawner")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.2343235, 1.02, 101.00868)
+choose_vehicle = 3
 
 [node name="Player" parent="." unique_id=721692377 instance=ExtResource("1_player")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5.5, 1.05, 134)

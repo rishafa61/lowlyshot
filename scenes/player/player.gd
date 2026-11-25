@@ -84,17 +84,23 @@ var cook_timer: float = 0.0
 const MAX_COOK_TIME: float = 3.0
 var grenade_projectile = load("res://scenes/weapons/utilities/grenade_projectile.tscn")
 
+# Deployable / Ammo Supply Box
+var ammo_box_deployments: int = 1
+@export var max_ammo_box_deployments_per_life: int = 1
+var active_ammo_box: Node3D = null
+
 var is_reloading: bool = false
 var reload_timer: float = 0.0
 var _reload_abort_requested: bool = false
 const RELOAD_TIME: float = 1.5
 
 const WEAPON_POS_HIP = Vector3(0.3, -0.3, -0.5)
-const WEAPON_POS_ADS = Vector3(0.0, -0.22, -0.4)
+const WEAPON_POS_ADS = Vector3(0.0, -0.22, -0.8)
 const PITCH_LIMIT: float = deg_to_rad(87.0)  # keep off the ±90° euler pole (flip bug)
 const WPN_SWAY_ROT: float = 0.0012  # rad per mouse pixel
 const WPN_TILT_ROT: float = 0.035   # strafe tilt rad
 const WPN_MOVE_POS: float = 0.035   # movement lag offset (m)
+const WPN_INSPECT_PULLBACK: float = 0.12 # viewmodel pulled away from camera while inspecting (m)
 const WPN_BOB_AMT: float = 0.008    # viewmodel bob amplitude
 const FOV_NORMAL = 75.0
 const FOV_ADS = 55.0
@@ -105,8 +111,10 @@ var mouse_input: Vector2 = Vector2.ZERO
 var recoil_spread := 0.0
 var _empty_click_cd := 0.0
 var is_aiming := false
+var viewmodel_edit_mode := "" # "", "ads" or "hip" — set by the viewmodel tuner overlays
 var melee_tween: Tween = null
 var reload_tween: Tween = null
+var _death_tween: Tween = null
 var melee_swing_offset := Vector3.ZERO
 static var _tick_streams := {}
 
@@ -133,20 +141,150 @@ func _menu_open() -> bool:
 @onready var sniper_scope_ui = $SniperScope
 
 var current_weapon_instance: Node3D = null
+var weapon_base_transform: Transform3D = Transform3D.IDENTITY # authored offset (user tweaks in editor); reload code must restore this, not ZERO
+var weapon_anim: AnimationPlayer = null # arms rig player (drives both players)
+var gun_anim: AnimationPlayer = null # gun skeleton player, synced with arms
+var _inspecting := false # inspect clip playing — holder pulled back while true
+var _weapon_anim_connected := false
 
 func update_weapon_model(slot: Slot) -> void:
 	if is_instance_valid(current_weapon_instance):
 		current_weapon_instance.queue_free()
 		current_weapon_instance = null
+	weapon_anim = null
+	gun_anim = null
+	_weapon_anim_connected = false
 	var w = weapons[slot]
 	var path = str(w.get("scene_path", ""))
+	# Local first-person viewmodel: replace the world model with the anim rig
+	# (only for the owning peer; every other peer renders the world model).
+	var vpath := str(w.get("viewmodel_scene", ""))
+	if vpath != "" and not is_puppet:
+		path = vpath
 	if path == "":
 		return
 	var scene = load(path) as PackedScene
 	if scene == null:
 		return
 	current_weapon_instance = scene.instantiate() as Node3D
+	# Viewmodel meshes are client-only and must never cast floating-hands shadows
+	if not is_puppet and vpath != "":
+		for gi in current_weapon_instance.find_children("*", "GeometryInstance3D", true, false):
+			(gi as GeometryInstance3D).cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	weapon_holder.add_child(current_weapon_instance)
+	weapon_base_transform = current_weapon_instance.transform
+	_setup_weapon_anim()
+
+func _setup_weapon_anim() -> void:
+	if is_puppet or current_weapon_instance == null:
+		return
+	var aps = current_weapon_instance.find_children("*", "AnimationPlayer", true, false)
+	if aps.is_empty():
+		return
+	# Split between Arms and Gun players: gun's AK_Reload carries real keyframes,
+	# arms' dead 1-key AK_Reload (imported library is pristine here — never mutated).
+	for ap in aps:
+		var p := ap as AnimationPlayer
+		var a: Animation = p.get_animation("AK_Reload") if p.has_animation("AK_Reload") else null
+		if a != null and a.track_get_key_count(0) > 1:
+			gun_anim = p
+		else:
+			weapon_anim = p
+	if weapon_anim == null and gun_anim == null:
+		weapon_anim = aps[0] as AnimationPlayer
+	if weapon_anim == null and gun_anim != null:
+		weapon_anim = gun_anim # future exports may ship alive arms clips
+
+	# Clip naming: Arms (viewmodel) uses AK_<action>_001 ONLY — the plain AK_
+	# clips are weapon-rig tracks that T-pose the arm bones. Gun uses AK_<action>.
+	# Missing _001 (Hit has none yet) -> arms keep the idle hold while gun plays.
+	# Clip naming: Arms (viewmodel) uses AK_<action>_001 ONLY — the plain AK_
+	# clips are weapon-rig tracks that T-pose the arm bones. Gun uses AK_<action>.
+	# Missing _001 (Hit has none yet) -> arms keep the idle hold while gun plays.
+	# No Scope clips: the arms/gun scope poses don't match across rigs, so ADS
+	# is coded (centered holder + idle grip) instead of clip-driven.
+	var actions := ["Idle", "Hit", "Reload", "Pullout", "Inspect"]
+	var sources := {} # player -> {action: Animation}
+	for ap: AnimationPlayer in [weapon_anim, gun_anim]:
+		if ap == null: continue
+		var lib: AnimationLibrary = ap.get_animation_library("")
+		if lib == null: continue
+		var is_viewmodel := (ap == weapon_anim)
+		var per := {}
+		for action in actions:
+			var clip_name: String = ("AK_" + action + "_001") if is_viewmodel else ("AK_" + action)
+			if lib.has_animation(clip_name):
+				per[action] = lib.get_animation(clip_name)
+		if not per.is_empty():
+			sources[ap] = per
+
+	# Install a fresh "vm" library per player: duplicates trimmed to the shortest clip
+	# across players so arms + gun loop/finish in lockstep (clips export with slightly
+	# different lengths, losing Blender's timeline sync). The imported library stays
+	# untouched — it is shared between scene instances.
+	for ap: AnimationPlayer in sources.keys():
+		var vm_lib := AnimationLibrary.new()
+		for action in actions:
+			if not sources[ap].has(action):
+				continue
+			var dup: Animation = sources[ap][action].duplicate()
+			for other in sources:
+				if other != ap and sources[other].has(action):
+					dup.length = minf(dup.length, sources[other][action].length)
+			if action == "Idle":
+				dup.loop_mode = Animation.LOOP_LINEAR
+				vm_lib.add_animation("AK_Idle_Loop", dup)
+			else:
+				vm_lib.add_animation("AK_" + action, dup)
+		if ap.has_animation_library("vm"):
+			ap.remove_animation_library("vm")
+		ap.add_animation_library("vm", vm_lib)
+
+	if weapon_anim != null and not _weapon_anim_connected:
+		weapon_anim.animation_finished.connect(_on_weapon_anim_finished)
+		_weapon_anim_connected = true
+	_play_weapon_action("AK_Pullout")
+
+func _play_weapon_action(action: String, fallback_idle: bool = false) -> void:
+	if weapon_anim == null or not is_instance_valid(weapon_anim):
+		return
+	# Any other action replacing inspect cancels the pullback (reload mid-inspect etc.)
+	_inspecting = action == "AK_Inspect"
+	var dur := get_active_reload_duration()
+	for ap: AnimationPlayer in [weapon_anim, gun_anim]:
+		if ap == null or not is_instance_valid(ap) or not ap.has_animation_library("vm"):
+			continue
+		var target: String = "vm/" + action
+		if action == "AK_Idle" and ap.has_animation("vm/AK_Idle_Loop"):
+			target = "vm/AK_Idle_Loop"
+		elif not ap.has_animation(target):
+			if fallback_idle and ap.has_animation("vm/AK_Idle_Loop"):
+				target = "vm/AK_Idle_Loop"
+			else:
+				continue
+		if action == "AK_Reload":
+			var a: Animation = ap.get_animation(target)
+			ap.speed_scale = a.length / maxf(dur, 0.01)
+		else:
+			ap.speed_scale = 1.0
+		ap.play(target, 0.15) # crossfade — no hard pose snap between clips
+
+func _on_weapon_anim_finished(anim_name: StringName) -> void:
+	var sname := str(anim_name)
+	if "Pullout" in sname or "Reload" in sname or "Hit" in sname or "Inspect" in sname:
+		if weapon_anim: weapon_anim.speed_scale = 1.0
+		if gun_anim: gun_anim.speed_scale = 1.0
+		_play_weapon_action("AK_Idle", true)
+		# Idle keeps playing while scoped — entry snap to frame 0 already
+		# gave ADS a clean starting pose.
+
+## Y: one-shot weapon inspect, auto-returns to the idle loop on finish
+func inspect_weapon() -> void:
+	if is_puppet or is_dead or is_reloading or weapon_anim == null:
+		return
+	if not is_instance_valid(weapon_anim) or not weapon_anim.has_animation("vm/AK_Inspect"):
+		return
+	_play_weapon_action("AK_Inspect")
 
 func _ready() -> void:
 	spawn_point = global_position
@@ -158,7 +296,7 @@ func _ready() -> void:
 	floor_constant_speed = true
 	floor_block_on_wall = false
 	# Online match: a player node owned by ANOTHER peer is only a puppet (no input/camera/HUD)
-	is_puppet = GlobalData.is_networked() and not is_multiplayer_authority()
+	is_puppet = is_puppet or (GlobalData.is_networked() and not is_multiplayer_authority())
 	if is_puppet:
 		_setup_puppet()
 		return
@@ -171,6 +309,14 @@ func _ready() -> void:
 		player_name = "Player" if local_pid == 1 else str(local_pid)
 	camera.make_current() # tscn current was stripped pre-add (puppet hijack fix); always reclaim the view
 	Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
+
+	# Local shadow body: casts full player shadow without occluding the first-person camera.
+	var body_scene := load("res://scenes/characters/human_body.tscn") as PackedScene
+	if body_scene != null:
+		_shadow_body = body_scene.instantiate() as Node3D
+		for gi in _shadow_body.find_children("*", "GeometryInstance3D", true, false):
+			(gi as GeometryInstance3D).cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_SHADOWS_ONLY
+		add_child(_shadow_body)
 	
 	# Load Operator
 	var op_script: Script = GlobalData.get_equipped_operator_script()
@@ -197,6 +343,7 @@ func _ready() -> void:
 		GlobalData.get_equipped_heavy().duplicate()
 	]
 	weapons[Slot.THROWABLE]["amount"] = 1
+	ammo_box_deployments = max_ammo_box_deployments_per_life
 	
 	_push_hud_slot_names()
 	switch_weapon(Slot.RIFLE)
@@ -237,6 +384,30 @@ func _net_apply_stun(duration: float) -> void:
 	if is_puppet or is_dead:
 		return
 	stun(duration)
+
+## Hunter Drone EMP: full control lock (no move/sprint/fire/reload) for the
+## duration. Camera look stays functional. Auto-expires — never permanent.
+var _drone_stun_timer: float = 0.0
+var is_drone_stunned: bool = false
+
+func drone_stun(duration: float) -> void:
+	if is_puppet:
+		_net_apply_drone_stun.rpc_id(get_multiplayer_authority(), duration)
+		return
+	if is_dead:
+		return
+	is_drone_stunned = true
+	_drone_stun_timer = maxf(_drone_stun_timer, duration)
+	camera_recoil += 0.15
+	if hud:
+		hud.show_flash_vignette(duration)
+		hud.show_center_hint("STUNNED", Color(0.4, 0.9, 1.0))
+
+@rpc("any_peer", "call_remote", "reliable")
+func _net_apply_drone_stun(duration: float) -> void:
+	if is_puppet or is_dead:
+		return
+	drone_stun(duration)
 
 func _on_health_damaged(_raw_amount: float, _absorbed: float) -> void:
 	if hud:
@@ -398,7 +569,11 @@ var _net_last_pitch: float = INF
 var _net_last_weapon: String = ""
 var _net_idle_ticks: int = 0
 var _puppet_body: Node3D = null
+var _shadow_body: Node3D = null
 var _puppet_gun_holder: Node3D = null
+var _puppet_gun_drop_tween: Tween = null
+const DEFAULT_PUPPET_GUN_POS := Vector3(0.3, 1.35, -0.35)
+const DEFAULT_PUPPET_GUN_ROT := Vector3.ZERO
 var _net_weapon_path: String = ""
 var _puppet_death_played: bool = false
 
@@ -420,7 +595,7 @@ func _setup_puppet() -> void:
 	add_child(_puppet_body)
 	# Third-person gun holder so others can see the weapon this player holds
 	_puppet_gun_holder = Node3D.new()
-	_puppet_gun_holder.position = Vector3(0.3, 1.35, -0.35)
+	_puppet_gun_holder.position = DEFAULT_PUPPET_GUN_POS
 	add_child(_puppet_gun_holder)
 
 ## Syncs the visible gun model on remote puppets
@@ -448,12 +623,54 @@ func net_play_death() -> void:
 	# Host-side state must match: without this the host still counts the dead
 	# player as alive (S&D elimination never fires) and bots keep shooting the corpse.
 	is_dead = true
-	if is_instance_valid(_puppet_gun_holder):
-		_puppet_gun_holder.visible = false
+	_drop_puppet_weapon()
 	if is_instance_valid(_puppet_body):
-		var tween = create_tween().set_parallel(true)
-		tween.tween_property(_puppet_body, "rotation:x", deg_to_rad(-90), 0.5).set_trans(Tween.TRANS_BOUNCE)
-		tween.tween_property(_puppet_body, "position:y", 0.2, 0.5)
+		if _puppet_body.has_method("play_anim"):
+			_puppet_body.play_anim("Death")
+		else:
+			var tween = create_tween().set_parallel(true)
+			tween.tween_property(_puppet_body, "rotation:x", deg_to_rad(-90), 0.5).set_trans(Tween.TRANS_BOUNCE)
+			tween.tween_property(_puppet_body, "position:y", 0.2, 0.5)
+
+## Drops the remote puppet's held weapon to the floor on death
+func _drop_puppet_weapon() -> void:
+	if not is_instance_valid(_puppet_gun_holder):
+		return
+	if _puppet_gun_drop_tween and _puppet_gun_drop_tween.is_valid():
+		_puppet_gun_drop_tween.kill()
+
+	var floor_y: float = global_position.y + 0.04
+	var space := get_world_3d().direct_space_state if is_inside_tree() else null
+	if space:
+		var ray_from: Vector3 = _puppet_gun_holder.global_position
+		var ray_to: Vector3 = ray_from + Vector3.DOWN * 10.0
+		var query := PhysicsRayQueryParameters3D.create(ray_from, ray_to)
+		query.collision_mask = 1
+		query.exclude = [get_rid()]
+		var hit := space.intersect_ray(query)
+		if hit and hit.has("position"):
+			floor_y = float(hit.position.y) + 0.04
+
+	var parent_node := _puppet_gun_holder.get_parent() as Node3D
+	var target_local_y: float = 0.04
+	if parent_node:
+		target_local_y = parent_node.to_local(Vector3(_puppet_gun_holder.global_position.x, floor_y, _puppet_gun_holder.global_position.z)).y
+
+	_puppet_gun_drop_tween = create_tween().set_parallel(true)
+	_puppet_gun_drop_tween.tween_property(_puppet_gun_holder, "position:y", target_local_y, 0.35)\
+		.set_trans(Tween.TRANS_BOUNCE).set_ease(Tween.EASE_OUT)
+	_puppet_gun_drop_tween.tween_property(_puppet_gun_holder, "rotation:z", deg_to_rad(85.0), 0.3)\
+		.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	_puppet_gun_drop_tween.tween_property(_puppet_gun_holder, "rotation:x", deg_to_rad(randf_range(-10.0, 10.0)), 0.3)
+	_puppet_gun_drop_tween.tween_property(_puppet_gun_holder, "rotation:y", deg_to_rad(randf_range(-20.0, 20.0)), 0.3)
+
+func _reset_puppet_gun_holder() -> void:
+	if _puppet_gun_drop_tween and _puppet_gun_drop_tween.is_valid():
+		_puppet_gun_drop_tween.kill()
+	if is_instance_valid(_puppet_gun_holder):
+		_puppet_gun_holder.position = DEFAULT_PUPPET_GUN_POS
+		_puppet_gun_holder.rotation = DEFAULT_PUPPET_GUN_ROT
+		_puppet_gun_holder.visible = true
 
 ## Called by the MultiplayerManager with the owner's latest transform
 func net_set_target(pos: Vector3, yaw: float, pitch: float) -> void:
@@ -464,6 +681,8 @@ func net_set_target(pos: Vector3, yaw: float, pitch: float) -> void:
 	_net_target_pitch = pitch
 
 func _puppet_physics(delta: float) -> void:
+	if is_dead:
+		return
 	var t: float = min(1.0, delta * 15.0)
 	var prev_pos := global_position
 	if _net_target_pos.is_finite():
@@ -572,6 +791,11 @@ func _die():
 
 func die():
 	is_dead = true
+	is_drone_stunned = false
+	_drone_stun_timer = 0.0
+	if hud and hud.has_method("hide_interact_prompt"):
+		hud.hide_interact_prompt()
+	_hovered_ammo_box = null
 	# Drop carried bomb if this player is the S&D carrier
 	var mgr_scene = get_tree().current_scene
 	if mgr_scene and mgr_scene.has_method("drop_bomb") and mgr_scene.get("bomb_carrier_peer") != null:
@@ -585,7 +809,9 @@ func die():
 	if reload_tween and reload_tween.is_valid():
 		reload_tween.kill()
 	if is_instance_valid(current_weapon_instance):
-		current_weapon_instance.rotation = Vector3.ZERO
+		current_weapon_instance.transform = weapon_base_transform
+	if is_instance_valid(_shadow_body) and _shadow_body.has_method("play_anim"):
+		_shadow_body.play_anim("Death")
 	Sfx.stop_loop(_sfx_move)
 	_sfx_move = null
 	_sfx_move_state = ""
@@ -605,22 +831,41 @@ func die():
 				mgr.report_kill.rpc_id(1, killer, k_faction, gun, player_name, v_faction)
 			mgr.notify_player_death(int(str(name)))
 	
-	# Drop camera to floor
-	var tween = create_tween()
-	tween.tween_property(head, "position:y", 0.2, 0.5).set_trans(Tween.TRANS_BOUNCE)
-	# Rotate camera sideways
-	tween.parallel().tween_property(head, "rotation:z", deg_to_rad(75), 0.5)
+	# Drop camera and viewmodel weapon to floor
+	if _death_tween and _death_tween.is_valid():
+		_death_tween.kill()
+	_death_tween = create_tween().set_parallel(true)
+	_death_tween.tween_property(head, "position:y", 0.2, 0.5).set_trans(Tween.TRANS_BOUNCE)
+	_death_tween.tween_property(head, "rotation:z", deg_to_rad(75), 0.5)
+	if is_instance_valid(weapon_holder):
+		_death_tween.tween_property(weapon_holder, "position:y", -0.4, 0.35).set_trans(Tween.TRANS_QUAD)
+		_death_tween.tween_property(weapon_holder, "rotation:x", deg_to_rad(-35), 0.35)
 	
 	respawn_timer = 3.0 # Wait 3 seconds then respawn
 
 
 func respawn():
 	is_dead = false
-	health_component.reset()
+	is_drone_stunned = false
+	_drone_stun_timer = 0.0
+	if health_component:
+		health_component.reset()
 	last_attacker = ""
 	last_weapon = ""
 	stamina = max_stamina
 	is_exhausted = false
+	_puppet_death_played = false # allow the next death anim on respawn
+	if _death_tween and _death_tween.is_valid():
+		_death_tween.kill()
+	if is_instance_valid(_shadow_body):
+		_shadow_body.visible = true
+		if _shadow_body.has_method("clear_death"):
+			_shadow_body.clear_death()
+	if is_instance_valid(_puppet_body) and _puppet_body.has_method("clear_death"):
+		_puppet_body.clear_death()
+	_reset_puppet_gun_holder()
+	if is_puppet:
+		return
 	
 	# Refill all weapons dynamically based on their specific max stats
 	if weapons[Slot.RIFLE].has("max_mag"):
@@ -633,6 +878,7 @@ func respawn():
 		weapons[Slot.HEAVY]["mag"] = weapons[Slot.HEAVY]["max_mag"]
 		weapons[Slot.HEAVY]["res"] = weapons[Slot.HEAVY]["max_res"]
 	weapons[Slot.THROWABLE]["amount"] = 1
+	ammo_box_deployments = max_ammo_box_deployments_per_life
 	
 	_push_hud_slot_names()
 	switch_weapon(Slot.RIFLE) # Reset to default sidearm
@@ -642,10 +888,13 @@ func respawn():
 		hud.update_minimap(global_position, head.rotation.y)
 
 	
-	# Reset camera
+	# Reset camera and viewmodel weapon
 	head.position.y = 1.8
 	head.rotation.z = 0.0
 	camera.rotation.x = 0.0
+	if is_instance_valid(weapon_holder):
+		weapon_holder.position = WEAPON_POS_HIP
+		weapon_holder.rotation = Vector3.ZERO
 	
 	# Move back to initial spawn point
 	global_position = spawn_point
@@ -709,11 +958,17 @@ func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("weapon_3"): switch_weapon(Slot.MELEE)
 	if event.is_action_pressed("weapon_4"): switch_weapon(Slot.THROWABLE)
 	if event.is_action_pressed("weapon_5"): switch_weapon(Slot.HEAVY)
+	if event.is_action_pressed("inspect"): inspect_weapon()
 
 	# Operator Skill
 	if event.is_action_pressed("use_skill"):
 		active_operator.use_skill(self)
 
+	# Ammo Supply Box interaction [F]
+	if event.is_action_pressed("interact") or event.is_action_pressed("vehicle_interact"):
+		if _handle_ammo_box_interact():
+			get_viewport().set_input_as_handled()
+			return
 
 	# Door dragging toggle
 	if event.is_action_pressed("interact"):
@@ -780,7 +1035,7 @@ func switch_weapon(slot: Slot) -> void:
 	if reload_tween and reload_tween.is_valid():
 		reload_tween.kill()
 	if is_instance_valid(current_weapon_instance):
-		current_weapon_instance.rotation = Vector3.ZERO
+		current_weapon_instance.transform = weapon_base_transform
 	
 	active_slot = slot as Slot
 	var w = weapons[slot]
@@ -806,6 +1061,8 @@ func switch_weapon(slot: Slot) -> void:
 			hud.update_ammo(w.get("mag", 1), w.get("res", 0))
 		elif w["type"] in ["util", "throwable"]:
 			hud.update_ammo(w.get("amount", 0), 0)
+		elif w.get("type") == "deployable" or w.get("id") == "ammo_box":
+			hud.update_ammo(ammo_box_deployments, 0)
 		else:
 			hud.update_ammo(0, 0) # hide or show 0
 
@@ -880,25 +1137,26 @@ func _kill_reload_anim() -> void:
 	if reload_tween and reload_tween.is_valid():
 		reload_tween.kill()
 	if is_instance_valid(current_weapon_instance):
-		current_weapon_instance.rotation = Vector3.ZERO
-		current_weapon_instance.position = Vector3.ZERO
+		current_weapon_instance.transform = weapon_base_transform
+	_play_weapon_action("AK_Idle", true)
 
 func _start_reload_dip(dur: float, looping: bool) -> void:
 	if not is_instance_valid(current_weapon_instance):
 		return
 	if reload_tween and reload_tween.is_valid():
 		reload_tween.kill()
-	current_weapon_instance.rotation = Vector3.ZERO
-	current_weapon_instance.position = Vector3.ZERO
+	current_weapon_instance.transform = weapon_base_transform
+	var base_rot := weapon_base_transform.basis.get_euler()
+	var base_pos := weapon_base_transform.origin
 	reload_tween = create_tween()
 	if looping:
 		reload_tween.set_loops()
-	reload_tween.tween_property(current_weapon_instance, "rotation:x", deg_to_rad(45), dur * 0.35).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-	reload_tween.parallel().tween_property(current_weapon_instance, "position:y", -0.15, dur * 0.35).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	reload_tween.tween_property(current_weapon_instance, "rotation:x", base_rot.x + deg_to_rad(45), dur * 0.35).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	reload_tween.parallel().tween_property(current_weapon_instance, "position:y", base_pos.y - 0.15, dur * 0.35).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 	if not looping:
 		reload_tween.tween_interval(dur * 0.2)
-	reload_tween.tween_property(current_weapon_instance, "rotation:x", 0.0, dur * 0.35).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
-	reload_tween.parallel().tween_property(current_weapon_instance, "position:y", 0.0, dur * 0.35).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	reload_tween.tween_property(current_weapon_instance, "rotation:x", base_rot.x, dur * 0.35).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	reload_tween.parallel().tween_property(current_weapon_instance, "position:y", base_pos.y, dur * 0.35).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
 
 func start_reload():
 	is_reloading = true
@@ -908,13 +1166,16 @@ func start_reload():
 	# Shotgun: per-shell dip; each finish_reload inserts 1 and chains next
 	if w.get("is_shotgun", false):
 		var per := float(w.get("reload_time", 0.52))
-		_start_reload_dip(per, true)
+		if weapon_anim == null: # no Blender anim: keep the procedural dip
+			_start_reload_dip(per, true)
 		return
 	# Reload sound for rifles/smgs
 	var wid := str(w.get("id", ""))
 	if wid in ["ak47", "m4a4", "mp5", "steyr_aug", "rpd"]:
 		Sfx.oneshot3d("rifle_reload", self, 6.0, 40.0, 0.0)
-	_start_reload_dip(get_active_reload_duration(), false)
+	_play_weapon_action("AK_Reload", true)
+	if weapon_anim == null: # Blender reload clip owns the motion when present
+		_start_reload_dip(get_active_reload_duration(), false)
 
 func finish_reload():
 	var w = weapons[active_slot]
@@ -957,10 +1218,14 @@ func finish_reload():
 	hud.update_ammo(w["mag"], w["res"])
 
 func shoot_gun() -> void:
+	if weapon_anim != null and is_instance_valid(weapon_anim) \
+			and weapon_anim.current_animation.ends_with("AK_Pullout"):
+		return # can't fire mid-equip
 	var w = weapons[active_slot]
 	w["mag"] -= 1
 	fire_cooldown = w["fire_rate"]
 	hud.update_ammo(w["mag"], w["res"])
+	_play_weapon_action("AK_Hit")
 	
 	current_recoil = Vector3(0, 0, 0.15)
 	if w.get("id", "") == "desert_hawk":
@@ -1308,6 +1573,200 @@ func _spawn_launcher_muzzle_flash(pos: Vector3) -> void:
 	t.tween_property(flash, "light_energy", 0.0, 0.1)
 	t.tween_callback(flash.queue_free)
 
+func try_deploy_ammo_box() -> void:
+	if is_dead or is_reloading or is_skydiving:
+		return
+	if ammo_box_deployments <= 0:
+		if hud and hud.has_method("show_center_hint"):
+			hud.show_center_hint("NO DEPLOYMENTS REMAINING", Color(1.0, 0.35, 0.35))
+		_play_empty_click()
+		return
+
+	# Raycast forward and down from player to find floor
+	var space_state := get_world_3d().direct_space_state
+	var forward := -camera.global_transform.basis.z
+	forward.y = 0.0
+	if forward.length_squared() < 0.01:
+		forward = -transform.basis.z
+		forward.y = 0.0
+	forward = forward.normalized()
+
+	# Drop-down raycast 1.6m in front of player
+	var check_origin := global_position + forward * 1.6 + Vector3.UP * 0.5
+	var ray_query := PhysicsRayQueryParameters3D.create(check_origin, check_origin - Vector3.UP * 2.5)
+	ray_query.exclude = [get_rid()]
+	var hit := space_state.intersect_ray(ray_query)
+
+	if hit.is_empty() or hit.normal.dot(Vector3.UP) < 0.65:
+		if hud and hud.has_method("show_center_hint"):
+			hud.show_center_hint("CANNOT DEPLOY HERE (INVALID GROUND)", Color(1.0, 0.35, 0.35))
+		return
+
+	var spawn_pos: Vector3 = hit.position
+
+	# Box clearance query to prevent placing inside walls or geometry
+	var box_shape := BoxShape3D.new()
+	box_shape.size = Vector3(0.65, 0.45, 0.65)
+	var shape_query := PhysicsShapeQueryParameters3D.new()
+	shape_query.shape = box_shape
+	shape_query.transform = Transform3D(Basis(), spawn_pos + Vector3.UP * 0.25)
+	shape_query.exclude = [get_rid()]
+	var collisions := space_state.intersect_shape(shape_query, 4)
+	var blocked := false
+	for col in collisions:
+		var c = col.get("collider")
+		if c is StaticBody3D or c is CSGShape3D or (c is Node and c.is_in_group("map_geometry")):
+			blocked = true
+			break
+	if blocked:
+		if hud and hud.has_method("show_center_hint"):
+			hud.show_center_hint("CANNOT DEPLOY HERE (BLOCKED)", Color(1.0, 0.35, 0.35))
+		return
+
+	# Valid placement — consume deployment
+	ammo_box_deployments -= 1
+	var w = weapons[Slot.HEAVY]
+	w["mag"] = ammo_box_deployments
+	if hud:
+		hud.update_ammo(ammo_box_deployments, 0)
+
+	fire_cooldown = 1.0
+	Sfx.oneshot3d("rifle_reload", self, 8.0, 30.0, 1.2)
+
+	var yaw := atan2(-forward.x, -forward.z)
+
+	if GlobalData.is_networked():
+		var mgr = get_tree().current_scene
+		if mgr and mgr.has_method("request_deploy_ammo_box"):
+			mgr.request_deploy_ammo_box(spawn_pos, yaw, team, player_name)
+	else:
+		_spawn_local_ammo_box(spawn_pos, yaw)
+
+func _spawn_local_ammo_box(spawn_pos: Vector3, yaw: float) -> void:
+	if is_instance_valid(active_ammo_box):
+		active_ammo_box.queue_free()
+	var sc := load("res://scenes/weapons/heavy/ammo_box.tscn") as PackedScene
+	if not sc:
+		return
+	var box: Node3D = sc.instantiate()
+	box.position = spawn_pos
+	box.rotation.y = yaw
+	box.set("owner_peer_id", 1)
+	box.set("owner_team", team)
+	box.set("owner_name", player_name)
+	get_tree().root.add_child(box)
+	active_ammo_box = box
+
+func can_receive_ammo() -> bool:
+	if is_dead:
+		return false
+	for w in weapons:
+		if not (w is Dictionary):
+			continue
+		var w_type: String = str(w.get("type", ""))
+		if w_type in ["melee", "throwable", "deployable", "utility"]:
+			continue
+		var max_r: int = int(w.get("max_res", 0))
+		var cur_r: int = int(w.get("res", 0))
+		if max_r > 0 and cur_r < max_r:
+			return true
+	return false
+
+func receive_resupply(amount_override: int = 0) -> bool:
+	if not can_receive_ammo():
+		return false
+	var refilled_any: bool = false
+	for w in weapons:
+		if not (w is Dictionary):
+			continue
+		var w_type: String = str(w.get("type", ""))
+		if w_type in ["melee", "throwable", "deployable", "utility"]:
+			continue
+		var max_r: int = int(w.get("max_res", 0))
+		var cur_r: int = int(w.get("res", 0))
+		if max_r <= 0 or cur_r >= max_r:
+			continue
+		var gain: int = 0
+		if amount_override > 0:
+			gain = amount_override
+		elif w_type == "launcher":
+			gain = 1
+		else:
+			gain = int(w.get("max_mag", 30))
+		w["res"] = mini(max_r, cur_r + gain)
+		refilled_any = true
+
+	if refilled_any:
+		if active_slot >= 0 and active_slot < weapons.size():
+			var cur_w = weapons[active_slot]
+			if cur_w.get("type") in ["gun", "launcher"]:
+				hud.update_ammo(cur_w.get("mag", 0), cur_w.get("res", 0))
+		if hud and hud.has_method("show_center_hint"):
+			hud.show_center_hint("AMMO RESUPPLIED", Color(1.0, 0.75, 0.2))
+		Sfx.oneshot3d("rifle_reload", self, 8.0, 40.0, 1.0)
+	return refilled_any
+
+var _hovered_ammo_box: Node3D = null
+
+func _handle_ammo_box_interact() -> bool:
+	var target_box: Node3D = _hovered_ammo_box
+	if target_box == null or not is_instance_valid(target_box):
+		if interact_ray.is_colliding():
+			var col = interact_ray.get_collider()
+			if col and col.is_in_group("ammo_supply_boxes"):
+				target_box = col
+			elif col and col.get_parent() and col.get_parent().is_in_group("ammo_supply_boxes"):
+				target_box = col.get_parent()
+
+	if target_box == null:
+		var best_dist := 3.5
+		for b in get_tree().get_nodes_in_group("ammo_supply_boxes"):
+			if is_instance_valid(b) and not b.is_queued_for_deletion():
+				var d := global_position.distance_to(b.global_position)
+				var r: float = float(b.get("resupply_radius")) if "resupply_radius" in b else 3.0
+				if d <= r + 0.5 and d < best_dist:
+					best_dist = d
+					target_box = b
+
+	if target_box != null and is_instance_valid(target_box):
+		if target_box.has_method("interact_from_player"):
+			target_box.interact_from_player(self)
+			return true
+	return false
+
+func _update_ammo_box_interaction() -> void:
+	if not hud or is_puppet or is_dead or is_piloting:
+		return
+	var nearest_box: Node3D = null
+	if interact_ray.is_colliding():
+		var col = interact_ray.get_collider()
+		if col and col.is_in_group("ammo_supply_boxes"):
+			nearest_box = col
+		elif col and col.get_parent() and col.get_parent().is_in_group("ammo_supply_boxes"):
+			nearest_box = col.get_parent()
+
+	if nearest_box == null:
+		var best_dist := 3.2
+		for b in get_tree().get_nodes_in_group("ammo_supply_boxes"):
+			if is_instance_valid(b) and not b.is_queued_for_deletion():
+				var d := global_position.distance_to(b.global_position)
+				var r: float = float(b.get("resupply_radius")) if "resupply_radius" in b else 3.0
+				if d <= r and d < best_dist:
+					best_dist = d
+					nearest_box = b
+
+	if nearest_box != null:
+		_hovered_ammo_box = nearest_box
+		var is_dep: bool = bool(nearest_box.get("is_depleted"))
+		if is_dep:
+			hud.show_interact_prompt("—", "SUPPLIES DEPLETED")
+		else:
+			hud.show_interact_prompt("F", "RESUPPLY AMMO")
+	else:
+		if _hovered_ammo_box != null:
+			_hovered_ammo_box = null
+			hud.hide_interact_prompt()
+
 func melee_attack(is_heavy: bool):
 	var w = weapons[active_slot]
 	fire_cooldown = 1.2 if is_heavy else w["fire_rate"]
@@ -1544,6 +2003,37 @@ func _physics_process(delta: float) -> void:
 	# Perf: hover-name ray at 20 Hz — nametag lag imperceptible
 	if Engine.get_physics_frames() % 3 == 0:
 		_check_crosshair_target()
+	# Viewmodel tuner overlay: player frozen in place, scoped or hip pose held,
+	# world keeps rendering so the offset can be judged against the live scene.
+	# Runs BEFORE the menu-open gate — the tuner opens over the pause menu,
+	# which would otherwise early-return and ignore offset changes.
+	if viewmodel_edit_mode != "":
+		if not is_on_floor():
+			velocity.y -= gravity * delta
+		velocity.x = 0.0
+		velocity.z = 0.0
+		move_and_slide()
+		var editing_ads: bool = viewmodel_edit_mode == "ads"
+		is_aiming = editing_ads
+		var wv = weapons[active_slot]
+		var tune_wid := str(wv.get("id", ""))
+		var rot_target := deg_to_rad(GlobalSettings.get_vm_rot(tune_wid, "ads" if editing_ads else "hip"))
+		weapon_holder.rotation.y = lerp_angle(weapon_holder.rotation.y, rot_target, delta * 15.0)
+		var base := WEAPON_POS_ADS if editing_ads else WEAPON_POS_HIP
+		var off := GlobalSettings.get_vm_off(tune_wid, "ads" if editing_ads else "hip")
+		for ap: AnimationPlayer in [weapon_anim, gun_anim]:
+			if ap != null and is_instance_valid(ap) and ap.has_animation_library("vm") \
+					and ap.current_animation.ends_with("AK_Idle_Loop"):
+				ap.speed_scale = 1.0 if not editing_ads else 0.0 # hip sway plays, scoped grip frozen
+		if editing_ads and wv.get("is_sniper", false):
+			weapon_holder.visible = false
+			if sniper_scope_ui: sniper_scope_ui.show()
+		else:
+			weapon_holder.visible = true
+			weapon_holder.position = weapon_holder.position.lerp(base + off, delta * 15.0)
+			camera.fov = lerp(camera.fov, FOV_ADS if editing_ads else FOV_NORMAL, delta * 15.0)
+		return
+
 	# Block all gameplay input while console or pause/settings menu is open
 	if (hud and hud.console_visible) or _menu_open():
 		if not is_on_floor():
@@ -1592,7 +2082,23 @@ func _physics_process(delta: float) -> void:
 
 	if fire_cooldown > 0: fire_cooldown -= delta
 
+	# Hunter Drone EMP stun: controls locked, camera look stays live.
+	# Timer-based — can never permanently disable controls.
+	if is_drone_stunned:
+		_drone_stun_timer -= delta
+		if _drone_stun_timer <= 0.0:
+			_drone_stun_timer = 0.0
+			is_drone_stunned = false
+		else:
+			if not is_on_floor():
+				velocity.y -= gravity * delta
+			velocity.x = move_toward(velocity.x, 0, speed_normal)
+			velocity.z = move_toward(velocity.z, 0, speed_normal)
+			move_and_slide()
+			return
+
 	_snd_process_interactions()
+	_update_ammo_box_interaction()
 
 	if active_operator and hud:
 		hud.update_skill_ui(active_operator.skill_name, active_operator.current_cooldown, active_operator.skill_cooldown)
@@ -1631,6 +2137,10 @@ func _physics_process(delta: float) -> void:
 				hud.update_ammo(w["mag"], w["res"])
 			if Input.is_action_just_pressed("fire") and fire_cooldown <= 0 and w["mag"] > 0:
 				fire_launcher()
+		elif w.get("type") == "deployable" or w.get("id") == "ammo_box":
+			_update_launcher_lock_reset()
+			if Input.is_action_just_pressed("fire") and fire_cooldown <= 0:
+				try_deploy_ammo_box()
 		else:
 			_update_launcher_lock_reset()
 
@@ -1660,13 +2170,24 @@ func _physics_process(delta: float) -> void:
 			finish_reload()
 
 	# Handle Scoping (w is declared above, in the weapon logic block)
-	is_aiming = Input.is_action_pressed("aim") and not is_reloading and w["type"] == "gun"
+	var prev_aiming := is_aiming
+	var pulling_out := weapon_anim != null and is_instance_valid(weapon_anim) \
+		and weapon_anim.current_animation.ends_with("AK_Pullout")
+	is_aiming = Input.is_action_pressed("aim") and not is_reloading and not pulling_out and w["type"] == "gun"
 	if active_operator and active_operator.has_method("override_aim") and active_operator.get("is_holding_bow"):
 		is_aiming = false # Don't ADS while holding bow
-
+	if is_aiming != prev_aiming and is_aiming:
+		# Entering scope: snap idle to its first frame so the stock can't
+		# swing into view mid-sway.
+		for ap: AnimationPlayer in [weapon_anim, gun_anim]:
+			if ap != null and is_instance_valid(ap) and ap.has_animation_library("vm") \
+					and ap.current_animation.ends_with("AK_Idle_Loop"):
+				ap.seek(0.0, true)
 	var input_dir := Input.get_vector("move_left", "move_right", "move_forward", "move_backward")
 	# Movement lag: drifts opposite strafe, pulls back on S / pushes on W
 	var move_off := Vector3(input_dir.x * WPN_MOVE_POS, 0.0, input_dir.y * WPN_MOVE_POS) * (0.2 if is_aiming else 1.0)
+	# Inspecting: ease the whole viewmodel away from the camera (camera looks -Z)
+	var inspect_off := Vector3(0.0, 0.0, -WPN_INSPECT_PULLBACK) if _inspecting else Vector3.ZERO
 
 	if is_aiming:
 		if w.get("is_sniper", false):
@@ -1675,12 +2196,17 @@ func _physics_process(delta: float) -> void:
 			weapon_holder.visible = false # Hide 3D gun while looking through scope
 			if sniper_scope_ui and camera.fov < 25.0: sniper_scope_ui.show()
 		else:
-			# Standard rifle ADS
-			weapon_holder.position = weapon_holder.position.lerp(WEAPON_POS_ADS + move_off, delta * 15.0)
+			# Standard rifle ADS: centered holder, idle grip. No scope clips —
+			# the arms/gun scope poses don't match across rigs.
+			var ads_wid := str(w.get("id", ""))
+			weapon_holder.rotation.y = lerp_angle(weapon_holder.rotation.y, deg_to_rad(GlobalSettings.get_vm_rot(ads_wid, "ads")), delta * 15.0)
+			weapon_holder.position = weapon_holder.position.lerp(WEAPON_POS_ADS + GlobalSettings.get_vm_off(ads_wid, "ads") + move_off + inspect_off, delta * 15.0)
 			camera.fov = lerp(camera.fov, FOV_ADS, delta * 15.0)
 	else:
 		# Hipfire
-		weapon_holder.position = weapon_holder.position.lerp(WEAPON_POS_HIP + move_off, delta * 10.0)
+		var hip_wid := str(w.get("id", ""))
+		weapon_holder.rotation.y = lerp_angle(weapon_holder.rotation.y, deg_to_rad(GlobalSettings.get_vm_rot(hip_wid, "hip")), delta * 10.0)
+		weapon_holder.position = weapon_holder.position.lerp(WEAPON_POS_HIP + GlobalSettings.get_vm_off(hip_wid, "hip") + move_off + inspect_off, delta * 10.0)
 		camera.fov = lerp(camera.fov, FOV_NORMAL, delta * 10.0)
 		weapon_holder.visible = true
 		if sniper_scope_ui: sniper_scope_ui.hide()
@@ -1700,10 +2226,11 @@ func _physics_process(delta: float) -> void:
 	mouse_input = mouse_input.lerp(Vector2.ZERO, 10.0 * delta)
 
 	var bob_off := Vector3.ZERO
-	if is_on_floor() and Vector2(velocity.x, velocity.z).length() > 1.0:
+	# Blender idle clip owns viewmodel motion; skip procedural bob when it plays
+	if weapon_anim == null and is_on_floor() and Vector2(velocity.x, velocity.z).length() > 1.0:
 		var bob_amt: float = WPN_BOB_AMT * (0.25 if is_aiming else 1.0)
 		var t_ms := float(Time.get_ticks_msec())
-		bob_off = Vector3(sin(t_ms * 0.005) * bob_amt, sin(t_ms * 0.01) * bob_amt, 0.0)
+		bob_off = Vector3(sin(t_ms * 0.005) * bob_amt, 0.0, 0.0) # lateral only — no vertical bob
 
 	weapon_holder.position += current_recoil + melee_swing_offset + bob_off
 	current_recoil = current_recoil.lerp(Vector3.ZERO, delta * 15.0)
@@ -1771,22 +2298,24 @@ func _physics_process(delta: float) -> void:
 		if move_state != "":
 			_sfx_move = Sfx.loop3d(move_state, self, 3.0, 28.0, -8.0)
 
+	# Shadow-only body mirrors local movement so the cast shadow matches the pose
+	if is_instance_valid(_shadow_body) and _shadow_body.has_method("sync_movement"):
+		_shadow_body.sync_movement(hspeed > 0.5, Input.is_action_pressed("crouch") and not is_sliding, is_sliding, not is_on_floor())
+
 	if is_on_floor() and not is_sliding:
 		var speed_factor = Vector2(velocity.x, velocity.z).length()
 		if speed_factor > 1.0:
-			var bob_mult_y: float = 3.0 if is_sprinting else 1.0
 			var bob_mult_x: float = 2.2 if is_sprinting else 0.6
 			t_bob += delta * speed_factor * (1.25 if is_sprinting else 1.0) * 0.15
-			# Deeper figure-8 sway; sprinting layers a fast camera shake.
+			# Vertical bob removed — Blender idle clip owns viewmodel motion;
+			# camera Y bob dragged the viewmodel up/down over it.
 			# Shake skipped while ADS so scopes stay steady.
 			var shake: float = 0.0
 			if is_sprinting and not is_aiming:
 				shake = 0.03
-			var target_y := sin(t_bob * BOB_FREQ) * BOB_AMP * bob_mult_y \
-				+ sin(t_bob * BOB_FREQ * 2.7) * shake
 			var target_x := cos(t_bob * BOB_FREQ * 0.5) * BOB_AMP * bob_mult_x \
 				+ sin(t_bob * BOB_FREQ * 3.1 + 1.3) * shake * 0.6
-			camera.position.y = lerp(camera.position.y, target_y, delta * 12.0)
+			camera.position.y = lerp(camera.position.y, 0.0, delta * 12.0)
 			camera.position.x = lerp(camera.position.x, target_x, delta * 12.0)
 			# Sway roll: strafe lean + bob wobble (recoil only owns rotation x/y)
 			camera.rotation.z = lerp(camera.rotation.z,
@@ -1946,14 +2475,16 @@ func _physics_process(delta: float) -> void:
 	if is_on_floor() and not is_on_ceiling() and get_real_velocity().length() > 1.0:
 		_last_safe_pos = global_position
 
-	# Push rigid bodies like the physics door
+	# Push rigid bodies like the physics door (vehicles excluded: shoving a
+	# 3600 kg heli around is not a thing)
 	for i in get_slide_collision_count():
 		var c = get_slide_collision(i)
-		if c.get_collider() is RigidBody3D:
-			c.get_collider().sleeping = false
-			c.get_collider().apply_central_impulse(-c.get_normal() * 2.0)
-			if c.get_collider().get_parent().has_method("register_interaction"):
-					c.get_collider().get_parent().register_interaction()
+		var pushed = c.get_collider()
+		if pushed is RigidBody3D and not pushed.is_in_group("vehicles"):
+			pushed.sleeping = false
+			pushed.apply_central_impulse(-c.get_normal() * 2.0)
+			if pushed.get_parent().has_method("register_interaction"):
+					pushed.get_parent().register_interaction()
 
 
 # ---------------- Vehicle piloting ----------------
@@ -2026,7 +2557,7 @@ func _apply_seated_pose(seat: Node3D) -> void:
 		_puppet_body.rotation = Vector3.ZERO
 		var hb := _puppet_body as HumanBody
 		if hb:
-			hb.play_anim("Crouch")
+			hb.play_anim("Idle_Rifle")
 
 
 ## Called by a vehicle controller when the occupant moves between seats
@@ -2066,7 +2597,7 @@ func exit_aircraft(exit_pos: Vector3, face_dir: Vector3, eject_vel: Vector3 = Ve
 		_puppet_body.position = Vector3.ZERO
 		var hb := _puppet_body as HumanBody
 		if hb:
-			hb.play_anim("Idle")
+			hb.play_anim("Idle_Rifle")
 	if is_instance_valid(_puppet_gun_holder):
 		_puppet_gun_holder.visible = true
 	if hud:

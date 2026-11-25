@@ -1,0 +1,38 @@
+[gd_resource type="Resource" script_class="WeaponData" format=3]
+
+[ext_resource type="Script" path="res://scripts/weapon_data.gd" id="1_script"]
+
+[resource]
+script = ExtResource("1_script")
+id = "ammo_box"
+display_name = "Ammo Supply Box"
+type = "deployable"
+dmg = 0.0
+rng = 3.0
+stab = 100.0
+fire_rate = 1.0
+mag = 1
+max_mag = 1
+res = 0
+max_res = 0
+auto = false
+is_shotgun = false
+pellets = 1
+spread_base = 0.0
+reload_time = 0.0
+recoil_v = 0.0
+recoil_h = 0.0
+kick_vm = 0.08
+spread_per_shot = 0.0
+speed_mult = 1.0
+is_sniper = false
+owned = true
+equipped = false
+price = 0
+scene_path = "res://scenes/weapons/heavy/ammo_box_held.tscn"
+viewmodel_position = Vector3(0.18, -0.22, -0.38)
+viewmodel_rotation = Vector3(0, 0, 0)
+viewmodel_scale = Vector3(0.38, 0.38, 0.38)
+hold_style = "util"
+right_hand_offset = Vector3(0, 0, 0)
+left_hand_offset = Vector3(0, 0, 0)

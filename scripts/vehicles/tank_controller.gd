@@ -89,20 +89,55 @@ var _last_hit_faction: String = ""
 var _engine_sfx: AudioStreamPlayer3D = null
 
 @onready var interact_area: Area3D = get_node_or_null("InteractArea")
-@onready var turret_node: Node3D = get_node_or_null("Model/Turret")
-@onready var barrel_node: Node3D = get_node_or_null("Model/Turret/BarrelPivot")
-@onready var muzzle_node: Node3D = get_node_or_null("Model/Turret/BarrelPivot/Muzzle")
+@onready var turret_node: Node3D = _first_node(["Model/Turret", "Model/Tank/Pivot"]) as Node3D
+@onready var barrel_node: Node3D = _first_node(["Model/Turret/BarrelPivot", "Model/Tank/Pivot/BarrelPivot"]) as Node3D
+@onready var muzzle_node: Node3D = _first_node(["Model/Turret/BarrelPivot/Muzzle", "Model/Tank/Pivot/BarrelPivot/Muzzle"]) as Node3D
 @onready var muzzle_flash: OmniLight3D = get_node_or_null("Model/Turret/BarrelPivot/Muzzle/MuzzleFlash")
 @onready var chase_pivot: Node3D = get_node_or_null("ChasePivot")
 @onready var chase_arm: SpringArm3D = get_node_or_null("ChasePivot/ChaseArm")
 @onready var chase_cam: Camera3D = get_node_or_null("ChasePivot/ChaseArm/ChaseCamera")
-@onready var commander_hatch: Node3D = get_node_or_null("Model/Turret/CommanderHatch")
-@onready var gunner_cam: Camera3D = get_node_or_null("Model/Turret/CommanderHatch/GunnerCam")
-@onready var left_track_mesh: MeshInstance3D = get_node_or_null("Model/Hull/LeftTrack")
-@onready var right_track_mesh: MeshInstance3D = get_node_or_null("Model/Hull/RightTrack")
+@onready var commander_hatch: Node3D = _first_node(["Model/Turret/CommanderHatch", "Model/CommanderHatch"]) as Node3D
+@onready var gunner_cam: Camera3D = _first_node(["Model/Turret/CommanderHatch/GunnerCam", "Model/CommanderHatch/GunnerCam"]) as Camera3D
+@onready var tread_anim: AnimationPlayer = get_node_or_null("Model/Tank/AnimationPlayer")
+
+var _tread_current := ""
+
+## First existing node from candidate paths (old primitive rig vs new glb rig).
+func _first_node(paths: Array) -> Node:
+	for p in paths:
+		var n := get_node_or_null(p)
+		if n != null:
+			return n
+	return null
+
+## glb rig: BarrelPivot/Muzzle come from Tank.glb; only the flash light is
+## missing from the export, so create it here.
+func _setup_glb_cannon() -> void:
+	if muzzle_node != null and muzzle_flash == null:
+		var fl := OmniLight3D.new()
+		fl.name = "MuzzleFlash"
+		fl.light_color = Color(1, 0.75, 0.25)
+		fl.light_energy = 8.0
+		fl.omni_range = 14.0
+		muzzle_node.add_child(fl)
+		muzzle_flash = fl
+
+## ponytail: Tank.glb exports BOTH tread ribbons stacked at the same spot
+## (world x -0.24..-0.51, hull-top height — they render as a dark arc over the
+## hull). Re-seat them onto the animated Track belts. Re-export the glb from
+## Blender to fix at the source and delete this.
+func _fix_glb_treads() -> void:
+	var l := get_node_or_null("Model/Tank/L_Tread") as Node3D
+	var r := get_node_or_null("Model/Tank/R_Tread") as Node3D
+	if l != null:
+		l.position += Vector3(0.278, -0.69, 0.106)
+	if r != null:
+		r.position += Vector3(-1.025, -0.69, 0.106)
 
 func _ready() -> void:
 	hp = max_hp
+	_setup_glb_cannon()
+	_fix_glb_treads()
 	_setup_seats()
 	if chase_cam != null:
 		chase_cam.current = false
@@ -352,7 +387,9 @@ func _process(delta: float) -> void:
 	if turret_node != null:
 		turret_node.rotation.y = turret_yaw
 	if barrel_node != null:
-		barrel_node.rotation.x = cannon_pitch
+		# ponytail: glb barrel runs along +Z local (opposite the old rig), so
+		# +rotation.x pitches DOWN — negate so +pitch = muzzle up.
+		barrel_node.rotation.x = -cannon_pitch
 	if commander_hatch != null:
 		# Gunner rotates ONLY the cupola (yaw + pitch); main turret untouched.
 		hatch_yaw = lerp_angle(hatch_yaw, _target_hatch_yaw, minf(delta * 12.0, 1.0))
@@ -386,6 +423,7 @@ func _process(delta: float) -> void:
 # --- Physics & Driving ---
 
 func _physics_process(delta: float) -> void:
+	_update_tread_anim()
 	if _net_puppet:
 		var t := minf(1.0, delta * 15.0)
 		if _net_target_pos.is_finite():
@@ -433,6 +471,26 @@ func _physics_process(delta: float) -> void:
 
 	move_and_slide()
 	_update_hud()
+
+## Scroll the tread chains: link speed matches ground speed; pivot steering
+## scrolls both tracks the same way (no per-side counter-scroll — ponytail:
+## add left/right reverse when steering if it ever bothers the eye).
+func _update_tread_anim() -> void:
+	if tread_anim == null:
+		return
+	var forward := -global_basis.z
+	var fwd_speed := velocity.dot(forward)
+	if absf(fwd_speed) < 0.3:
+		if _tread_current != "":
+			tread_anim.stop()
+			_tread_current = ""
+		return
+	var want := "forward" if fwd_speed > 0.0 else "backward"
+	if _tread_current != want:
+		tread_anim.play(want)
+		_tread_current = want
+	# animation loops 0.35 m per 1.0417 s at scale 1 -> scale by ground speed
+	tread_anim.speed_scale = clampf(absf(fwd_speed) / 0.35 / 0.96, 0.5, 20.0)
 
 func _drive_input(delta: float) -> void:
 	var fwd_input := Input.get_axis("move_backward", "move_forward") # W / S
@@ -503,7 +561,12 @@ func _try_fire_cannon(seat_idx: int = 0) -> void:
 	# Crosshair-converged fire direction:
 	# Raycast from chase camera straight along crosshair into the 3D scene.
 	# The shell fires directly toward the point the crosshair is aiming at.
-	var fire_dir := -barrel_node.global_transform.basis.z.normalized() if barrel_node else -global_basis.z
+	# Barrel axis = pivot -> muzzle tip. NEVER derive it from -basis.z — the
+	# glb rig sits under a yaw-180 wrapper, so -basis.z points BACKWARD
+	# (probe-verified: shell fired behind the tank).
+	var fire_dir := -global_basis.z
+	if barrel_node != null and muzzle_node != null:
+		fire_dir = (muzzle_node.global_position - barrel_node.global_position).normalized()
 	if chase_cam != null and chase_cam.current:
 		var space := get_world_3d().direct_space_state
 		var cam_pos := chase_cam.global_position
@@ -516,10 +579,8 @@ func _try_fire_cannon(seat_idx: int = 0) -> void:
 		var aim_point: Vector3 = hit.position if hit else (cam_pos + cam_fwd * 500.0)
 		var converged := (aim_point - spawn_pos).normalized()
 		# Only use converged if not pointing backwards relative to the barrel
-		if converged.dot(-barrel_node.global_transform.basis.z) > 0.3:
+		if converged.dot(fire_dir) > 0.3:
 			fire_dir = converged
-		else:
-			fire_dir = -barrel_node.global_transform.basis.z.normalized()
 
 	# Spawn projectile locally
 	_spawn_cannon_shell(spawn_pos, fire_dir, s_name, s_fac)

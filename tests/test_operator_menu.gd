@@ -35,7 +35,7 @@ func _run() -> void:
 	menu._set_category("Recon")
 	await process_frame
 	check(menu.cat_header.text == "Recon", "header is Recon")
-	check(menu.op_rows.size() == 1, "Recon has 1 operator (Ghost)")
+	check(menu.op_rows.size() == 2, "Recon has 2 operators (Ghost, Wraith)")
 	check(menu.selected_id == "Ghost", "Ghost auto-selected")
 
 	# Switch to Support

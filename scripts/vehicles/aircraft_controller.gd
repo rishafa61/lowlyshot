@@ -127,10 +127,112 @@ func net_release_puppet() -> void:
 @onready var interact_area: Area3D = $InteractArea
 @onready var muzzle: Node3D = $Model/GAU8_Cannon
 
+# --- Airframe animation states (Aircraft.glb clips) ---
+# Loops: Idle (parked / post-landing hold) and Fly (airborne default).
+# One-shots, edge-triggered on altitude crossings so holding an altitude never
+# re-fires them:
+#   Take Off — climbs past TAKEOFF_ALT -> plays once -> Fly
+#   Landing  — descends past LAND_ALT  -> plays once -> Idle (holds until the
+#              next Take Off, even if still airborne under LAND_ALT)
+const TAKEOFF_ALT := 100.0    ## meters AGL that trigger the takeoff clip
+const LAND_ALT := 50.0        ## meters AGL that trigger the landing clip
+const ANIM_CROSSFADE := 0.3
+var _anim: AnimationPlayer = null
+var _current_anim := ""
+var _oneshot := ""            # "Take Off" / "Landing" while its one-shot runs
+var _was_takeoff_alt := false # altitude latch (rising-edge detector)
+var _was_land_alt := false
+var _post_landing := false    # after Landing finishes: hold Idle over Fly
+
+func _setup_anim() -> void:
+	var players := find_children("*", "AnimationPlayer", true, false)
+	if players.is_empty():
+		return
+	_anim = players[0] as AnimationPlayer
+	# Idle/Fly loop (Fly/Idle are 1-frame pose clips that must keep playing —
+	# a stopped player resets bones to rest); Take Off/Landing play once.
+	# The imported library is shared between scene instances — rebuild per player.
+	var lib := AnimationLibrary.new()
+	for anim_name in ["Idle", "Fly", "Take Off", "Landing"]:
+		if _anim.has_animation(anim_name):
+			var a := (_anim.get_animation(anim_name) as Animation).duplicate()
+			a.loop_mode = Animation.LOOP_NONE if (anim_name == "Take Off" or anim_name == "Landing") \
+				else Animation.LOOP_LINEAR
+			lib.add_animation(anim_name, a)
+	if lib.get_animation_list().is_empty():
+		_anim = null
+		return
+	if _anim.has_animation_library(""):
+		_anim.remove_animation_library("")
+	_anim.add_animation_library("", lib)
+	_anim.animation_finished.connect(_on_anim_finished)
+	# Seed the latches with the spawn altitude so a landing/takeoff doesn't
+	# misfire on the first frame.
+	var agl0 := _altitude_agl(true)
+	_was_takeoff_alt = agl0 >= TAKEOFF_ALT
+	_was_land_alt = agl0 <= LAND_ALT
+	_current_anim = "Idle"
+	_anim.play("Idle")
+
+func _play_clip(target: String) -> void:
+	if target == _current_anim:
+		return
+	_current_anim = target
+	_anim.play(target, ANIM_CROSSFADE)
+
+func _play_oneshot(target: String) -> void:
+	_oneshot = target
+	_play_clip(target)
+
+func _on_anim_finished(anim_name: StringName) -> void:
+	var sname := str(anim_name)
+	if _oneshot == "Take Off" and sname.ends_with("Take Off"):
+		_oneshot = ""
+		_play_clip("Fly")
+	elif _oneshot == "Landing" and sname.ends_with("Landing"):
+		_oneshot = ""
+		_play_clip("Idle")
+
+## Never stop the player: with only one Mesh under a skeleton, stopping resets
+## bones to the rest pose mid-flight.
+func _update_anim(_delta: float) -> void:
+	if _anim == null:
+		return
+	var agl := _altitude_agl(true)
+	var grounded := _is_grounded()
+	var high := agl >= TAKEOFF_ALT
+	var low := agl <= LAND_ALT
+	# Rising edge past TAKEOFF_ALT: one takeoff clip, then Fly.
+	if high and not _was_takeoff_alt:
+		_was_takeoff_alt = true
+		_was_land_alt = low
+		_post_landing = false
+		_play_oneshot("Take Off")
+		return
+	_was_takeoff_alt = high
+	# Falling edge past LAND_ALT (in the air): one landing clip, then Idle hold.
+	if low and not _was_land_alt and not grounded and _oneshot != "Take Off":
+		_was_land_alt = true
+		_post_landing = true
+		_play_oneshot("Landing")
+		return
+	_was_land_alt = low
+	if _oneshot != "":
+		return # one-shot owns the player until animation_finished swaps it
+	if grounded:
+		_play_clip("Idle")
+	elif _post_landing:
+		_play_clip("Idle")
+	else:
+		_play_clip("Fly")
+
 # Camera roll lag for smooth, flowing bank feeling
 var _cam_fwd: Vector3 = Vector3.FORWARD
 var _cam_up: Vector3 = Vector3.UP
 var _cam_look_back: bool = false
+var _cam_pos: Vector3 = Vector3.ZERO
+var _last_vel: Vector3 = Vector3.ZERO
+var _accel_smooth: float = 0.0
 
 # AGM-65 missile vehicle lock-on (same mechanism as AT4 launcher)
 const LOCK_MAX_PIXEL_DIST: float = 240.0
@@ -154,6 +256,7 @@ func _ready() -> void:
 	chase_arm.add_excluded_object(get_rid())
 	interact_area.body_entered.connect(_on_body_entered)
 	interact_area.body_exited.connect(_on_body_exited)
+	_setup_anim()
 
 # --- Pure math (unit-tested in tests/test_aircraft_physics.gd) ---
 
@@ -265,6 +368,7 @@ func _physics_process(delta: float) -> void:
 				return
 	_apply_forces(delta, grounded)
 	_apply_rotation(delta, grounded)
+	_update_anim(delta)
 	_update_pilot_hud()
 
 func _console_open() -> bool:
@@ -747,12 +851,15 @@ func _on_impact(body: Node) -> void:
 func _update_camera_lag(delta: float) -> void:
 	if chase_pivot == null:
 		return
-	chase_pivot.global_position = global_position + global_basis * Vector3(0.0, 5.2, 0.0)
+	var pos_target := global_position + global_basis * Vector3(0.0, 5.2, 0.0)
 	if not chase_cam.current:
 		# Camera not driven: snap to the airframe so the next occupant starts clean
 		_cam_fwd = -global_basis.z
 		_cam_up = global_basis.y
 		_cam_look_back = false
+		_cam_pos = pos_target
+		_last_vel = linear_velocity
+		chase_pivot.global_position = _cam_pos
 		chase_pivot.global_basis = global_basis
 		return
 	# V: snap-look behind the tail (instant flip, no lag on the switch)
@@ -762,10 +869,26 @@ func _update_camera_lag(delta: float) -> void:
 		_cam_look_back = look_back
 		_cam_fwd = (global_basis.z if look_back else -global_basis.z).normalized()
 		_cam_up = global_basis.y.normalized()
-	var w_track := 1.0 - exp(-8.0 * delta)  # pitch/yaw responsiveness
-	var w_roll := 1.0 - exp(-3.5 * delta)   # roll responsiveness (the "flow")
 	var target_fwd := (global_basis.z if look_back else -global_basis.z).normalized()
 	var target_up := global_basis.y.normalized()
+
+	# POSITION: ease after the plane instead of welding to it. Steady flight
+	# follows tight; hard acceleration deepens the lag so the airframe visibly
+	# pulls ahead and the camera chases it down (accel feel).
+	var accel := (linear_velocity - _last_vel) / maxf(delta, 0.001)
+	_last_vel = linear_velocity
+	var accel_mag := accel.length()
+	_accel_smooth = lerpf(_accel_smooth, accel_mag, 1.0 - exp(-6.0 * delta))
+	var accel_t := clampf(_accel_smooth / 30.0, 0.0, 1.0) # ~full lag at 30 m/s^2
+	var w_pos := 1.0 - exp(-lerpf(14.0, 4.0, accel_t) * delta)
+	_cam_pos = _cam_pos.lerp(pos_target, w_pos)
+	chase_pivot.global_position = _cam_pos
+
+	# ORIENTATION: pitch/yaw track fast, roll is the "flow"; both lag deeper
+	# while the plane is turning over (roll rate) so swings read as fluid.
+	var turn_t := clampf(angular_velocity.length() / 2.5, 0.0, 1.0)
+	var w_track := 1.0 - exp(-lerpf(8.0, 3.0, turn_t) * delta)
+	var w_roll := 1.0 - exp(-lerpf(3.5, 1.3, turn_t) * delta)
 	_cam_fwd = _cam_fwd.lerp(target_fwd, w_track).normalized()
 	_cam_up = _cam_up.lerp(target_up, w_roll).normalized()
 	# Re-orthogonalize so the basis stays valid while roll lags
@@ -902,10 +1025,11 @@ var _alt_cache: float = 0.0
 var _alt_timer: float = 0.0
 
 ## Height above ground (AGL): downward ray to terrain/rooftops, 800 m max.
-## Perf: cached at 10 Hz — HUD text doesn't need a fresh 800 m ray every physics tick.
-func _altitude_agl() -> float:
+## Perf: cached at 10 Hz — HUD text doesn't need a fresh 800 m ray every physics
+## tick. Pass force=true when the value gates a state change (anim states).
+func _altitude_agl(force: bool = false) -> float:
 	_alt_timer -= get_physics_process_delta_time()
-	if _alt_timer > 0.0:
+	if not force and _alt_timer > 0.0:
 		return _alt_cache
 	_alt_timer = 0.1
 	var space := get_world_3d().direct_space_state

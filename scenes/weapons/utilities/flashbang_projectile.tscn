@@ -1,4 +1,4 @@
-[gd_scene load_steps=5 format=3]
+[gd_scene load_steps=6 format=3]
 
 [ext_resource type="Script" path="res://scenes/weapons/utilities/flashbang_projectile.gd" id="1_script"]
 
@@ -10,7 +10,13 @@ friction = 0.5
 radius = 0.04
 height = 0.15
 
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_flash"]
+albedo_color = Color(0.7, 0.7, 0.75, 1)
+metallic = 0.8
+roughness = 0.3
+
 [sub_resource type="CylinderMesh" id="CylinderMesh_body"]
+material = SubResource("StandardMaterial3D_flash")
 top_radius = 0.035
 bottom_radius = 0.035
 height = 0.14

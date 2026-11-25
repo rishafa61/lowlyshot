@@ -12,6 +12,7 @@ const SCENES := {
 	"m700": "res://scenes/weapons/main/m700.tscn",
 	"knife": "res://scenes/weapons/melee/Knife.tscn",
 	"at4": "res://scenes/weapons/heavy/at4.tscn",
+	"ammo_box": "res://scenes/weapons/heavy/ammo_box.tscn",
 	"glock": "res://scenes/weapons/secondary/Glock.tscn",
 	"desert_hawk": "res://scenes/weapons/secondary/desert_hawk.tscn",
 	"grenade": "res://scenes/weapons/utilities/grenade_hand.tscn",

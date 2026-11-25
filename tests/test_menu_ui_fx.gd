@@ -30,7 +30,7 @@ func _initialize() -> void:
 			w["equipped"] = str(w.get("id", "")) == wid
 		standby.refresh()
 		await process_frame
-		var mount = standby.get_node("WeaponMount")
+		var mount = standby.find_child("WeaponMount", true, false)
 		var kids = mount.get_children()
 		var ok: bool = kids.size() == 1 and (str(kids[0].scene_file_path).to_lower().ends_with("/%s.tscn" % wid.to_lower()) or (wid == "steyr_aug" and str(kids[0].scene_file_path).ends_with("/SteyrAUG.tscn")))
 		check(ok, "standby shows %s model (got %s)" % [wid, ", ".join(kids.map(func(k): return k.scene_file_path))])

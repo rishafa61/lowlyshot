@@ -3,6 +3,7 @@ build/
 godot-copy-all-errors-*/
 *.tmp
 *~
+~*
 *.TMP
 
 # Third-party junk / other engine experiments at repo root

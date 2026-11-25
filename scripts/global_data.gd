@@ -26,7 +26,8 @@ const WEAPON_CATALOG := {
 		"res://resources/weapons/flashbang.tres"
 	],
 	"Heavy": [
-		"res://resources/weapons/at4.tres"
+		"res://resources/weapons/at4.tres",
+		"res://resources/weapons/ammo_box.tres"
 	]
 }
 
@@ -147,6 +148,8 @@ func get_equipped_operator_script() -> Script:
 		return load("res://scenes/operators/assault_operator.gd")
 	elif equipped_operator == "Ghost" or equipped_operator == "Recon":
 		return load("res://scenes/operators/recon_operator.gd")
+	elif equipped_operator == "Wraith":
+		return load("res://scenes/operators/wraith_operator.gd")
 	elif equipped_operator == "Shock" or equipped_operator == "Breacher":
 		return load("res://scenes/operators/breacher_operator.gd")
 	elif equipped_operator == "Wingman":

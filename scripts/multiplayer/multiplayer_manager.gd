@@ -601,6 +601,10 @@ func _on_peer_left(peer: int) -> void:
 	players_data.erase(peer)
 	_sync_match_data()
 	_fill_bots()
+	# Clean up any deployables owned by the leaving peer
+	for box in get_tree().get_nodes_in_group("ammo_supply_boxes"):
+		if is_instance_valid(box) and box.get("owner_peer_id") == peer:
+			box.queue_free()
 
 ## Client -> host: "my arena is loaded, send me everything"
 @rpc("any_peer", "call_remote", "reliable")
@@ -629,6 +633,10 @@ func client_ready() -> void:
 			if b.get("equipped_primary") and b.equipped_primary.has("id"):
 				weapon_id = b.equipped_primary["id"]
 			net_spawn_bot.rpc_id(peer, b_id, scene_path, b.global_position, b.rotation.y, team, b.bot_name, weapon_id)
+	# Replicate all active ammo supply boxes to late joiner
+	for box in get_tree().get_nodes_in_group("ammo_supply_boxes"):
+		if is_instance_valid(box) and not box.is_queued_for_deletion():
+			net_spawn_ammo_box.rpc_id(peer, box.name, box.global_position, box.rotation.y, box.get("owner_peer_id"), str(box.get("owner_team")), str(box.get("owner_name")), int(box.get("supplies")), bool(box.get("is_depleted")))
 	# New peer may have been added to players_data just before readying:
 	# rebalance so bot counts match humans (max 5v5 = 10 combatants).
 	_fill_bots()
@@ -1005,6 +1013,152 @@ func _instantiate_utility_replica(scene_path: String, pos: Vector3, dir: Vector3
 	get_tree().root.add_child(node)
 	if node is RigidBody3D and extra_data.has("impulse"):
 		node.apply_impulse(extra_data["impulse"])
+
+# ---------------- Ammo Supply Box Replication & Authority ----------------
+func request_deploy_ammo_box(pos: Vector3, yaw: float, team_name: String, p_name: String) -> void:
+	if not GlobalData.is_networked():
+		return
+	if multiplayer.is_server():
+		_server_deploy_ammo_box(1, pos, yaw, team_name, p_name)
+	else:
+		relay_deploy_ammo_box_to_host.rpc_id(1, pos, yaw, team_name, p_name)
+
+@rpc("any_peer", "call_remote", "reliable")
+func relay_deploy_ammo_box_to_host(pos: Vector3, yaw: float, team_name: String, p_name: String) -> void:
+	if not multiplayer.is_server():
+		return
+	var sender := multiplayer.get_remote_sender_id()
+	_server_deploy_ammo_box(sender, pos, yaw, team_name, p_name)
+
+func _server_deploy_ammo_box(sender: int, pos: Vector3, yaw: float, team_name: String, p_name: String) -> void:
+	# Enforce max 1 active box per player: free any prior box owned by this sender
+	for old_box in get_tree().get_nodes_in_group("ammo_supply_boxes"):
+		if is_instance_valid(old_box) and old_box.get("owner_peer_id") == sender:
+			old_box.queue_free()
+
+	var sc := load("res://scenes/weapons/heavy/ammo_box.tscn") as PackedScene
+	if not sc:
+		return
+	var box: Node3D = sc.instantiate()
+	box.name = "AmmoBox_%d_%d" % [sender, Time.get_ticks_msec()]
+	box.position = pos
+	box.rotation.y = yaw
+	box.set("owner_peer_id", sender)
+	box.set("owner_team", team_name)
+	box.set("owner_name", p_name)
+	get_tree().root.add_child(box)
+
+	var cur_supplies: int = int(box.get("supplies"))
+	# Relay to all ready peers
+	for p in ready_peers:
+		net_spawn_ammo_box.rpc_id(p, box.name, pos, yaw, sender, team_name, p_name, cur_supplies, false)
+
+@rpc("authority", "call_remote", "reliable")
+func net_spawn_ammo_box(box_name: String, pos: Vector3, yaw: float, owner_peer: int, team_name: String, p_name: String, box_supplies: int, depleted: bool = false) -> void:
+	# Avoid duplicate if already exists locally
+	var existing = get_tree().root.get_node_or_null(box_name)
+	if existing and is_instance_valid(existing):
+		if existing.has_method("sync_state"):
+			existing.sync_state(box_supplies, depleted)
+		return
+
+	var sc := load("res://scenes/weapons/heavy/ammo_box.tscn") as PackedScene
+	if not sc:
+		return
+	var box: Node3D = sc.instantiate()
+	box.name = box_name
+	box.position = pos
+	box.rotation.y = yaw
+	box.set("owner_peer_id", owner_peer)
+	box.set("owner_team", team_name)
+	box.set("owner_name", p_name)
+	box.set("supplies", box_supplies)
+	box.set("is_depleted", depleted)
+	box.set("is_net_replica", (owner_peer != multiplayer.get_unique_id()))
+	get_tree().root.add_child(box)
+	if depleted and box.has_method("set_depleted"):
+		box.set_depleted()
+
+func request_box_resupply(box_name: String) -> void:
+	if not GlobalData.is_networked():
+		return
+	if multiplayer.is_server():
+		_server_handle_box_resupply(1, box_name)
+	else:
+		relay_box_resupply_to_host.rpc_id(1, box_name)
+
+@rpc("any_peer", "call_remote", "reliable")
+func relay_box_resupply_to_host(box_name: String) -> void:
+	if not multiplayer.is_server():
+		return
+	var sender := multiplayer.get_remote_sender_id()
+	_server_handle_box_resupply(sender, box_name)
+
+func _server_handle_box_resupply(peer_id: int, box_name: String) -> void:
+	var target_box: Node3D = null
+	for b in get_tree().get_nodes_in_group("ammo_supply_boxes"):
+		if is_instance_valid(b) and b.name == box_name:
+			target_box = b
+			break
+
+	if not target_box or target_box.get("is_depleted") == true or int(target_box.get("supplies")) <= 0:
+		return
+
+	# Locate requesting player node
+	var player_node: Node = null
+	for p in get_tree().get_nodes_in_group("player"):
+		if is_instance_valid(p) and (p.name == str(peer_id) or (p.has_method("get_multiplayer_authority") and p.get_multiplayer_authority() == peer_id)):
+			player_node = p
+			break
+
+	if not player_node or player_node.get("is_dead") == true:
+		return
+
+	# Validate distance + friendly
+	var radius: float = float(target_box.get("resupply_radius")) if "resupply_radius" in target_box else 3.0
+	if player_node.global_position.distance_to(target_box.global_position) > radius + 1.5:
+		return
+	if target_box.has_method("_is_friendly_to") and not target_box._is_friendly_to(player_node):
+		return
+
+	# Authoritatively deduct supplies
+	var cost: int = int(target_box.get("resupply_cost")) if "resupply_cost" in target_box else 20
+	var cur_sup: int = int(target_box.get("supplies"))
+	var new_sup: int = maxi(0, cur_sup - cost)
+	target_box.set("supplies", new_sup)
+	var is_dep: bool = (new_sup <= 0)
+	if is_dep and target_box.has_method("set_depleted"):
+		target_box.set_depleted()
+	elif target_box.has_method("_update_visuals"):
+		target_box._update_visuals()
+
+	# Sync updated box state to all peers
+	for p in ready_peers:
+		net_sync_ammo_box.rpc_id(p, target_box.name, new_sup, is_dep)
+
+	# Grant ammo to requesting peer
+	var grant_amt: int = int(target_box.get("ammo_amount_per_resupply")) if "ammo_amount_per_resupply" in target_box else 0
+	if peer_id == 1:
+		if player_node.has_method("receive_resupply"):
+			player_node.receive_resupply(grant_amt)
+	else:
+		net_grant_resupply.rpc_id(peer_id, grant_amt)
+
+@rpc("authority", "call_remote", "reliable")
+func net_grant_resupply(amount_override: int) -> void:
+	for p in get_tree().get_nodes_in_group("player"):
+		if is_instance_valid(p) and p.get("is_puppet") == false:
+			if p.has_method("receive_resupply"):
+				p.receive_resupply(amount_override)
+			break
+
+@rpc("authority", "call_remote", "reliable")
+func net_sync_ammo_box(box_name: String, new_supplies: int, depleted: bool) -> void:
+	for b in get_tree().get_nodes_in_group("ammo_supply_boxes"):
+		if is_instance_valid(b) and b.name == box_name:
+			if b.has_method("sync_state"):
+				b.sync_state(new_supplies, depleted)
+			break
 
 # ---------------- Tracer / Shot FX Replication ----------------
 ## Bullet tracers + impact flashes for every gun: infantry, tank cupola M2,

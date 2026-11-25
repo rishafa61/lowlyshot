@@ -1,4 +1,5 @@
 $ErrorActionPreference = "Stop"
+$ProgressPreference = "SilentlyContinue"
 
 $distDir = "C:\Users\Rio\AppData\Local\Temp\antigravity\CallOfDiddy_Dist"
 if (Test-Path $distDir) {

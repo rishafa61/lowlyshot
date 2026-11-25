@@ -14,6 +14,13 @@ func _initialize() -> void:
 	_run()
 
 func _run() -> void:
+	if not root.has_node("GlobalData"):
+		var gd_sc = load("res://scripts/global_data.gd") as GDScript
+		var gd_inst = gd_sc.new()
+		gd_inst.name = "GlobalData"
+		root.add_child(gd_inst)
+	var gd = root.get_node("GlobalData")
+
 	# 1. Load m700.tscn
 	var scene = load("res://scenes/weapons/main/m700.tscn") as PackedScene
 	check(scene != null, "m700.tscn loads as PackedScene")
@@ -65,15 +72,17 @@ func _run() -> void:
 	sniper.queue_free()
 	await process_frame
 
-	# 4. Standby character compatibility (checks weapon_mount.get_node("Sniper"))
+	# 4. Standby character compatibility (checks weapon_mount mounting the equipped weapon)
+	gd.set("force_primary_id", "m700")
 	var standby_scene = load("res://scenes/ui/standby_character.tscn") as PackedScene
 	check(standby_scene != null, "standby_character.tscn loads")
 	var standby = standby_scene.instantiate()
 	root.add_child(standby)
 	await process_frame
-	var mounted_sniper = standby.get_node_or_null("WeaponMount/Sniper")
+	var mounted_sniper = standby.find_child("Sniper", true, false)
 	check(mounted_sniper != null, "Standby character has mounted Sniper")
 	standby.queue_free()
+	gd.set("force_primary_id", "")
 	await process_frame
 
 	print("RESULT: %s (%d fails)" % ["OK" if fails == 0 else "FAILED", fails])

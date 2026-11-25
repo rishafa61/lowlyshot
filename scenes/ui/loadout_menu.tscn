@@ -7,7 +7,7 @@
 background_mode = 0
 ambient_light_source = 2
 ambient_light_color = Color(0.55, 0.6, 0.7, 1)
-ambient_light_energy = 1.0
+ambient_light_energy = 1.3
 
 [node name="LoadoutMenu" type="Control"]
 layout_mode = 3
@@ -34,14 +34,14 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-theme_override_constants/margin_left = 60
-theme_override_constants/margin_top = 30
-theme_override_constants/margin_right = 60
-theme_override_constants/margin_bottom = 30
+theme_override_constants/margin_left = 50
+theme_override_constants/margin_top = 26
+theme_override_constants/margin_right = 50
+theme_override_constants/margin_bottom = 24
 
 [node name="VBox" type="VBoxContainer" parent="Margin"]
 layout_mode = 2
-theme_override_constants/separation = 16
+theme_override_constants/separation = 14
 
 [node name="TopBar" type="HBoxContainer" parent="Margin/VBox"]
 layout_mode = 2
@@ -84,105 +84,199 @@ size_flags_horizontal = 3
 [node name="Main" type="HBoxContainer" parent="Margin/VBox"]
 layout_mode = 2
 size_flags_vertical = 3
-theme_override_constants/separation = 24
+theme_override_constants/separation = 28
 
 [node name="Left" type="VBoxContainer" parent="Margin/VBox/Main"]
-custom_minimum_size = Vector2(300, 0)
+custom_minimum_size = Vector2(620, 0)
 layout_mode = 2
+size_flags_vertical = 3
 theme_override_constants/separation = 10
 
 [node name="SlotPrimary" type="PanelContainer" parent="Margin/VBox/Main/Left"]
-custom_minimum_size = Vector2(0, 100)
+custom_minimum_size = Vector2(0, 240)
 layout_mode = 2
+size_flags_vertical = 3
+size_flags_stretch_ratio = 1.4
 
 [node name="VBox" type="VBoxContainer" parent="Margin/VBox/Main/Left/SlotPrimary"]
 layout_mode = 2
-alignment = 1
+theme_override_constants/separation = 4
 
-[node name="NameLabel" type="Label" parent="Margin/VBox/Main/Left/SlotPrimary/VBox"]
+[node name="HeaderRow" type="HBoxContainer" parent="Margin/VBox/Main/Left/SlotPrimary/VBox"]
+layout_mode = 2
+
+[node name="SubLabel" type="Label" parent="Margin/VBox/Main/Left/SlotPrimary/VBox/HeaderRow"]
+layout_mode = 2
+text = "PRIMARY WEAPON"
+
+[node name="Spacer" type="Control" parent="Margin/VBox/Main/Left/SlotPrimary/VBox/HeaderRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="BtnGunsmith" type="Button" parent="Margin/VBox/Main/Left/SlotPrimary/VBox/HeaderRow"]
+custom_minimum_size = Vector2(105, 24)
+layout_mode = 2
+text = "⬡ GUNSMITH"
+
+[node name="PreviewBox" type="Control" parent="Margin/VBox/Main/Left/SlotPrimary/VBox"]
+layout_mode = 2
+size_flags_vertical = 3
+mouse_filter = 2
+
+[node name="BottomRow" type="HBoxContainer" parent="Margin/VBox/Main/Left/SlotPrimary/VBox"]
+layout_mode = 2
+
+[node name="NameLabel" type="Label" parent="Margin/VBox/Main/Left/SlotPrimary/VBox/BottomRow"]
 layout_mode = 2
 text = "AK-47"
-horizontal_alignment = 1
 
-[node name="SubLabel" type="Label" parent="Margin/VBox/Main/Left/SlotPrimary/VBox"]
+[node name="Spacer" type="Control" parent="Margin/VBox/Main/Left/SlotPrimary/VBox/BottomRow"]
 layout_mode = 2
-text = "Primary Weapon"
-horizontal_alignment = 1
+size_flags_horizontal = 3
 
-[node name="SlotSecondary" type="PanelContainer" parent="Margin/VBox/Main/Left"]
-custom_minimum_size = Vector2(0, 100)
+[node name="LevelBadge" type="Control" parent="Margin/VBox/Main/Left/SlotPrimary/VBox/BottomRow"]
+custom_minimum_size = Vector2(40, 40)
 layout_mode = 2
 
-[node name="VBox" type="VBoxContainer" parent="Margin/VBox/Main/Left/SlotSecondary"]
+[node name="RowMid" type="HBoxContainer" parent="Margin/VBox/Main/Left"]
+custom_minimum_size = Vector2(0, 150)
 layout_mode = 2
-alignment = 1
+size_flags_vertical = 3
+size_flags_stretch_ratio = 0.9
+theme_override_constants/separation = 10
 
-[node name="NameLabel" type="Label" parent="Margin/VBox/Main/Left/SlotSecondary/VBox"]
+[node name="SlotSecondary" type="PanelContainer" parent="Margin/VBox/Main/Left/RowMid"]
 layout_mode = 2
-text = "Glock"
-horizontal_alignment = 1
+size_flags_horizontal = 3
+size_flags_vertical = 3
 
-[node name="SubLabel" type="Label" parent="Margin/VBox/Main/Left/SlotSecondary/VBox"]
+[node name="VBox" type="VBoxContainer" parent="Margin/VBox/Main/Left/RowMid/SlotSecondary"]
 layout_mode = 2
-text = "Secondary Weapon"
-horizontal_alignment = 1
+theme_override_constants/separation = 2
 
-[node name="SlotMelee" type="PanelContainer" parent="Margin/VBox/Main/Left"]
-custom_minimum_size = Vector2(0, 100)
+[node name="SubLabel" type="Label" parent="Margin/VBox/Main/Left/RowMid/SlotSecondary/VBox"]
 layout_mode = 2
+text = "SECONDARY WEAPON"
 
-[node name="VBox" type="VBoxContainer" parent="Margin/VBox/Main/Left/SlotMelee"]
+[node name="PreviewBox" type="Control" parent="Margin/VBox/Main/Left/RowMid/SlotSecondary/VBox"]
 layout_mode = 2
-alignment = 1
+size_flags_vertical = 3
+mouse_filter = 2
 
-[node name="NameLabel" type="Label" parent="Margin/VBox/Main/Left/SlotMelee/VBox"]
-layout_mode = 2
-text = "Combat Knife"
-horizontal_alignment = 1
-
-[node name="SubLabel" type="Label" parent="Margin/VBox/Main/Left/SlotMelee/VBox"]
-layout_mode = 2
-text = "Melee Weapon"
-horizontal_alignment = 1
-
-[node name="SlotEquip1" type="PanelContainer" parent="Margin/VBox/Main/Left"]
-custom_minimum_size = Vector2(0, 100)
+[node name="BottomRow" type="HBoxContainer" parent="Margin/VBox/Main/Left/RowMid/SlotSecondary/VBox"]
 layout_mode = 2
 
-[node name="VBox" type="VBoxContainer" parent="Margin/VBox/Main/Left/SlotEquip1"]
+[node name="NameLabel" type="Label" parent="Margin/VBox/Main/Left/RowMid/SlotSecondary/VBox/BottomRow"]
 layout_mode = 2
-alignment = 1
+text = "GLOCK"
 
-[node name="NameLabel" type="Label" parent="Margin/VBox/Main/Left/SlotEquip1/VBox"]
+[node name="Spacer" type="Control" parent="Margin/VBox/Main/Left/RowMid/SlotSecondary/VBox/BottomRow"]
 layout_mode = 2
-text = "Frag Grenade"
-horizontal_alignment = 1
+size_flags_horizontal = 3
 
-[node name="SubLabel" type="Label" parent="Margin/VBox/Main/Left/SlotEquip1/VBox"]
-layout_mode = 2
-text = "Equipment 01"
-horizontal_alignment = 1
-
-[node name="SlotEquip2" type="PanelContainer" parent="Margin/VBox/Main/Left"]
-custom_minimum_size = Vector2(0, 100)
+[node name="LevelBadge" type="Control" parent="Margin/VBox/Main/Left/RowMid/SlotSecondary/VBox/BottomRow"]
+custom_minimum_size = Vector2(34, 34)
 layout_mode = 2
 
-[node name="VBox" type="VBoxContainer" parent="Margin/VBox/Main/Left/SlotEquip2"]
+[node name="SlotMelee" type="PanelContainer" parent="Margin/VBox/Main/Left/RowMid"]
 layout_mode = 2
-alignment = 1
+size_flags_horizontal = 3
+size_flags_vertical = 3
 
-[node name="NameLabel" type="Label" parent="Margin/VBox/Main/Left/SlotEquip2/VBox"]
+[node name="VBox" type="VBoxContainer" parent="Margin/VBox/Main/Left/RowMid/SlotMelee"]
 layout_mode = 2
-text = "Flashbang"
-horizontal_alignment = 1
+theme_override_constants/separation = 2
 
-[node name="SubLabel" type="Label" parent="Margin/VBox/Main/Left/SlotEquip2/VBox"]
+[node name="SubLabel" type="Label" parent="Margin/VBox/Main/Left/RowMid/SlotMelee/VBox"]
 layout_mode = 2
-text = "Equipment 02"
-horizontal_alignment = 1
+text = "MELEE WEAPON"
+
+[node name="PreviewBox" type="Control" parent="Margin/VBox/Main/Left/RowMid/SlotMelee/VBox"]
+layout_mode = 2
+size_flags_vertical = 3
+mouse_filter = 2
+
+[node name="BottomRow" type="HBoxContainer" parent="Margin/VBox/Main/Left/RowMid/SlotMelee/VBox"]
+layout_mode = 2
+
+[node name="NameLabel" type="Label" parent="Margin/VBox/Main/Left/RowMid/SlotMelee/VBox/BottomRow"]
+layout_mode = 2
+text = "COMBAT KNIFE"
+
+[node name="Spacer" type="Control" parent="Margin/VBox/Main/Left/RowMid/SlotMelee/VBox/BottomRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="LevelBadge" type="Control" parent="Margin/VBox/Main/Left/RowMid/SlotMelee/VBox/BottomRow"]
+custom_minimum_size = Vector2(34, 34)
+layout_mode = 2
+
+[node name="RowBottom" type="HBoxContainer" parent="Margin/VBox/Main/Left"]
+custom_minimum_size = Vector2(0, 138)
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="SlotEquip1" type="PanelContainer" parent="Margin/VBox/Main/Left/RowBottom"]
+custom_minimum_size = Vector2(0, 138)
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="VBox" type="VBoxContainer" parent="Margin/VBox/Main/Left/RowBottom/SlotEquip1"]
+layout_mode = 2
+theme_override_constants/separation = 2
+
+[node name="SubLabel" type="Label" parent="Margin/VBox/Main/Left/RowBottom/SlotEquip1/VBox"]
+layout_mode = 2
+text = "EQUIPMENT 01"
+
+[node name="PreviewBox" type="Control" parent="Margin/VBox/Main/Left/RowBottom/SlotEquip1/VBox"]
+layout_mode = 2
+size_flags_vertical = 3
+mouse_filter = 2
+
+[node name="BottomRow" type="HBoxContainer" parent="Margin/VBox/Main/Left/RowBottom/SlotEquip1/VBox"]
+layout_mode = 2
+
+[node name="NameLabel" type="Label" parent="Margin/VBox/Main/Left/RowBottom/SlotEquip1/VBox/BottomRow"]
+layout_mode = 2
+text = "FRAG GRENADE"
+
+[node name="Spacer" type="Control" parent="Margin/VBox/Main/Left/RowBottom/SlotEquip1/VBox/BottomRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="SlotEquip2" type="PanelContainer" parent="Margin/VBox/Main/Left/RowBottom"]
+custom_minimum_size = Vector2(0, 138)
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="VBox" type="VBoxContainer" parent="Margin/VBox/Main/Left/RowBottom/SlotEquip2"]
+layout_mode = 2
+theme_override_constants/separation = 2
+
+[node name="SubLabel" type="Label" parent="Margin/VBox/Main/Left/RowBottom/SlotEquip2/VBox"]
+layout_mode = 2
+text = "EQUIPMENT 02"
+
+[node name="PreviewBox" type="Control" parent="Margin/VBox/Main/Left/RowBottom/SlotEquip2/VBox"]
+layout_mode = 2
+size_flags_vertical = 3
+mouse_filter = 2
+
+[node name="BottomRow" type="HBoxContainer" parent="Margin/VBox/Main/Left/RowBottom/SlotEquip2/VBox"]
+layout_mode = 2
+
+[node name="NameLabel" type="Label" parent="Margin/VBox/Main/Left/RowBottom/SlotEquip2/VBox/BottomRow"]
+layout_mode = 2
+text = "AT4 LAUNCHER"
+
+[node name="Spacer" type="Control" parent="Margin/VBox/Main/Left/RowBottom/SlotEquip2/VBox/BottomRow"]
+layout_mode = 2
+size_flags_horizontal = 3
 
 [node name="Mid" type="VBoxContainer" parent="Margin/VBox/Main"]
-custom_minimum_size = Vector2(460, 0)
+visible = false
+custom_minimum_size = Vector2(480, 0)
 layout_mode = 2
 theme_override_constants/separation = 12
 
@@ -230,6 +324,23 @@ theme_override_constants/separation = 6
 [node name="Right" type="VBoxContainer" parent="Margin/VBox/Main"]
 layout_mode = 2
 size_flags_horizontal = 3
+theme_override_constants/separation = 8
+
+[node name="InfoHeader" type="VBoxContainer" parent="Margin/VBox/Main/Right"]
+layout_mode = 2
+theme_override_constants/separation = 2
+
+[node name="CatLabel" type="Label" parent="Margin/VBox/Main/Right/InfoHeader"]
+layout_mode = 2
+text = "ASSAULT RIFLE"
+
+[node name="ItemTitle" type="Label" parent="Margin/VBox/Main/Right/InfoHeader"]
+layout_mode = 2
+text = "AK-47"
+
+[node name="ItemDesc" type="Label" parent="Margin/VBox/Main/Right/InfoHeader"]
+layout_mode = 2
+text = " "
 
 [node name="Preview" type="SubViewportContainer" parent="Margin/VBox/Main/Right"]
 layout_mode = 2
@@ -237,9 +348,10 @@ size_flags_vertical = 3
 stretch = true
 
 [node name="SubViewport" type="SubViewport" parent="Margin/VBox/Main/Right/Preview"]
+own_world_3d = true
 transparent_bg = true
 handle_input_locally = false
-size = Vector2i(500, 700)
+size = Vector2i(600, 700)
 render_target_update_mode = 4
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="Margin/VBox/Main/Right/Preview/SubViewport"]
@@ -251,17 +363,17 @@ current = true
 
 [node name="KeyLight" type="DirectionalLight3D" parent="Margin/VBox/Main/Right/Preview/SubViewport"]
 transform = Transform3D(0.707107, -0.353553, 0.612372, 0, 0.866025, 0.5, -0.707107, -0.353553, 0.612372, 1.5, 2, 2)
-light_energy = 1.6
+light_energy = 2.0
 shadow_enabled = true
 
 [node name="FillLight" type="DirectionalLight3D" parent="Margin/VBox/Main/Right/Preview/SubViewport"]
 transform = Transform3D(0.707107, 0.353553, -0.612372, 0, 0.866025, 0.5, 0.707107, -0.353553, 0.612372, -1.5, 1, 2)
-light_energy = 0.8
+light_energy = 1.0
 light_color = Color(0.75, 0.85, 1, 1)
 
 [node name="RimLight" type="DirectionalLight3D" parent="Margin/VBox/Main/Right/Preview/SubViewport"]
 transform = Transform3D(-1, 0, 0, 0, 0.707107, 0.707107, 0, 0.707107, -0.707107, 0, 2, -2)
-light_energy = 1.0
+light_energy = 1.2
 light_color = Color(1, 0.95, 0.85, 1)
 
 [node name="WeaponPreview" type="Node3D" parent="Margin/VBox/Main/Right/Preview/SubViewport"]
@@ -272,10 +384,12 @@ layout_mode = 2
 theme_override_constants/separation = 20
 
 [node name="BtnBack" type="Button" parent="Margin/VBox/BottomBar"]
-custom_minimum_size = Vector2(120, 44)
+custom_minimum_size = Vector2(150, 44)
 layout_mode = 2
 text = "< BACK"
 
-[node name="HintEquip" type="Label" parent="Margin/VBox/BottomBar"]
+[node name="HintContainer" type="HBoxContainer" parent="Margin/VBox/BottomBar"]
 layout_mode = 2
-text = "[E] Equip Selected   ·   Drag to Rotate   ·   Scroll to Zoom"
+size_flags_horizontal = 3
+alignment = 2
+theme_override_constants/separation = 8

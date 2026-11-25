@@ -284,6 +284,82 @@ func _build_enter_prompt() -> void:
 	txt.add_theme_constant_override("outline_size", 8)
 	enter_prompt_ui.add_child(txt)
 
+# ---------------- Generic / Resupply interaction prompt ----------------
+var _interact_prompt_ui: Control = null
+var _interact_key_label: Label = null
+var _interact_action_label: Label = null
+
+func show_interact_prompt(key_str: String = "F", action_str: String = "RESUPPLY AMMO") -> void:
+	if _interact_prompt_ui == null:
+		_build_interact_prompt()
+	_interact_key_label.text = key_str
+	_interact_action_label.text = action_str
+	if _interact_prompt_ui.visible and _interact_prompt_ui.modulate.a > 0.8:
+		return
+	_interact_prompt_ui.visible = true
+	_interact_prompt_ui.modulate.a = 0.0
+	_interact_prompt_ui.scale = Vector2.ONE * 0.85
+	var tw := create_tween().set_parallel(true)
+	tw.tween_property(_interact_prompt_ui, "modulate:a", 1.0, 0.12)
+	tw.tween_property(_interact_prompt_ui, "scale", Vector2.ONE, 0.22).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+
+func hide_interact_prompt() -> void:
+	if _interact_prompt_ui == null or not _interact_prompt_ui.visible:
+		return
+	var tw := create_tween()
+	tw.tween_property(_interact_prompt_ui, "modulate:a", 0.0, 0.1)
+	tw.tween_callback(func():
+		if _interact_prompt_ui:
+			_interact_prompt_ui.visible = false
+	)
+
+func _build_interact_prompt() -> void:
+	var center := CenterContainer.new()
+	center.set_anchors_preset(Control.PRESET_FULL_RECT)
+	center.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(center)
+	var stack := VBoxContainer.new()
+	stack.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	stack.alignment = BoxContainer.ALIGNMENT_CENTER
+	center.add_child(stack)
+	var spacer := Control.new()
+	spacer.custom_minimum_size = Vector2(0, 130)
+	spacer.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	stack.add_child(spacer)
+	_interact_prompt_ui = HBoxContainer.new()
+	_interact_prompt_ui.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_interact_prompt_ui.add_theme_constant_override("separation", 12)
+	_interact_prompt_ui.resized.connect(func():
+		if _interact_prompt_ui != null:
+			_interact_prompt_ui.pivot_offset = _interact_prompt_ui.size / 2.0
+	)
+	stack.add_child(_interact_prompt_ui)
+	var key := PanelContainer.new()
+	key.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = Color(0.09, 0.09, 0.11, 0.92)
+	sb.border_color = Color(1.0, 0.78, 0.15)
+	sb.set_border_width_all(3)
+	sb.set_corner_radius_all(8)
+	sb.content_margin_left = 14.0
+	sb.content_margin_right = 14.0
+	sb.content_margin_top = 4.0
+	sb.content_margin_bottom = 4.0
+	key.add_theme_stylebox_override("panel", sb)
+	_interact_key_label = Label.new()
+	_interact_key_label.text = "F"
+	_interact_key_label.add_theme_font_size_override("font_size", 24)
+	_interact_key_label.add_theme_color_override("font_color", Color(1.0, 0.78, 0.15))
+	key.add_child(_interact_key_label)
+	_interact_prompt_ui.add_child(key)
+	_interact_action_label = Label.new()
+	_interact_action_label.text = "RESUPPLY AMMO"
+	_interact_action_label.add_theme_font_size_override("font_size", 24)
+	_interact_action_label.add_theme_color_override("font_color", Color(0.97, 0.97, 0.97))
+	_interact_action_label.add_theme_color_override("font_outline_color", Color(0, 0, 0))
+	_interact_action_label.add_theme_constant_override("outline_size", 8)
+	_interact_prompt_ui.add_child(_interact_action_label)
+
 # ---------------- Launcher lock indicator ----------------
 ## Acquisition ring around crosshair while locking; solid diamond when locked.
 
